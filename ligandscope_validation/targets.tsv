@@ -1,0 +1,13 @@
+PDB_ID	Class	Protein	Ligand_atoms	Best_RMSD_Å
+2ZV2	Kinases	CDK2	24	0.18
+4AG8	Kinases	EGFR	28	0.50
+5L2S	Kinases	Aurora-A	37	1.40
+1ERR	Nuclear_receptors	ERalpha	34	1.12
+1T7R	Nuclear_receptors	RXR-beta	21	0.34
+4R06	Nuclear_receptors	AR	34	0.88
+4F8H	Ion_channels	KCNQ1	16	0.45
+5EK0	Ion_channels	hERG	39	0.98
+6D6T	Ion_channels	Nav1.7	22	1.11
+4YAY	G_protein-coupled_receptors	beta2-AR	33	0.30
+5MZJ	G_protein-coupled_receptors	D3R	13	0.45
+6IIU	G_protein-coupled_receptors	A2aR	29	0.57

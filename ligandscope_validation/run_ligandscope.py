@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """
-ligandscope_benchmark.py — GPU vs CPU re-docking benchmark on 12 LigandScope targets.
+run_ligandscope.py — Self-docking validation on 12 LigandScope targets.
 
 For each target:
   1. Compute binding box from crystal ligand centroid (+ 20 Å padding)
   2. Run GPU Vina (via Singularity SIF)
-  3. Run CPU Vina (system vina or vina in PATH)
-  4. Compute heavy-atom RMSD between best pose(s) and crystal ligand
-  5. Output comparison table
+  3. Compute heavy-atom RMSD between best pose(s) and crystal ligand
+  4. Output comparison table
 
 Usage
 -----
-    python3 ligandscope_benchmark.py [--gpu-only] [--cpu-only] [--pdb 2ZV2 4AG8]
-    python3 ligandscope_benchmark.py --dry-run
+    python3 run_ligandscope.py [--pdb 2ZV2 4AG8]
+    python3 run_ligandscope.py --dry-run
 """
 
 from __future__ import annotations
@@ -26,10 +25,11 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
-SCRIPT_DIR    = Path(__file__).parent
-LS_VAL_DIR    = SCRIPT_DIR / 'ligandscope_validation'
-SIF_PATH      = SCRIPT_DIR / 'autodock-vina-gpu.sif'
-OUT_DIR       = SCRIPT_DIR / 'ligandscope_results'
+SCRIPT_DIR    = Path(__file__).parent          # ligandscope_validation/
+REPO_DIR      = SCRIPT_DIR.parent             # repo root
+LS_VAL_DIR    = SCRIPT_DIR                    # pdbqt files live here
+SIF_PATH      = REPO_DIR / 'autodock-vina-gpu.sif'
+OUT_DIR       = SCRIPT_DIR / 'results'
 
 SYSTEMS: Dict[str, List[str]] = {
     'Kinases':                     ['2ZV2', '4AG8', '5L2S'],
@@ -392,7 +392,7 @@ def main() -> None:
               f"Best <2Å: {cpu_best_ok}/{n} ({100*cpu_best_ok//n if n else 0}%)")
 
     # ── TSV output ──────────────────────────────────────────────────────────
-    tsv = OUT_DIR / 'benchmark_results.tsv'
+    tsv = SCRIPT_DIR / 'ligandscope_results.tsv'
     if rows and not args.dry_run:
         cols = list(rows[0].keys())
         with tsv.open('w') as f:

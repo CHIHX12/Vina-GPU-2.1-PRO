@@ -1,0 +1,2 @@
+PDB	Class	CrystalAtoms	GPU_poses	GPU_top1_RMSD	GPU_best_RMSD	GPU_top1_ok	GPU_best_ok
+2ZV2	Kinases	24	9	0.18	0.18	True	True

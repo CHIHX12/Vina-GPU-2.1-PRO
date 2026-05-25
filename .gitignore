@@ -26,8 +26,8 @@ metal_validation/baseline_run.log
 metal_validation/baseline_run.err
 metal_validation/fix_missing_targets.py
 
-# LigandScope benchmark — runtime output (large, machine-specific)
-# benchmark_results.tsv is committed; per-run output files are not
-ligandscope_results/*/
-ligandscope_results/*.cfg
-ligandscope_results/*.log
+# LigandScope validation — runtime output (per-run docking results)
+ligandscope_results/
+ligandscope_validation/results/
+ligandscope_validation/*.cfg
+ligandscope_validation/*.log
