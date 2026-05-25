@@ -68,13 +68,30 @@ search_depth = 4      # see search_depth guide below
 
 ### Step 4 — Run
 
-```bash
-# Single GPU
-singularity run --nv \
-  -B /path/to/work:/work \
-  autodock-vina-gpu.sif --config /work/config.txt
+**Option A — one-command wrapper (recommended):**
 
-# All GPUs — work-stealing, ~2× faster
+```bash
+# Auto-box from co-crystal reference ligand
+./dock.sh \
+  --receptor /path/to/receptor.pdbqt \
+  --ligands  /path/to/ligands/ \
+  --ref      /path/to/ref_ligand.pdbqt \
+  --out      /path/to/output/
+
+# Manual box center
+./dock.sh \
+  --receptor /path/to/receptor.pdbqt \
+  --ligands  /path/to/ligands/ \
+  --box      "10.5 20.3 -5.1" \
+  --out      /path/to/output/
+```
+
+`dock.sh` handles bind mounts, config generation, and GPU selection automatically.
+Run `./dock.sh --help` for all options.
+
+**Option B — raw singularity (advanced):**
+
+```bash
 singularity run --nv \
   -B /path/to/work:/work \
   autodock-vina-gpu.sif --config /work/config.txt --gpu_id all
