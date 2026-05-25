@@ -34,75 +34,58 @@ docker build -t autodock-vina-gpu .
 singularity build autodock-vina-gpu.sif docker-daemon://autodock-vina-gpu:latest
 ```
 
-### Step 2 — Set up your working directory
+### Step 2 — Prepare inputs
+
+- **Receptor:** run `prepare_receptor4.py` — keep the catalytic metal, remove the co-crystallized ligand
+- **Ligands:** one `.pdbqt` per compound in a single directory
+- **Reference ligand** (for auto-box): the co-crystal ligand saved as PDBQT
+
+> See `metal_validation/prepare_all.py` for a preparation reference.
+
+### Step 3 — Run
 
 ```bash
-mkdir -p /path/to/work/{ligands,output,ocl_cache}
-cp receptor.pdbqt  /path/to/work/
-cp *.pdbqt         /path/to/work/ligands/
-```
-
-> **Receptor prep:** use `prepare_receptor4.py` — keep the catalytic metal, remove the
-> co-crystallized ligand.  See `metal_validation/prepare_all.py` for a reference.
-
-### Step 3 — Write config.txt
-
-Copy `example/config.txt` and edit the binding site coordinates:
-
-```ini
-receptor           = /work/receptor.pdbqt
-ligand_directory   = /work/ligands
-output_directory   = /work/output
-opencl_binary_path = /work/ocl_cache   # must be writable
-
-center_x = <X>
-center_y = <Y>
-center_z = <Z>
-size_x   = 25
-size_y   = 25
-size_z   = 25
-
-thread       = 8000
-search_depth = 4      # see search_depth guide below
-```
-
-### Step 4 — Run
-
-**Option A — one-command wrapper (recommended):**
-
-```bash
-# Auto-box from co-crystal reference ligand
 ./dock.sh \
-  --receptor /path/to/receptor.pdbqt \
-  --ligands  /path/to/ligands/ \
-  --ref      /path/to/ref_ligand.pdbqt \
-  --out      /path/to/output/
-
-# Manual box center
-./dock.sh \
-  --receptor /path/to/receptor.pdbqt \
-  --ligands  /path/to/ligands/ \
-  --box      "10.5 20.3 -5.1" \
-  --out      /path/to/output/
+  --receptor receptor.pdbqt \
+  --ligands  ./ligands/ \
+  --ref      co_crystal_ligand.pdbqt \
+  --out      ./output/
 ```
 
-`dock.sh` handles bind mounts, config generation, and GPU selection automatically.
-Run `./dock.sh --help` for all options.
+`dock.sh` auto-computes the binding box from the reference ligand and handles all
+Singularity bind mounts internally.  No config file needed.
 
-**Option B — raw singularity (advanced):**
+Output: `./output/<ligand_name>_out.pdbqt` — 9 poses per ligand, ranked by affinity.
+
+> **First run** compiles OpenCL kernels (~30 s) and caches them.  Subsequent runs are instant.
+
+#### dock.sh options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--receptor` / `-r` | required | Receptor PDBQT file |
+| `--ligands` / `-l` | required | Directory of ligand PDBQT files |
+| `--ref` | — | Co-crystal ligand → auto-compute box center + size |
+| `--box "X Y Z"` | — | Box center coordinates (required if no `--ref`) |
+| `--size N` | auto | Box size in Å; one value or `"SX SY SZ"` |
+| `--out` / `-o` | `./output` | Output directory |
+| `--depth` | `4` | search_depth (see guide below) |
+| `--gpu` | `all` | GPU selection: `all`, `0`, `1`, `0,1` |
+| `--threads` | `8000` | OpenCL thread count |
+| `--sif` | `./autodock-vina-gpu.sif` | Path to SIF image |
+
+When `--ref` is given, box center = ligand centroid and box size = ligand extent + 10 Å margin.
+When no co-crystal structure is available, specify the binding site manually:
 
 ```bash
-singularity run --nv \
-  -B /path/to/work:/work \
-  autodock-vina-gpu.sif --config /work/config.txt --gpu_id all
+./dock.sh \
+  --receptor receptor.pdbqt \
+  --ligands  ./ligands/ \
+  --box "10.5 20.3 -5.1" --size 25 \
+  --out ./output/
 ```
 
-Output: `/path/to/work/output/<ligand_name>_out.pdbqt`
-
-> **First run** compiles OpenCL kernels for your GPU (~30 s) and caches them to
-> `ocl_cache/`.  Subsequent runs load the cache instantly.
-
-### search_depth guide
+#### search_depth guide
 
 | sd | Throughput | Best RMSD < 2 Å | 20/20 rate | Use for |
 |:--:|:----------:|:---------------:|:----------:|---------|
@@ -111,6 +94,17 @@ Output: `/path/to/work/output/<ligand_name>_out.pdbqt`
 | 32 | 1.3 mol/s  | confirmed 20/20 | ~25 % | Validation / publication |
 
 *2× GPU (work-stealing): sd=32 → **2.5 mol/s**, 100 ligands in 40 s.*
+
+#### Advanced — raw Singularity
+
+For HPC environments where `dock.sh` is not suitable, copy `example/config.txt`,
+edit the binding site coordinates, then:
+
+```bash
+singularity run --nv \
+  -B /path/to/work:/work \
+  autodock-vina-gpu.sif --config /work/config.txt --gpu_id all
+```
 
 ---
 
