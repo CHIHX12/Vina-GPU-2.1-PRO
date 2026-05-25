@@ -1,0 +1,188 @@
+=== Job started at Sat May 23 18:15:26 JST 2026 on KENTO-GPU8 ===
+NVIDIA RTX 6000 Ada Generation
+NVIDIA RTX 6000 Ada Generation
+
+======================================================================
+Baseline docking — 20 targets  (SIF: /home/cycheng/Vina-GPU-2.1/autodock-vina-gpu.sif)
+======================================================================
+
+  [1OQ5] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [1BNN] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [1CNX] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [1A42] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [1YDB] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [3HS4] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [1BV3] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [1G52] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [4E3D] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [1GKC] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [1MMQ] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [1SLN] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [2OVX] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [1O86] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [1UZE] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [3L2U] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [3S3M] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [3OXM] docking... FAILED (exit 255)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+  [4BKS] docking... FAILED (exit 1)
+  output: #################################################################
+# If you used AutoDockVina-GPU 2.1 in your work, please cite:   #
+#                                                               #
+# Ding, Ji, et al. Vina-GPU 2.0: Further Accelerating AutoDock  #
+# Vina and Its Derivatives with Graphics Processing Units.      #
+# Journal of Chemical Information and Modeling (2023).          #
+#   
+
+======================================================================
+PDB    Metal    Ki(nM)   RMSD_top1  RMSD_best  Status
+----------------------------------------------------------------------
+1OQ5   ZN            9         N/A        N/A  RUN_FAILED
+1BNN   ZN          380         N/A        N/A  RUN_FAILED
+1CNX   ZN          540         N/A        N/A  RUN_FAILED
+1A42   ZN           15         N/A        N/A  RUN_FAILED
+1YDB   ZN            2         N/A        N/A  RUN_FAILED
+3HS4   ZN         8300         N/A        N/A  RUN_FAILED
+1BV3   ZN          150         N/A        N/A  RUN_FAILED
+1G52   ZN          100         N/A        N/A  RUN_FAILED
+4E3D   ZN           50         N/A        N/A  RUN_FAILED
+1GKC   ZN           27         N/A        N/A  RUN_FAILED
+1MMQ   ZN          670         N/A        N/A  RUN_FAILED
+1SLN   ZN            4         N/A        N/A  RUN_FAILED
+2OVX   ZN           26         N/A        N/A  RUN_FAILED
+1O86   ZN          1.7         N/A        N/A  RUN_FAILED
+2C6N   ZN         0.27         N/A        N/A  PREP_FAILED
+1UZE   ZN          2.2         N/A        N/A  RUN_FAILED
+3L2U   MG          2.0         N/A        N/A  RUN_FAILED
+3S3M   MG          3.0         N/A        N/A  RUN_FAILED
+3OXM   MG          400         N/A        N/A  RUN_FAILED
+4BKS   MG         1500         N/A        N/A  RUN_FAILED
+----------------------------------------------------------------------
+
+Saved: /home/cycheng/Vina-GPU-2.1/metal_validation/baseline_results.tsv
+=== Job finished at Sat May 23 18:15:38 JST 2026 ===

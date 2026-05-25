@@ -1,0 +1,12 @@
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1BV3_HGB.pdb
+REMARK  1 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C7_4  and  C6_6
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C1  HGB A 263      -0.128  13.021  30.470  0.00  0.00    +0.000 C 
+ATOM      2  O1  HGB A 263      -0.178  12.264  31.470  0.00  0.00    +0.000 OA
+ATOM      3  O2  HGB A 263       0.261  14.204  30.561  0.00  0.00    +0.000 OA
+ENDROOT
+TORSDOF 0

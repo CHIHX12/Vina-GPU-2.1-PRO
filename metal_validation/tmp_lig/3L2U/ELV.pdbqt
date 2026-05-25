@@ -1,0 +1,60 @@
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/3L2U_ELV.pdb
+REMARK  7 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAP_16  and  CBD_30
+REMARK    2  A    between atoms: CAQ_17  and  CAV_22
+REMARK    3  A    between atoms: CAQ_17  and  CAW_23
+REMARK    4  A    between atoms: OAR_18  and  CAX_24
+REMARK    5  A    between atoms: CAS_19  and  CAY_25
+REMARK    6  A    between atoms: CBC_29  and  CBD_30
+REMARK    7  A    between atoms: CBD_30  and  NBE_31
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  OAE ELV A 397     -36.138  33.386 -19.255  0.00  0.00    +0.000 OA
+ATOM      2  CAM ELV A 397     -36.972  34.049 -21.799  0.00  0.00    +0.000 A 
+ATOM      3  CAN ELV A 397     -37.767  32.077 -23.514  0.00  0.00    +0.000 A 
+ATOM      4  CAO ELV A 397     -36.875  30.100 -20.444  0.00  0.00    +0.000 A 
+ATOM      5  CAW ELV A 397     -37.387  34.419 -23.078  0.00  0.00    +0.000 A 
+ATOM      6  CAX ELV A 397     -37.794  33.423 -23.959  0.00  0.00    +0.000 A 
+ATOM      7  CAY ELV A 397     -36.472  31.106 -19.577  0.00  0.00    +0.000 A 
+ATOM      8  CAZ ELV A 397     -36.493  32.457 -20.007  0.00  0.00    +0.000 A 
+ATOM      9  CBA ELV A 397     -36.935  32.731 -21.335  0.00  0.00    +0.000 A 
+ATOM     10  CBB ELV A 397     -37.346  31.710 -22.220  0.00  0.00    +0.000 A 
+ATOM     11  NBE ELV A 397     -37.311  30.349 -21.749  0.00  0.00    +0.000 N 
+ENDROOT
+BRANCH   7  14
+ATOM     12  OAD ELV A 397     -35.926  31.335 -17.210  0.00  0.00    +0.000 OA
+ATOM     13  OAG ELV A 397     -35.815  29.364 -18.139  0.00  0.00    +0.000 OA
+ATOM     14  CAS ELV A 397     -36.038  30.577 -18.199  0.00  0.00    +0.000 C 
+ENDBRANCH   7  14
+BRANCH   6  16
+ATOM     15  CAA ELV A 397     -39.339  34.714 -25.386  0.00  0.00    +0.000 C 
+ATOM     16  OAR ELV A 397     -38.216  33.773 -25.251  0.00  0.00    +0.000 OA
+ENDBRANCH   6  16
+BRANCH   5  17
+ATOM     17  CAQ ELV A 397     -37.364  35.893 -23.415  0.00  0.00    +0.000 C 
+BRANCH  17  25
+ATOM     18  FAH ELV A 397     -40.150  37.297 -23.041  0.00  0.00    +0.000 F 
+ATOM     19 CLAI ELV A 397     -41.074  38.221 -20.138  0.00  0.00    +0.000 Cl
+ATOM     20  CAJ ELV A 397     -37.677  36.640 -19.790  0.00  0.00    +0.000 A 
+ATOM     21  CAK ELV A 397     -38.885  37.257 -19.581  0.00  0.00    +0.000 A 
+ATOM     22  CAL ELV A 397     -37.309  36.252 -21.074  0.00  0.00    +0.000 A 
+ATOM     23  CAT ELV A 397     -39.669  37.453 -20.688  0.00  0.00    +0.000 A 
+ATOM     24  CAU ELV A 397     -39.327  37.070 -22.011  0.00  0.00    +0.000 A 
+ATOM     25  CAV ELV A 397     -38.091  36.443 -22.198  0.00  0.00    +0.000 A 
+ENDBRANCH  17  25
+ENDBRANCH   5  17
+BRANCH  11  26
+ATOM     26  CBD ELV A 397     -37.694  29.112 -22.492  0.00  0.00    +0.000 C 
+BRANCH  26  29
+ATOM     27  CAB ELV A 397     -39.904  29.864 -23.756  0.00  0.00    +0.000 C 
+ATOM     28  CAC ELV A 397     -39.884  29.475 -21.182  0.00  0.00    +0.000 C 
+ATOM     29  CBC ELV A 397     -39.260  29.064 -22.552  0.00  0.00    +0.000 C 
+ENDBRANCH  26  29
+BRANCH  26  31
+ATOM     30  OAF ELV A 397     -35.765  28.402 -23.589  0.00  0.00    +0.000 OA
+ATOM     31  CAP ELV A 397     -37.039  28.914 -23.851  0.00  0.00    +0.000 C 
+ENDBRANCH  26  31
+ENDBRANCH  11  26
+TORSDOF 7

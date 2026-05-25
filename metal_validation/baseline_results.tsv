@@ -1,0 +1,21 @@
+PDB_ID	Metal	Ki_nM	RMSD_top1	RMSD_best	Status	Description
+1OQ5	ZN	9	1.33	0.53	OK	CAII + Acetazolamide
+1BNN	ZN	380	4.49	0.93	OK	CAII + aminobenzenesulfonamide
+1CNX	ZN	540	6.51	5.33	OK	CAII + methylbenzenesulfonamide
+1A42	ZN	15	4.75	1.33	OK	CAII + Acetazolamide analog
+1YDB	ZN	2	5.60	0.37	OK	CAII + fluorinated sulfonamide
+3HS4	ZN	8300	1.20	0.64	OK	CAII + coumarin inhibitor
+1BV3	ZN	150	10.18	5.84	OK	CAII + sulfonamide
+1G52	ZN	100	4.81	3.82	OK	CAII + fluorinated benzensulfonamide
+4E3D	ZN	50	3.29	1.93	OK	CAII + coumarin-sulfonamide
+1GKC	ZN	27	1.16	0.97	OK	MMP-2 + phosphonate inhibitor
+1MMQ	ZN	670	1.23	0.44	OK	MMP-1 + peptide hydroxamate
+1SLN	ZN	4	8.13	2.17	OK	MMP-8 + batimastat analog
+2OVX	ZN	26	0.56	0.56	OK	MMP-9 + hydroxamate
+1O86	ZN	1.7	3.05	0.94	OK	ACE + Captopril
+2C6N	ZN	0.27	N/A	N/A	PREP_FAILED	ACE + Lisinopril
+1UZE	ZN	2.2	3.24	0.56	OK	ACE + Enalaprilat
+3L2U	MG	2.0	8.23	6.91	OK	HIV-IN + Elvitegravir analog
+3S3M	MG	3.0	5.72	4.17	OK	HIV-IN + Raltegravir analog
+3OXM	MG	400	10.16	5.70	OK	PHD2 + N-oxalylglycine analog
+4BKS	MG	1500	N/A	N/A	RUN_FAILED	PHD2 + GSK1278863 analog

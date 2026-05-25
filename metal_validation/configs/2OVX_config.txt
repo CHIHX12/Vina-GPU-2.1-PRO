@@ -1,0 +1,12 @@
+receptor = /home/cycheng/Vina-GPU-2.1/metal_validation/pdbqt_receptor/2OVX_receptor.pdbqt
+ligand_directory = /home/cycheng/Vina-GPU-2.1/metal_validation/pdbqt_ligand
+output_directory = /home/cycheng/Vina-GPU-2.1/metal_validation/results/2OVX
+opencl_binary_path = /opt/vina-gpu/AutoDock-Vina-GPU-2.1
+center_x = 25.616
+center_y = 7.320
+center_z = 46.122
+size_x = 25
+size_y = 25
+size_z = 25
+thread = 8000
+search_depth = 1

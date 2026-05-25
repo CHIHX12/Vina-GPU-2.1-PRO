@@ -1,0 +1,60 @@
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1CNX_EG2.pdb
+REMARK  10 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: S_1  and  C4_8
+REMARK    2  A    between atoms: C1_5  and  C7_11
+REMARK    3  A    between atoms: N2_13  and  C8_14
+REMARK    4  A    between atoms: C8_14  and  C9_15
+REMARK    5  A    between atoms: C9_15  and  O4_16
+REMARK    6  A    between atoms: O4_16  and  C10_17
+REMARK    7  A    between atoms: C10_17  and  C11_18
+REMARK    8  A    between atoms: C11_18  and  O5_19
+REMARK    9  A    between atoms: O5_19  and  C12_20
+REMARK   10  A    between atoms: C12_20  and  C13_21
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C7  EG2 A 555      -4.314   5.504  13.775  0.00  0.00    +0.000 C 
+ATOM      2  O3  EG2 A 555      -4.991   6.422  13.422  0.00  0.00    +0.000 OA
+ATOM      3  N2  EG2 A 555      -2.965   5.546  13.351  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   4
+ATOM      4  C1  EG2 A 555      -4.706   4.378  14.623  0.00  0.00    +0.000 A 
+ATOM      5  C2  EG2 A 555      -3.755   3.378  14.906  0.00  0.00    +0.000 A 
+ATOM      6  C3  EG2 A 555      -4.213   2.293  15.683  0.00  0.00    +0.000 A 
+ATOM      7  C4  EG2 A 555      -5.538   2.210  16.177  0.00  0.00    +0.000 A 
+ATOM      8  C5  EG2 A 555      -6.428   3.253  15.824  0.00  0.00    +0.000 A 
+ATOM      9  C6  EG2 A 555      -6.012   4.337  15.047  0.00  0.00    +0.000 A 
+BRANCH   7  10
+ATOM     10  S   EG2 A 555      -5.990   0.917  17.096  0.00  0.00    +0.000 S 
+ATOM     11  O1  EG2 A 555      -5.510   0.917  18.367  0.00  0.00    +0.000 OA
+ATOM     12  O2  EG2 A 555      -7.448   0.959  16.954  0.00  0.00    +0.000 OA
+ATOM     13  N1  EG2 A 555      -5.337  -0.209  16.389  0.00  0.00    +0.000 NA
+ENDBRANCH   7  10
+ENDBRANCH   1   4
+BRANCH   3  14
+ATOM     14  C8  EG2 A 555      -2.446   6.589  12.504  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C9  EG2 A 555      -2.209   7.923  13.069  0.00  0.00    +0.000 C 
+BRANCH  15  16
+ATOM     16  O4  EG2 A 555      -1.307   7.881  14.199  0.00  0.00    +0.000 OA
+BRANCH  16  17
+ATOM     17  C10 EG2 A 555      -1.486   9.007  15.047  0.00  0.00    +0.000 C 
+BRANCH  17  18
+ATOM     18  C11 EG2 A 555      -0.381  10.008  14.906  0.00  0.00    +0.000 C 
+BRANCH  18  19
+ATOM     19  O5  EG2 A 555      -0.817  11.262  15.502  0.00  0.00    +0.000 OA
+BRANCH  19  20
+ATOM     20  C12 EG2 A 555      -0.164  12.298  14.809  0.00  0.00    +0.000 C 
+BRANCH  20  21
+ATOM     21  C13 EG2 A 555       0.149  13.385  15.705  0.00  0.00    +0.000 C 
+ATOM     22  N3  EG2 A 555       0.389  14.615  14.972  0.00  0.00    +0.000 NA
+ENDBRANCH  20  21
+ENDBRANCH  19  20
+ENDBRANCH  18  19
+ENDBRANCH  17  18
+ENDBRANCH  16  17
+ENDBRANCH  15  16
+ENDBRANCH  14  15
+ENDBRANCH   3  14
+TORSDOF 10

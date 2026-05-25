@@ -1,0 +1,903 @@
+#include "cache.h"
+#include "wrapcl.h"
+#include "monte_carlo.h"
+#include "coords.h"
+#include "mutate.h"
+#include "quasi_newton.h"
+#include "parallel_mc.h"
+#include "szv_grid.h"
+#include <thread>
+#include <atomic>
+#include <future>
+#include <fstream>
+#include <mutex>
+#include <chrono>
+#include <boost/progress.hpp>
+
+#include "commonMacros.h"
+#include "wrapcl.h"
+#include "random.h"
+#include <iostream>
+#include <fstream>
+#include <stdexcept>
+#include <iomanip>
+#include <stdio.h>
+
+using namespace std;
+
+// Fix: replaced volatile enum (race condition) with std::atomic for thread-safe access
+enum class DockingStatus : int { Finish = 0, Docking = 1, Abort = 2 };
+
+// Fix: status is now per-invocation (passed by pointer) so concurrent GPU threads
+// do not interfere with each other's progress display.
+void print_process(std::atomic<int>* status_ptr) {
+	int count = 0;
+	printf("\n");
+	do
+	{
+#ifdef WIN32
+		Sleep(100);
+#else
+		sleep(1);
+#endif
+		printf("\rPerform docking|");
+		for (int i = 0; i < count; i++)printf(" ");
+		printf("=======");
+		for (int i = 0; i < 30 - count; i++)printf(" ");
+		printf("|"); fflush(stdout);
+
+		count++;
+		count %= 30;
+	} while (status_ptr->load(std::memory_order_acquire) == static_cast<int>(DockingStatus::Docking));
+
+	int final_status = status_ptr->load(std::memory_order_acquire);
+	if (final_status == static_cast<int>(DockingStatus::Finish)) {
+		printf("\rPerform docking|");
+		for (int i = 0; i < 16; i++)printf("=");
+		printf("done");
+		for (int i = 0; i < 17; i++)printf("=");
+		printf("|\n"); fflush(stdout);
+	}
+	else if (final_status == static_cast<int>(DockingStatus::Abort)) {
+		printf("\rPerform docking|");
+		for (int i = 0; i < 16; i++)printf("=");
+		printf("error");
+		for (int i = 0; i < 16; i++)printf("=");
+		printf("|\n"); fflush(stdout);
+	}
+}
+
+// Fix: RAII guard ensures console_thread is always joined even when exceptions are thrown
+struct ThreadGuard {
+	std::thread& t;
+	explicit ThreadGuard(std::thread& t_) : t(t_) {}
+	~ThreadGuard() { if (t.joinable()) t.join(); }
+	ThreadGuard(const ThreadGuard&) = delete;
+	ThreadGuard& operator=(const ThreadGuard&) = delete;
+};
+
+std::vector<output_type> cl_to_vina(output_type_cl result_ptr[], 
+									ligand_atom_coords_cl result_coords_ptr[],
+									int thread, int lig_torsion_size) 
+{
+	std::vector<output_type> results_vina;
+	int num_atoms;
+	for (int i = 0; i < thread; i++) {
+		output_type_cl tmp = result_ptr[i];
+		ligand_atom_coords_cl tmp_coords = result_coords_ptr[i];
+		conf tmp_c;
+		tmp_c.ligands.resize(1);
+		// Position
+		for (int j = 0; j < 3; j++)tmp_c.ligands[0].rigid.position[j] = tmp.position[j];
+		// Orientation
+		qt q(tmp.orientation[0], tmp.orientation[1], tmp.orientation[2], tmp.orientation[3]);
+		tmp_c.ligands[0].rigid.orientation = q;
+		output_type tmp_vina(tmp_c, tmp.e);
+		// torsion
+		for (int j = 0; j < lig_torsion_size; j++)tmp_vina.c.ligands[0].torsions.push_back(tmp.lig_torsion[j]);
+		// coords
+		for (int j = 0; j < MAX_NUM_OF_ATOMS; j++) {
+			vec v_tmp(tmp_coords.coords[j][0], tmp_coords.coords[j][1], tmp_coords.coords[j][2]);
+			if ((v_tmp[0] != 0 || v_tmp[1] != 0) || (v_tmp[2] != 0)) tmp_vina.coords.push_back(v_tmp);
+		}
+		results_vina.push_back(tmp_vina);
+		if (i == 0)num_atoms = tmp_vina.coords.size();
+		if(num_atoms != tmp_vina.coords.size()){throw std::runtime_error("atom coords not match!");}
+	}
+	return results_vina;
+}
+
+void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalculate& p, const parallel_mc par,
+	const vec& corner1, const vec& corner2, const int seed, std::vector<output_container>& outs, std::string opencl_binary_path,
+	const std::vector<std::vector<std::string>> ligand_names, const int rilc_bfgs,
+	const int gpu_id, const int cpu_threads, std::atomic<int>& global_next_lig) {
+
+/**************************************************************************/
+/***************************    OpenCL Init    ****************************/
+/**************************************************************************/
+
+	auto _fn_t0 = std::chrono::steady_clock::now();
+	printf("DIAG GPU%d: main_procedure_cl started  num_ligands=%d\n", gpu_id, (int)ms.size()); fflush(stdout);
+
+	cl_int err;
+	cl_platform_id* platforms;
+	cl_device_id* devices;
+	cl_context context;
+	cl_command_queue queue;
+	cl_int gpu_platform_id = 0;
+	SetupPlatform(&platforms, &gpu_platform_id);
+	SetupDevice(platforms, &devices, gpu_platform_id);
+	printf("Using GPU device index: %d\n", gpu_id);
+	// Fix: context must be created with the exact target device, not always devices[0]
+	SetupContext(platforms, devices + gpu_id, &context, 1, gpu_platform_id);
+	SetupQueue(&queue, context, devices, gpu_id);
+
+	cl_program programs[2];
+
+	//printf("\nSearch depth is set to %d", par.mc.search_depth);
+	printf("\nUsing random seed: %d", seed);
+
+#ifdef BUILD_KERNEL_FROM_SOURCE
+{
+	// Fix: serialize kernel compilation across GPU threads — only one thread compiles
+	// and saves the .bin files; others wait and then load the cached result.
+	static std::mutex kernel_compile_mutex;
+	std::lock_guard<std::mutex> compile_lock(kernel_compile_mutex);
+
+	// Compiled .bin files live in opencl_binary_path (writable host dir, default ".")
+	const std::string bin_out_path = opencl_binary_path.empty() ? "." : opencl_binary_path;
+	const std::string bin1 = bin_out_path + "/Kernel1_Opt.bin";
+	const std::string bin2 = bin_out_path + "/Kernel2_Opt.bin";
+
+	// Check if cached .bin files already exist for this machine's GPU
+	auto file_exists = [](const std::string& p) {
+		std::ifstream f(p); return f.good();
+	};
+
+	if (file_exists(bin1) && file_exists(bin2)) {
+		printf("\nLoading cached GPU kernels from %s\n", bin_out_path.c_str()); fflush(stdout);
+	} else {
+		// First run on this GPU: compile from source and cache the .bin files
+		// VINA_GPU_HOME is set in the SIF's ENV; falls back to "." for local builds
+		const char* vina_home_env = std::getenv("VINA_GPU_HOME");
+		const std::string kernel_src_path = vina_home_env ? std::string(vina_home_env) : ".";
+		const std::string include_path = kernel_src_path + "/OpenCL/inc";
+		const std::string addtion = "";
+
+		printf("\n\nCompiling GPU kernels for this machine (one-time, caching to %s)...\n",
+		       bin_out_path.c_str()); fflush(stdout);
+
+		// --- Kernel 1 ---
+		printf("  Building kernel 1 from source..."); fflush(stdout);
+		char* program1_file_n[NUM_OF_FILES_KERNEL_1];
+		size_t program1_size_n[NUM_OF_FILES_KERNEL_1];
+		std::string file1_paths[NUM_OF_FILES_KERNEL_1] = {
+			kernel_src_path + "/OpenCL/src/kernels/code_head.cl",
+			kernel_src_path + "/OpenCL/src/kernels/kernel1.cl"
+		};
+		read_n_file(program1_file_n, program1_size_n, file1_paths, NUM_OF_FILES_KERNEL_1);
+		std::string final_file;
+		size_t final_size = NUM_OF_FILES_KERNEL_1 - 1;
+		for (int i = 0; i < NUM_OF_FILES_KERNEL_1; i++) {
+			final_file = (i == 0) ? program1_file_n[0] : final_file + '\n' + (std::string)program1_file_n[i];
+			final_size += program1_size_n[i];
+		}
+		const char* final_files1_char = final_file.data();
+		programs[0] = clCreateProgramWithSource(context, 1, (const char**)&final_files1_char, &final_size, &err); checkErr(err);
+		SetupBuildProgramWithSource(programs[0], NULL, devices + gpu_id, include_path, addtion);
+		SaveProgramToBinary(programs[0], bin1.c_str());
+		printf(" done\n"); fflush(stdout);
+
+		// --- Kernel 2 ---
+		printf("  Building kernel 2 from source..."); fflush(stdout);
+		char* program2_file_n[NUM_OF_FILES_KERNEL_2];
+		size_t program2_size_n[NUM_OF_FILES_KERNEL_2];
+		std::string file2_paths[NUM_OF_FILES_KERNEL_2] = {
+			kernel_src_path + "/OpenCL/src/kernels/code_head.cl",
+			kernel_src_path + "/OpenCL/src/kernels/mutate_conf.cl",
+			kernel_src_path + "/OpenCL/src/kernels/matrix.cl",
+			kernel_src_path + "/OpenCL/src/kernels/quasi_newton.cl",
+			kernel_src_path + "/OpenCL/src/kernels/kernel2.cl"
+		};
+		read_n_file(program2_file_n, program2_size_n, file2_paths, NUM_OF_FILES_KERNEL_2);
+		final_size = NUM_OF_FILES_KERNEL_2 - 1;
+		for (int i = 0; i < NUM_OF_FILES_KERNEL_2; i++) {
+			final_file = (i == 0) ? program2_file_n[0] : final_file + '\n' + (std::string)program2_file_n[i];
+			final_size += program2_size_n[i];
+		}
+		const char* final_files2_char = final_file.data();
+		programs[1] = clCreateProgramWithSource(context, 1, (const char**)&final_files2_char, &final_size, &err); checkErr(err);
+		SetupBuildProgramWithSource(programs[1], NULL, devices + gpu_id, include_path, addtion);
+		SaveProgramToBinary(programs[1], bin2.c_str());
+		printf(" done\n\n"); fflush(stdout);
+	}
+}
+#endif
+	// Fix: pass devices+gpu_id so the program is built for the target GPU, not always devices[0]
+	programs[0] = SetupBuildProgramWithBinary(context, devices + gpu_id, (opencl_binary_path + std::string("/Kernel1_Opt.bin")).c_str());
+
+	programs[1] = SetupBuildProgramWithBinary(context, devices + gpu_id, (opencl_binary_path + std::string("/Kernel2_Opt.bin")).c_str());
+
+	err = clUnloadPlatformCompiler(platforms[gpu_platform_id]); checkErr(err);
+	//Set kernel arguments
+	cl_kernel kernels[2];
+	char kernel_name[][50] = { "kernel1","kernel2"};
+	SetupKernel(kernels, programs, 2, kernel_name);
+
+	size_t max_wg_size; // max work item within one work group
+	size_t max_wi_size[3]; // max work item within each dimension(global)
+	// Fix: query the target GPU (devices[gpu_id]), not always devices[0]
+	err = clGetDeviceInfo(devices[gpu_id], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_wg_size, NULL); checkErr(err);
+	err = clGetDeviceInfo(devices[gpu_id], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(size_t), &max_wi_size, NULL); checkErr(err);
+
+	/**************************************************************************/
+	/************************    Original Vina code    ************************/
+	/**************************************************************************/
+	sz nat = num_atom_types(c.atu);
+
+	// Fix: protect lazy cache init with a mutex — multiple GPU threads share the same
+	// cache& c reference. Without a lock, concurrent c.grids[i].init() calls corrupt
+	// the grid, and an empty `needed` makes needed.front() undefined behaviour.
+	szv needed;
+	{
+		static std::mutex grid_init_mutex;
+		std::lock_guard<std::mutex> lock(grid_init_mutex);
+		for (sz i = 0; i < nat; i++) {
+			if (!c.grids[i].initialized()) {
+				needed.push_back(i);
+				c.grids[i].init(c.gd);
+			}
+		}
+	}
+	// If another GPU thread already initialised all grids, needed is empty here.
+	// Fall back to the full list so needed.front() is always valid.
+	if (needed.empty()) {
+		for (sz i = 0; i < nat; i++) needed.push_back(i);
+	}
+
+	flv affinities(needed.size());
+
+	grid& g = c.grids[needed.front()];
+
+	const fl cutoff_sqr = p.cutoff_sqr();         
+
+	grid_dims gd_reduced = szv_grid_dims(c.gd);     
+	szv_grid ig(ms[0], gd_reduced, cutoff_sqr); // use ms[0]           
+	//szv_grid ig2(ms[1], gd_reduced, cutoff_sqr); // use ms[0]  
+
+	for (int i = 0; i < 3; i++) {
+		if (ig.m_init[i] != g.m_init[i]) {
+			printf("m_init not equal!");
+			exit(-1);
+		}
+		if (ig.m_range[i] != g.m_range[i]) {
+			printf("m_range not equal!");
+			exit(-1);
+		}
+	}
+
+	vec authentic_v(1000, 1000, 1000); // FIXME? this is here to avoid max_fl/max_fl
+
+	std::vector<conf_size> s;
+	std::vector<output_type> tmps;
+	for (int i = 0; i < ms.size(); i++) {
+		s.push_back(ms[i].get_size());
+		output_type tmp(s[i], 0);
+		tmps.push_back(tmp);
+	}
+	//change g(s);
+	
+	//quasi_newton quasi_newton_par; const int quasi_newton_par_max_steps = par.mc.ssd_par.evals;
+	/**************************************************************************/
+	/************************    Kernel1    ***********************/
+	/**************************************************************************/
+	rng generator(static_cast<rng::result_type>(seed));
+	model m = ms[0];
+
+	// Preparing protein atoms related data
+	pa_cl* pa_ptr = (pa_cl*)malloc(sizeof(pa_cl));
+	if(MAX_NUM_OF_PROTEIN_ATOMS <= m.grid_atoms.size()){throw std::runtime_error("pocket too large!");}
+	for (int i = 0; i < m.grid_atoms.size(); i++) {
+		pa_ptr->atoms[i].types[0] = m.grid_atoms[i].el;
+		pa_ptr->atoms[i].types[1] = m.grid_atoms[i].ad;
+		pa_ptr->atoms[i].types[2] = m.grid_atoms[i].xs;
+		pa_ptr->atoms[i].types[3] = m.grid_atoms[i].sy;
+		for (int j = 0; j < 3; j++)pa_ptr->atoms[i].coords[j] = m.grid_atoms[i].coords.data[j];
+	}
+	size_t pa_size = sizeof(pa_cl);
+
+	// Preaparing precalculated look up table related data
+	pre_cl* pre_ptr = (pre_cl*)malloc(sizeof(pre_cl));
+	pre_ptr->m_cutoff_sqr = p.cutoff_sqr();
+	pre_ptr->factor = p.factor;
+	pre_ptr->n = p.n;
+	if(MAX_P_DATA_M_DATA_SIZE <= p.data.m_data.size()){throw std::runtime_error("LUT too large!");}
+	for (int i = 0; i < p.data.m_data.size(); i++) {
+		pre_ptr->m_data[i].factor = p.data.m_data[i].factor;
+		if(FAST_SIZE != p.data.m_data[i].fast.size()){throw std::runtime_error("fast too large!");}
+		if(SMOOTH_SIZE != p.data.m_data[i].smooth.size()){throw std::runtime_error("smooth too large!");}
+
+		for (int j = 0; j < FAST_SIZE; j++) {
+			pre_ptr->m_data[i].fast[j] = p.data.m_data[i].fast[j];
+		}
+		for (int j = 0; j < SMOOTH_SIZE; j++) {
+			pre_ptr->m_data[i].smooth[j][0] = p.data.m_data[i].smooth[j].first;
+			pre_ptr->m_data[i].smooth[j][1] = p.data.m_data[i].smooth[j].second;
+		}
+	}
+	size_t pre_size = sizeof(pre_cl);
+
+	// Preparing grid boundries
+	gb_cl* gb_ptr = (gb_cl*)malloc(sizeof(gb_cl));
+	gb_ptr->dims[0] = ig.m_data.dim0(); gb_ptr->dims[1] = ig.m_data.dim1(); gb_ptr->dims[2] = ig.m_data.dim2();
+	for (int i = 0; i < 3; i++)gb_ptr->init[i] = ig.m_init.data[i];
+	for (int i = 0; i < 3; i++)gb_ptr->range[i] = ig.m_range.data[i];
+	size_t gb_size = sizeof(gb_cl);
+
+	// Preparing atom relationship
+	if(MAX_NUM_OF_ATOM_RELATION_COUNT < ig.m_data.m_data.size()){throw std::runtime_error("Relation too large! Define a large box (see readme) would help");}
+	// assert(ig.m_data.m_i <= 10); assert(ig.m_data.m_j <= 10); assert(ig.m_data.m_k <= 10);
+	ar_cl* ar_ptr = (ar_cl*)malloc(sizeof(ar_cl));
+	for (int i = 0; i < ig.m_data.m_data.size(); i++) {
+		ar_ptr->relation_size[i] = ig.m_data.m_data[i].size();
+		if(MAX_NUM_OF_ATOM_RELATION_COUNT < ar_ptr->relation_size[i]){throw std::runtime_error("Relation too large! Define a large box (see readme) would help");}
+		for (int j = 0; j < ar_ptr->relation_size[i]; j++) {
+			ar_ptr->relation[i][j] = ig.m_data.m_data[i][j];
+		}
+	}
+	size_t ar_size = sizeof(ar_cl);
+
+	// Preparing grid related data
+	if(GRIDS_SIZE != c.grids.size()){throw std::runtime_error("grid_size has to be 17!");} // grid_size has to be 17
+	grids_cl* grids_ptr = (grids_cl*)malloc(sizeof(grids_cl)); if (grids_ptr == nullptr) {throw std::runtime_error("Grid too large! Define a large box (see readme) would help");}
+	grid* tmp_grid_ptr = &c.grids[0];
+
+	grids_ptr->atu = c.atu; // atu
+	grids_ptr->slope = c.slope; // slope
+	int grids_front;
+	for (int i = GRIDS_SIZE - 1; i >= 0; i--) {
+		for (int j = 0; j < 3; j++) {
+			grids_ptr->grids[i].m_init[j] = tmp_grid_ptr[i].m_init[j];
+			grids_ptr->grids[i].m_factor[j] = tmp_grid_ptr[i].m_factor[j];
+			grids_ptr->grids[i].m_dim_fl_minus_1[j] = tmp_grid_ptr[i].m_dim_fl_minus_1[j];
+			grids_ptr->grids[i].m_factor_inv[j] = tmp_grid_ptr[i].m_factor_inv[j];
+		}
+		if (tmp_grid_ptr[i].m_data.dim0() != 0) {
+			grids_ptr->grids[i].m_i = tmp_grid_ptr[i].m_data.dim0(); if(MAX_NUM_OF_GRID_MI < grids_ptr->grids[i].m_i){throw std::runtime_error("MAX_NUM_OF_GRID_MI too small!  Define a large box (see readme) would help");}
+			grids_ptr->grids[i].m_j = tmp_grid_ptr[i].m_data.dim1(); if(MAX_NUM_OF_GRID_MJ < grids_ptr->grids[i].m_j){throw std::runtime_error("MAX_NUM_OF_GRID_MJ too small!  Define a large box (see readme) would help");}
+			grids_ptr->grids[i].m_k = tmp_grid_ptr[i].m_data.dim2(); if(MAX_NUM_OF_GRID_MK < grids_ptr->grids[i].m_k){throw std::runtime_error("MAX_NUM_OF_GRID_MK too small!  Define a large box (see readme) would help");}
+			grids_front = i;
+		}
+		else {
+			grids_ptr->grids[i].m_i = 0;
+			grids_ptr->grids[i].m_j = 0;
+			grids_ptr->grids[i].m_k = 0;
+		}
+	}
+	size_t grids_size = sizeof(grids_cl);
+
+	// miscellaneous
+	mis_cl* mis_ptr = (mis_cl*)malloc(sizeof(mis_cl));
+	mis_ptr->needed_size = needed.size();
+	mis_ptr->epsilon_fl = epsilon_fl;
+	mis_ptr->cutoff_sqr = cutoff_sqr;
+	mis_ptr->max_fl = max_fl;
+	//mis_ptr->torsion_size = tmp.c.ligands[0].torsions.size();
+	//mis_ptr->max_bfgs_steps = quasi_newton_par_max_steps;
+	//mis_ptr->search_depth = par.mc.search_depth;
+	mis_ptr->mutation_amplitude = par.mc.mutation_amplitude;
+	mis_ptr->total_wi = max_wi_size[0] * max_wi_size[1];
+	mis_ptr->thread = par.mc.thread;
+	// DIAG: print key parameters so we can verify they are correct
+	printf("\nDIAG GPU%d: max_wi_size={%zu,%zu,%zu}  total_wi=%zu  thread=%d\n",
+	       gpu_id, max_wi_size[0], max_wi_size[1], max_wi_size[2],
+	       mis_ptr->total_wi, mis_ptr->thread);
+	printf("DIAG GPU%d: search_depth[0]=%d  bfgs_steps[0]=%d  num_ligands=%d\n",
+	       gpu_id,
+	       par.mc.search_depth.empty() ? -1 : par.mc.search_depth[0],
+	       par.mc.ssd_par.bfgs_steps.empty() ? -1 : par.mc.ssd_par.bfgs_steps[0],
+	       (int)ms.size()); fflush(stdout);
+	mis_ptr->ar_mi = ig.m_data.m_i;
+	mis_ptr->ar_mj = ig.m_data.m_j;
+	mis_ptr->ar_mk = ig.m_data.m_k;
+	mis_ptr->grids_front = grids_front;
+	for (int i = 0; i < 3; i++) mis_ptr->authentic_v[i] = authentic_v[i];
+	for (int i = 0; i < 3; i++) mis_ptr->hunt_cap[i] = par.mc.hunt_cap[i];
+	size_t mis_size = sizeof(mis_cl);
+
+	float* needed_ptr = (float*)malloc(mis_ptr->needed_size * sizeof(float));
+	for (int i = 0; i < mis_ptr->needed_size; i++)needed_ptr[i] = needed[i];
+
+	cl_mem pre_gpu;
+	CreateDeviceBuffer(&pre_gpu, CL_MEM_READ_ONLY, pre_size, context);
+	err = clEnqueueWriteBuffer(queue, pre_gpu, false, 0, pre_size, pre_ptr, 0, NULL, NULL); checkErr(err);
+
+	cl_mem pa_gpu;
+	CreateDeviceBuffer(&pa_gpu, CL_MEM_READ_ONLY, pa_size, context);
+	err = clEnqueueWriteBuffer(queue, pa_gpu, false, 0, pa_size, pa_ptr, 0, NULL, NULL); checkErr(err);
+
+	cl_mem gb_gpu;
+	CreateDeviceBuffer(&gb_gpu, CL_MEM_READ_ONLY, gb_size, context);
+	err = clEnqueueWriteBuffer(queue, gb_gpu, false, 0, gb_size, gb_ptr, 0, NULL, NULL); checkErr(err);
+
+	cl_mem ar_gpu;
+	CreateDeviceBuffer(&ar_gpu, CL_MEM_READ_ONLY, ar_size, context);
+	err = clEnqueueWriteBuffer(queue, ar_gpu, false, 0, ar_size, ar_ptr, 0, NULL, NULL); checkErr(err);
+
+	cl_mem grids_gpu;
+	CreateDeviceBuffer(&grids_gpu, CL_MEM_READ_WRITE, grids_size, context);
+	err = clEnqueueWriteBuffer(queue, grids_gpu, false, 0, grids_size, grids_ptr, 0, NULL, NULL); checkErr(err);
+
+	cl_mem needed_gpu;
+	CreateDeviceBuffer(&needed_gpu, CL_MEM_READ_WRITE, mis_ptr->needed_size * sizeof(float), context);
+	err = clEnqueueWriteBuffer(queue, needed_gpu, false, 0, mis_ptr->needed_size * sizeof(float), needed_ptr, 0, NULL, NULL); checkErr(err);
+
+	cl_mem mis_gpu;
+	CreateDeviceBuffer(&mis_gpu, CL_MEM_READ_ONLY, mis_size, context);
+	err = clEnqueueWriteBuffer(queue, mis_gpu, false, 0, mis_size, mis_ptr, 0, NULL, NULL); checkErr(err);
+	
+	clFinish(queue);
+
+	SetKernelArg(kernels[0], 0, sizeof(cl_mem), &pre_gpu);
+	SetKernelArg(kernels[0], 1, sizeof(cl_mem), &pa_gpu);
+	SetKernelArg(kernels[0], 2, sizeof(cl_mem), &gb_gpu);
+	SetKernelArg(kernels[0], 3, sizeof(cl_mem), &ar_gpu);
+	SetKernelArg(kernels[0], 4, sizeof(cl_mem), &grids_gpu);
+	SetKernelArg(kernels[0], 5, sizeof(cl_mem), &mis_gpu);
+	SetKernelArg(kernels[0], 6, sizeof(cl_mem), &needed_gpu);
+	SetKernelArg(kernels[0], 7, sizeof(int), &c.atu);
+	SetKernelArg(kernels[0], 8, sizeof(int), &nat);
+
+	// Fix: per-invocation status — each GPU thread has its own, so they don't
+	// interfere when running concurrently (e.g., one GPU finishing doesn't stop
+	// the other GPU's progress display).
+	std::atomic<int> local_status{static_cast<int>(DockingStatus::Finish)};
+	local_status.store(static_cast<int>(DockingStatus::Docking), std::memory_order_release);
+# ifdef NDEBUG
+	std::thread console_thread(print_process, &local_status);
+	ThreadGuard console_guard(console_thread); // Fix: RAII ensures join on any exit path
+# endif
+
+	cl_event kernel1;
+	size_t kernel1_global_size[3] = { 128, 128, 128 };
+	size_t kernel1_local_size[3] = { 4,4,4 };
+
+	{
+		auto _k1_t0 = std::chrono::steady_clock::now();
+		err = clEnqueueNDRangeKernel(queue, kernels[0], 3, 0, kernel1_global_size, kernel1_local_size, 0, NULL, &kernel1); checkErr(err);
+		clWaitForEvents(1, &kernel1);
+		auto _k1_t1 = std::chrono::steady_clock::now();
+		printf("DIAG GPU%d: kernel1 (grid setup) = %.1fms  sizeof(grids_cl)=%zu bytes\n",
+		       gpu_id,
+		       std::chrono::duration<double,std::milli>(_k1_t1 - _k1_t0).count(),
+		       sizeof(grids_cl)); fflush(stdout);
+	}
+
+	free(pa_ptr);
+	free(gb_ptr);
+	free(ar_ptr);
+	free(needed_ptr);
+	free(pre_ptr);
+	free(grids_ptr);
+
+	err = clReleaseMemObject(pa_gpu);		checkErr(err);
+	err = clReleaseMemObject(gb_gpu);		checkErr(err);
+	err = clReleaseMemObject(ar_gpu);		checkErr(err);
+	err = clReleaseMemObject(needed_gpu);	checkErr(err);
+
+	err = clReleaseEvent(kernel1);			checkErr(err);
+/**************************************************************************/
+/************************    Kernel2    ***********************/
+/**************************************************************************/
+	int num_ligands = ms.size();
+	std::vector<random_maps*>			rand_maps_ptrs		(num_ligands, nullptr);
+	std::vector<output_type_cl*>		ric_ptrs			(num_ligands, nullptr);
+	std::vector<m_cl*>					m_ptrs				(num_ligands, nullptr);
+	std::vector<ligand_atom_coords_cl*> result_coords_ptrs	(num_ligands, nullptr);
+	std::vector<output_type_cl*>		result_ptrs			(num_ligands, nullptr);
+	std::vector<int>					torsion_sizes		(num_ligands, 0);
+
+
+	// Multi-CPU: pre-compute random maps and initial conformations in parallel
+	// This is pure CPU work and independent per ligand — safe to parallelize
+	printf("\nPre-computing ligand data using %d CPU thread(s)...\n", cpu_threads);
+	{
+		const int actual_threads = std::max(1, std::min(cpu_threads, num_ligands));
+		std::vector<std::future<void>> prep_futures;
+		prep_futures.reserve(actual_threads);
+
+		// Divide ligands into chunks for each thread
+		auto prep_ligand = [&](int start, int end) {
+			rng local_gen(static_cast<rng::result_type>(seed + start));
+			for (int i = start; i < end; i++) {
+				try {
+					model mi = ms[i];
+					if (mi.atoms.size() >= MAX_NUM_OF_ATOMS) { throw std::runtime_error("Ligand too large! The maximum number of atoms is " +
+					 std::to_string(MAX_NUM_OF_ATOMS) + " and the ligand has " + std::to_string(mi.atoms.size()) + " atoms."); }
+					if (mi.ligands.size() != 1) { throw std::runtime_error("Only one ligand supported!"); }
+					if (mi.num_other_pairs() != 0) { throw std::runtime_error("m.other_pairs is not supported!"); }
+
+					output_type tmp = tmps[i];
+					torsion_sizes[i] = tmp.c.ligands[0].torsions.size();
+					if (tmp.c.ligands[0].torsions.size() >= MAX_NUM_OF_LIG_TORSION) { throw std::runtime_error("Ligand too large! The maximum number of torsions is " +
+					 std::to_string(MAX_NUM_OF_LIG_TORSION) + " and the ligand has " + std::to_string(tmp.c.ligands[0].torsions.size()) + " torsions."); }
+
+					// Random maps
+					rand_maps_ptrs[i] = (random_maps*)malloc(sizeof(random_maps));
+					random_maps* rmp = rand_maps_ptrs[i];
+					for (int k = 0; k < MAX_NUM_OF_RANDOM_MAP; k++) {
+						rmp->int_map[k] = random_int(0, int(tmp.c.ligands[0].torsions.size()), local_gen);
+						rmp->pi_map[k]  = random_fl(-pi, pi, local_gen);
+					}
+					for (int k = 0; k < MAX_NUM_OF_RANDOM_MAP; k++) {
+						vec rc = random_inside_sphere(local_gen);
+						for (int j = 0; j < 3; j++) rmp->sphere_map[k][j] = rc[j];
+					}
+
+					// Initial conformations (ric)
+					ric_ptrs[i] = (output_type_cl*)malloc(par.mc.thread * sizeof(output_type_cl));
+					output_type_cl* rp = ric_ptrs[i];
+					for (int k = 0; k < par.mc.thread; k++) {
+						tmp.c.randomize(corner1, corner2, local_gen);
+						for (int j = 0; j < 3; j++) rp[k].position[j] = tmp.c.ligands[0].rigid.position[j];
+						rp[k].orientation[0] = tmp.c.ligands[0].rigid.orientation.R_component_1();
+						rp[k].orientation[1] = tmp.c.ligands[0].rigid.orientation.R_component_2();
+						rp[k].orientation[2] = tmp.c.ligands[0].rigid.orientation.R_component_3();
+						rp[k].orientation[3] = tmp.c.ligands[0].rigid.orientation.R_component_4();
+						for (int j = 0; j < (int)tmp.c.ligands[0].torsions.size(); j++)
+							rp[k].lig_torsion[j] = tmp.c.ligands[0].torsions[j];
+					}
+
+					// m_cl struct
+					m_ptrs[i] = (m_cl*)malloc(sizeof(m_cl));
+					m_cl* m_ptr = m_ptrs[i];
+					for (int ai = 0; ai < (int)mi.atoms.size(); ai++) {
+						m_ptr->atoms[ai].types[0] = mi.atoms[ai].el;
+						m_ptr->atoms[ai].types[1] = mi.atoms[ai].ad;
+						m_ptr->atoms[ai].types[2] = mi.atoms[ai].xs;
+						m_ptr->atoms[ai].types[3] = mi.atoms[ai].sy;
+						for (int j = 0; j < 3; j++) m_ptr->atoms[ai].coords[j] = mi.atoms[ai].coords[j];
+					}
+					for (int ci = 0; ci < (int)mi.coords.size(); ci++)
+						for (int j = 0; j < 3; j++) m_ptr->m_coords.coords[ci][j] = mi.coords[ci].data[j];
+					for (int ci = 0; ci < (int)mi.coords.size(); ci++)
+						for (int j = 0; j < 3; j++) m_ptr->minus_forces.coords[ci][j] = mi.minus_forces[ci].data[j];
+
+					ligand m_ligand = mi.ligands[0];
+					if (m_ligand.end >= MAX_NUM_OF_ATOMS) { throw std::runtime_error("Ligand too large! The maximum number of atoms is " +
+					 std::to_string(MAX_NUM_OF_ATOMS) + " and the ligand has " + std::to_string(m_ligand.end) + " atoms."); }
+					m_ptr->ligand.pairs.num_pairs = mi.ligands[0].pairs.size();
+					if (mi.ligands[0].pairs.size() >= MAX_NUM_OF_LIG_PAIRS) { throw std::runtime_error("Ligand too large! The maximum number of pairs is " +
+					 std::to_string(MAX_NUM_OF_LIG_PAIRS) + " and the ligand has " + std::to_string(mi.ligands[0].pairs.size()) + " pairs."); }
+					for (int pi = 0; pi < m_ptr->ligand.pairs.num_pairs; pi++) {
+						m_ptr->ligand.pairs.type_pair_index[pi] = mi.ligands[0].pairs[pi].type_pair_index;
+						m_ptr->ligand.pairs.a[pi] = mi.ligands[0].pairs[pi].a;
+						m_ptr->ligand.pairs.b[pi] = mi.ligands[0].pairs[pi].b;
+					}
+					m_ptr->ligand.begin = mi.ligands[0].begin;
+					m_ptr->ligand.end   = mi.ligands[0].end;
+					m_ptr->ligand.rigid.atom_range[0][0] = m_ligand.node.begin;
+					m_ptr->ligand.rigid.atom_range[0][1] = m_ligand.node.end;
+					for (int j = 0; j < 3; j++) m_ptr->ligand.rigid.origin[0][j] = m_ligand.node.get_origin()[j];
+					for (int j = 0; j < 9; j++) m_ptr->ligand.rigid.orientation_m[0][j] = m_ligand.node.get_orientation_m().data[j];
+					m_ptr->ligand.rigid.orientation_q[0][0] = m_ligand.node.orientation().R_component_1();
+					m_ptr->ligand.rigid.orientation_q[0][1] = m_ligand.node.orientation().R_component_2();
+					m_ptr->ligand.rigid.orientation_q[0][2] = m_ligand.node.orientation().R_component_3();
+					m_ptr->ligand.rigid.orientation_q[0][3] = m_ligand.node.orientation().R_component_4();
+					for (int j = 0; j < 3; j++) { m_ptr->ligand.rigid.axis[0][j] = 0; m_ptr->ligand.rigid.relative_axis[0][j] = 0; m_ptr->ligand.rigid.relative_origin[0][j] = 0; }
+					struct tmp_struct_local {
+						int start_index = 0;
+						int parent_index = 0;
+						void store_node(tree<segment>& child_ptr, rigid_cl& rigid) {
+							start_index++;
+							rigid.parent[start_index] = parent_index;
+							rigid.atom_range[start_index][0] = child_ptr.node.begin;
+							rigid.atom_range[start_index][1] = child_ptr.node.end;
+							for (int j = 0; j < 9; j++) rigid.orientation_m[start_index][j] = child_ptr.node.get_orientation_m().data[j];
+							rigid.orientation_q[start_index][0] = child_ptr.node.orientation().R_component_1();
+							rigid.orientation_q[start_index][1] = child_ptr.node.orientation().R_component_2();
+							rigid.orientation_q[start_index][2] = child_ptr.node.orientation().R_component_3();
+							rigid.orientation_q[start_index][3] = child_ptr.node.orientation().R_component_4();
+							for (int j = 0; j < 3; j++) {
+								rigid.origin[start_index][j]          = child_ptr.node.get_origin()[j];
+								rigid.axis[start_index][j]            = child_ptr.node.get_axis()[j];
+								rigid.relative_axis[start_index][j]   = child_ptr.node.relative_axis[j];
+								rigid.relative_origin[start_index][j] = child_ptr.node.relative_origin[j];
+							}
+							if (child_ptr.children.empty()) return;
+							if (start_index >= MAX_NUM_OF_RIGID) { throw std::runtime_error("Children map too large!"); }
+							int parent_index_tmp = start_index;
+							for (int ci = 0; ci < (int)child_ptr.children.size(); ci++) {
+								this->parent_index = parent_index_tmp;
+								this->store_node(child_ptr.children[ci], rigid);
+							}
+						}
+					};
+					tmp_struct_local ts;
+					for (int ci = 0; ci < (int)m_ligand.children.size(); ci++) {
+						ts.parent_index = 0;
+						ts.store_node(m_ligand.children[ci], m_ptr->ligand.rigid);
+					}
+					m_ptr->ligand.rigid.num_children = ts.start_index;
+					for (int ri = 0; ri < MAX_NUM_OF_RIGID; ri++)
+						for (int rj = 0; rj < MAX_NUM_OF_RIGID; rj++)
+							m_ptr->ligand.rigid.children_map[ri][rj] = false;
+					for (int ri = 1; ri < m_ptr->ligand.rigid.num_children + 1; ri++) {
+						int par_idx = m_ptr->ligand.rigid.parent[ri];
+						m_ptr->ligand.rigid.children_map[par_idx][ri] = true;
+					}
+					m_ptr->m_num_movable_atoms = mi.num_movable_atoms();
+
+					// Result buffers
+					result_coords_ptrs[i] = (ligand_atom_coords_cl*)malloc(par.mc.thread * sizeof(ligand_atom_coords_cl));
+					result_ptrs[i]        = (output_type_cl*)malloc(par.mc.thread * sizeof(output_type_cl));
+
+				} catch (const std::exception& ex) {
+					fprintf(stderr, "CPU prep error ligand %d: %s\n", i, ex.what());
+					// Free any partially-allocated buffers for this ligand
+					if (rand_maps_ptrs[i])     { free(rand_maps_ptrs[i]);     rand_maps_ptrs[i] = nullptr; }
+					if (ric_ptrs[i])           { free(ric_ptrs[i]);           ric_ptrs[i] = nullptr; }
+					if (m_ptrs[i])             { free(m_ptrs[i]);             m_ptrs[i] = nullptr; }
+					if (result_coords_ptrs[i]) { free(result_coords_ptrs[i]); result_coords_ptrs[i] = nullptr; }
+					if (result_ptrs[i])        { free(result_ptrs[i]);        result_ptrs[i] = nullptr; }
+				}
+			}
+		};
+
+		int chunk = (num_ligands + actual_threads - 1) / actual_threads;
+		for (int t = 0; t < actual_threads; t++) {
+			int s = t * chunk;
+			int e = std::min(s + chunk, num_ligands);
+			if (s >= num_ligands) break;
+			prep_futures.push_back(std::async(std::launch::async, prep_ligand, s, e));
+		}
+		for (auto& f : prep_futures) f.get(); // Wait for all CPU prep to finish
+	}
+	{
+		auto _cpu_t1 = std::chrono::steady_clock::now();
+		printf("DIAG GPU%d: CPU pre-computation done in %.2fs\n", gpu_id,
+		       std::chrono::duration<double>(_cpu_t1 - _fn_t0).count()); fflush(stdout);
+	}
+
+	// Buffer size diagnostics — helps identify memory bottlenecks
+	printf("DIAG GPU%d: thread=%d  sizeof(output_type_cl)=%zu  sizeof(ligand_atom_coords_cl)=%zu  sizeof(random_maps)=%zu\n",
+	       gpu_id, par.mc.thread,
+	       sizeof(output_type_cl), sizeof(ligand_atom_coords_cl), sizeof(random_maps)); fflush(stdout);
+	printf("DIAG GPU%d: per-ligand upload=%.1fKB  download=%.1fKB\n",
+	       gpu_id,
+	       (par.mc.thread * sizeof(output_type_cl) + sizeof(m_cl) + sizeof(random_maps)) / 1024.0,
+	       (par.mc.thread * (sizeof(output_type_cl) + sizeof(ligand_atom_coords_cl))) / 1024.0); fflush(stdout);
+
+/**************************************************************************/
+/***************    Batched work-stealing kernel2 dispatch  ***************/
+/**************************************************************************/
+	// Fix 1: single queue eliminates multi-queue DMA serialization (upload 116s→0.08s).
+	// Fix 2: work-stealing loop — both GPUs grab ligands from shared global_next_lig.
+	// Fix 3: multi-ligand batching — pack batch_n ligands per kernel dispatch so all
+	//         GPU work items are active (RTX 6000 Ada: batch_n=2 → ~97% utilization).
+
+	// Auto-detect batch_n: fill the GPU's work items with multiple ligands.
+	// Each ligand needs par.mc.thread work items; GPU has CU * 128 cores (NVIDIA).
+	// Clamp to num_ligands so single-ligand runs still work.
+	cl_uint compute_units = 0;
+	err = clGetDeviceInfo(devices[gpu_id], CL_DEVICE_MAX_COMPUTE_UNITS,
+	                      sizeof(cl_uint), &compute_units, NULL); checkErr(err);
+	int batch_n = std::max(1, (int)(compute_units * 128) / par.mc.thread);
+	batch_n = std::min(batch_n, num_ligands);
+	printf("DIAG GPU%d: compute_units=%u  auto batch_n=%d  (thread=%d)\n",
+	       gpu_id, compute_units, batch_n, par.mc.thread); fflush(stdout);
+
+	cl_kernel k2 = clCreateKernel(programs[1], "kernel2", &err); checkErr(err);
+
+	// DIAGNOSTIC: print the runtime kernel arg count so we can detect source/binary mismatch
+	{
+		cl_uint k2_nargs = 0;
+		clGetKernelInfo(k2, CL_KERNEL_NUM_ARGS, sizeof(cl_uint), &k2_nargs, NULL);
+		printf("DIAG GPU%d: kernel2 CL_KERNEL_NUM_ARGS=%u (expect 13)\n", gpu_id, k2_nargs); fflush(stdout);
+	}
+
+	// GPU buffers sized for batch_n ligands
+	const size_t ric_size_           = (size_t)batch_n * par.mc.thread * sizeof(output_type_cl);
+	const size_t m_size_             = (size_t)batch_n * sizeof(m_cl);
+	const size_t rand_maps_size_     = (size_t)batch_n * sizeof(random_maps);
+	const size_t result_size_        = (size_t)batch_n * par.mc.thread * sizeof(output_type_cl);
+	const size_t result_coords_size_ = (size_t)batch_n * par.mc.thread * sizeof(ligand_atom_coords_cl);
+	const size_t int_arr_size_       = (size_t)batch_n * sizeof(int);
+
+	cl_mem ric_gpu_k2, m_gpu_k2, rand_gpu_k2, result_gpu_k2, result_coords_gpu_k2;
+	cl_mem torsion_gpu_k2, search_depth_gpu_k2, bfgs_steps_gpu_k2;
+	CreateDeviceBuffer(&ric_gpu_k2,           CL_MEM_READ_ONLY,  ric_size_,           context);
+	CreateDeviceBuffer(&m_gpu_k2,             CL_MEM_READ_WRITE, m_size_,             context);
+	CreateDeviceBuffer(&rand_gpu_k2,          CL_MEM_READ_ONLY,  rand_maps_size_,     context);
+	CreateDeviceBuffer(&result_gpu_k2,        CL_MEM_WRITE_ONLY, result_size_,        context);
+	CreateDeviceBuffer(&result_coords_gpu_k2, CL_MEM_WRITE_ONLY, result_coords_size_, context);
+	CreateDeviceBuffer(&torsion_gpu_k2,       CL_MEM_READ_ONLY,  int_arr_size_,       context);
+	CreateDeviceBuffer(&search_depth_gpu_k2,  CL_MEM_READ_ONLY,  int_arr_size_,       context);
+	CreateDeviceBuffer(&bfgs_steps_gpu_k2,    CL_MEM_READ_ONLY,  int_arr_size_,       context);
+
+	// New kernel arg layout (matches updated kernel2.cl):
+	//   0: ric           1: mg            2: pre (const)   3: grids (const)
+	//   4: rand_maps_arr 5: coords        6: results       7: mis (const)
+	//   8: torsion_sizes 9: search_depths 10: bfgs_steps   11: rilc_bfgs_enable
+	//   12: batch_n  (set per-dispatch because last batch may be smaller)
+	SetKernelArg(k2, 0,  sizeof(cl_mem), &ric_gpu_k2);
+	SetKernelArg(k2, 1,  sizeof(cl_mem), &m_gpu_k2);
+	SetKernelArg(k2, 2,  sizeof(cl_mem), &pre_gpu);
+	SetKernelArg(k2, 3,  sizeof(cl_mem), &grids_gpu);
+	SetKernelArg(k2, 4,  sizeof(cl_mem), &rand_gpu_k2);
+	SetKernelArg(k2, 5,  sizeof(cl_mem), &result_coords_gpu_k2);
+	SetKernelArg(k2, 6,  sizeof(cl_mem), &result_gpu_k2);
+	SetKernelArg(k2, 7,  sizeof(cl_mem), &mis_gpu);
+	SetKernelArg(k2, 8,  sizeof(cl_mem), &torsion_gpu_k2);
+	SetKernelArg(k2, 9,  sizeof(cl_mem), &search_depth_gpu_k2);
+	SetKernelArg(k2, 10, sizeof(cl_mem), &bfgs_steps_gpu_k2);
+	SetKernelArg(k2, 11, sizeof(int),    &rilc_bfgs);
+	// arg 12 (batch_n) set per-dispatch below
+
+	const size_t kernel2_global_size[2] = { 512, 32 };
+	const size_t kernel2_local_size[2]  = { 16, 2 };
+
+	double t_upload = 0, t_kernel = 0, t_download = 0, t_cl2vina = 0, t_add2out = 0;
+	int lig_count = 0;
+
+	printf("\nBatched work-stealing kernel2: GPU%d  total_ligands=%d  batch_n=%d\n",
+	       gpu_id, num_ligands, batch_n); fflush(stdout);
+
+	std::vector<int> batch_torsion(batch_n), batch_depth(batch_n), batch_bfgs(batch_n);
+
+	int batch_start;
+	while ((batch_start = global_next_lig.fetch_add(batch_n, std::memory_order_relaxed)) < num_ligands) {
+		int actual_batch = std::min(batch_n, num_ligands - batch_start);
+
+		// Verify CPU prep succeeded for all ligands in this batch
+		bool all_ready = true;
+		for (int b = 0; b < actual_batch; b++) {
+			int li = batch_start + b;
+			if (!rand_maps_ptrs[li] || !ric_ptrs[li] || !m_ptrs[li] ||
+			    !result_ptrs[li] || !result_coords_ptrs[li]) {
+				std::cerr << "Skipping batch starting at " << batch_start
+				          << ": CPU prep failed for ligand " << li << ".\n";
+				all_ready = false;
+				break;
+			}
+		}
+		if (!all_ready) continue;
+
+		auto _t_up0 = std::chrono::steady_clock::now();
+
+		// Upload actual_batch ligands at their stride offsets
+		for (int b = 0; b < actual_batch; b++) {
+			int li = batch_start + b;
+			size_t ric_off  = (size_t)b * par.mc.thread * sizeof(output_type_cl);
+			size_t m_off    = (size_t)b * sizeof(m_cl);
+			size_t rand_off = (size_t)b * sizeof(random_maps);
+			err = clEnqueueWriteBuffer(queue, ric_gpu_k2,  CL_FALSE, ric_off,  par.mc.thread * sizeof(output_type_cl), ric_ptrs[li],       0, NULL, NULL); checkErr(err);
+			err = clEnqueueWriteBuffer(queue, m_gpu_k2,    CL_FALSE, m_off,    sizeof(m_cl),                           m_ptrs[li],         0, NULL, NULL); checkErr(err);
+			err = clEnqueueWriteBuffer(queue, rand_gpu_k2, CL_FALSE, rand_off, sizeof(random_maps),                    rand_maps_ptrs[li], 0, NULL, NULL); checkErr(err);
+
+			batch_torsion[b] = torsion_sizes[li];
+			batch_depth[b]   = par.mc.search_depth[li];
+			batch_bfgs[b]    = par.mc.ssd_par.bfgs_steps[li];
+		}
+
+		// Upload per-ligand scalar arrays
+		err = clEnqueueWriteBuffer(queue, torsion_gpu_k2,      CL_FALSE, 0, (size_t)actual_batch * sizeof(int), batch_torsion.data(), 0, NULL, NULL); checkErr(err);
+		err = clEnqueueWriteBuffer(queue, search_depth_gpu_k2, CL_FALSE, 0, (size_t)actual_batch * sizeof(int), batch_depth.data(),   0, NULL, NULL); checkErr(err);
+		err = clEnqueueWriteBuffer(queue, bfgs_steps_gpu_k2,   CL_FALSE, 0, (size_t)actual_batch * sizeof(int), batch_bfgs.data(),    0, NULL, NULL); checkErr(err);
+
+		// clFinish ensures all non-blocking writes are complete before freeing CPU buffers.
+		// OpenCL spec: host_ptr must not be freed until the transfer command completes.
+		clFinish(queue);
+
+		// Safe to free CPU upload buffers now that DMA transfers are complete
+		for (int b = 0; b < actual_batch; b++) {
+			int li = batch_start + b;
+			free(rand_maps_ptrs[li]); rand_maps_ptrs[li] = nullptr;
+			free(ric_ptrs[li]);       ric_ptrs[li] = nullptr;
+			free(m_ptrs[li]);         m_ptrs[li] = nullptr;
+		}
+		auto _t_kn0 = std::chrono::steady_clock::now();
+		t_upload += std::chrono::duration<double>(_t_kn0 - _t_up0).count();
+
+		// Set actual_batch as kernel arg (handles last batch smaller than batch_n)
+		SetKernelArg(k2, 12, sizeof(int), &actual_batch);
+
+		// Kernel launch + wait
+		cl_event done_event;
+		err = clEnqueueNDRangeKernel(queue, k2, 2, 0,
+		    kernel2_global_size, kernel2_local_size,
+		    0, NULL, &done_event); checkErr(err);
+		clFlush(queue);
+		clWaitForEvents(1, &done_event);
+		clReleaseEvent(done_event);
+		auto _t_dn0 = std::chrono::steady_clock::now();
+		t_kernel += std::chrono::duration<double>(_t_dn0 - _t_kn0).count();
+
+		// Download actual_batch results (non-blocking per ligand, then sync)
+		for (int b = 0; b < actual_batch; b++) {
+			int li = batch_start + b;
+			size_t res_off   = (size_t)b * par.mc.thread * sizeof(output_type_cl);
+			size_t coord_off = (size_t)b * par.mc.thread * sizeof(ligand_atom_coords_cl);
+			err = clEnqueueReadBuffer(queue, result_gpu_k2,        CL_FALSE, res_off,   par.mc.thread * sizeof(output_type_cl),        result_ptrs[li],        0, NULL, NULL); checkErr(err);
+			err = clEnqueueReadBuffer(queue, result_coords_gpu_k2, CL_FALSE, coord_off, par.mc.thread * sizeof(ligand_atom_coords_cl), result_coords_ptrs[li], 0, NULL, NULL); checkErr(err);
+		}
+		clFinish(queue);
+		auto _t_cv0 = std::chrono::steady_clock::now();
+		t_download += std::chrono::duration<double>(_t_cv0 - _t_dn0).count();
+
+		// Convert and store results for each ligand in the batch
+		for (int b = 0; b < actual_batch; b++) {
+			int li = batch_start + b;
+
+			auto _t_a0 = std::chrono::steady_clock::now();
+			std::vector<output_type> result_vina = cl_to_vina(
+			    result_ptrs[li], result_coords_ptrs[li],
+			    par.mc.thread, torsion_sizes[li]);
+			auto _t_a1 = std::chrono::steady_clock::now();
+			t_cl2vina += std::chrono::duration<double>(_t_a1 - _t_a0).count();
+
+			if (result_vina.empty()) {
+				std::cerr << "Warning: no results for ligand " << li << " — skipping.\n";
+			} else {
+				for (int i = 0; i < par.mc.thread; i++) {
+					add_to_output_container(outs[li], result_vina[i],
+					    par.mc.min_rmsd, par.mc.num_saved_mins);
+				}
+			}
+			auto _t_a2 = std::chrono::steady_clock::now();
+			t_add2out += std::chrono::duration<double>(_t_a2 - _t_a1).count();
+
+			free(result_ptrs[li]);        result_ptrs[li] = nullptr;
+			free(result_coords_ptrs[li]); result_coords_ptrs[li] = nullptr;
+		}
+		lig_count += actual_batch;
+	}
+
+	printf("DIAG GPU%d: processed %d ligands — upload=%.2fs  kernel(wait)=%.2fs  download=%.2fs  cl2vina=%.2fs  add2out=%.2fs\n",
+	       gpu_id, lig_count, t_upload, t_kernel, t_download, t_cl2vina, t_add2out); fflush(stdout);
+
+	// Free any CPU buffers for ligands that were stolen by the other GPU.
+	for (int i = 0; i < num_ligands; i++) {
+		if (rand_maps_ptrs[i])     { free(rand_maps_ptrs[i]);     rand_maps_ptrs[i] = nullptr; }
+		if (ric_ptrs[i])           { free(ric_ptrs[i]);           ric_ptrs[i] = nullptr; }
+		if (m_ptrs[i])             { free(m_ptrs[i]);             m_ptrs[i] = nullptr; }
+		if (result_ptrs[i])        { free(result_ptrs[i]);        result_ptrs[i] = nullptr; }
+		if (result_coords_ptrs[i]) { free(result_coords_ptrs[i]); result_coords_ptrs[i] = nullptr; }
+	}
+
+	// Cleanup batched-dispatch resources
+	err = clReleaseKernel(k2);                        checkErr(err);
+	err = clReleaseMemObject(ric_gpu_k2);             checkErr(err);
+	err = clReleaseMemObject(m_gpu_k2);               checkErr(err);
+	err = clReleaseMemObject(rand_gpu_k2);            checkErr(err);
+	err = clReleaseMemObject(result_gpu_k2);          checkErr(err);
+	err = clReleaseMemObject(result_coords_gpu_k2);   checkErr(err);
+	err = clReleaseMemObject(torsion_gpu_k2);         checkErr(err);
+	err = clReleaseMemObject(search_depth_gpu_k2);    checkErr(err);
+	err = clReleaseMemObject(bfgs_steps_gpu_k2);      checkErr(err);
+
+
+	free(mis_ptr);
+	err = clReleaseMemObject(mis_gpu);		checkErr(err);
+	err = clReleaseMemObject(grids_gpu);	checkErr(err);
+	err = clReleaseMemObject(pre_gpu);		checkErr(err);
+
+	local_status.store(static_cast<int>(DockingStatus::Finish), std::memory_order_release);
+	// Fix: ThreadGuard destructor joins console_thread automatically here
+	{
+		auto _fn_t1 = std::chrono::steady_clock::now();
+		double _fn_s = std::chrono::duration<double>(_fn_t1 - _fn_t0).count();
+		printf("DIAG GPU%d: main_procedure_cl done in %.2fs  (%d ligands = %.3f mol/s)\n",
+		       gpu_id, _fn_s, (int)ms.size(), ms.size() / _fn_s); fflush(stdout);
+	}
+#ifdef OPENCL_TIME_ANALYSIS
+		cout << setiosflags(ios::fixed);
+		std::ofstream file("gpu_runtime.log");
+		if (file.is_open())
+		{
+			file << "GPU grid cache runtime = " << (kernel1_total_time / 1000000000.0) << " s" << std::endl;
+			file << "GPU monte carlo runtime = " << (kernel2_total_time / 1000000000.0) << " s" << std::endl;
+			file.close();
+		}
+#endif
+}

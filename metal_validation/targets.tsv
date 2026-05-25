@@ -1,0 +1,28 @@
+# PDB_ID	Metal	Protein	Ligand	Ki_nM	Note
+# ── Carbonic Anhydrase II (CAII) — Zn²⁺ — 最好的初始驗證集 ──────────────────
+1OQ5	Zn	CAII	Acetazolamide	9	FDA核准藥物；標準benchmark
+1BNN	Zn	CAII	p-aminobenzenesulfonamide	380	簡單sulfonamide
+1CNX	Zn	CAII	4-methylbenzenesulfonamide	540	methyl衍生物
+1ZNC	Zn	CAII	Sulfonamide inhibitor	200	常用benchmark
+1A42	Zn	CAII	Acetazolamide analog	15	高親和力
+1YDB	Zn	CAII	Fluorinated sulfonamide	2	極高親和力
+3HS4	Zn	CAII	Coumarin inhibitor	8300	非sulfonamide骨架
+2NWP	Zn	CAII	Glycosyl sulfonamide	430	大配體測試
+1BV3	Zn	CAII	Sulfonamide	150	中等親和力
+2CBD	Zn	CAII	Benzenesulfonamide	900	基本sulfonamide
+# ── MMP (Matrix Metalloproteinase) — Zn²⁺ ──────────────────────────────────
+1HOV	Zn	MMP-2	Hydroxamate inhibitor	0.3	超高親和力
+1GKC	Zn	MMP-2	Phosphonate inhibitor	27	非hydroxamate
+1QIB	Zn	MMP-9	Hydroxamate CGS27023A	26	MMP-9 specific
+1MMQ	Zn	MMP-1	Peptide hydroxamate	670	低選擇性
+1SLN	Zn	MMP-8	Batimastat analog	4	廣譜MMP抑制劑
+# ── ACE (Angiotensin Converting Enzyme) — Zn²⁺ — 降壓藥靶點 ─────────────────
+1O86	Zn	ACE	Captopril	1.7	第一個ACE抑制劑；FDA核准
+2C6N	Zn	ACE	Lisinopril	0.27	FDA核准；最高親和力
+1UZE	Zn	ACE	Enalaprilat	2.2	FDA核准藥物代謝物
+# ── HIV Integrase — Mg²⁺ ────────────────────────────────────────────────────
+3L2U	Mg	HIV-IN	Raltegravir	2.0	FDA核准；第一代IN抑制劑
+2B4J	Mg	HIV-IN	Diketo acid	30	早期IN抑制劑
+# ── HIF Prolyl Hydroxylase (PHD2) — Fe²⁺ — 貧血新靶點 ─────────────────────
+3OXM	Fe	PHD2	N-oxalylglycine analog	400	NOG類似物
+4BKS	Fe	PHD2	GSK1278863 analog	1500	臨床試驗化合物

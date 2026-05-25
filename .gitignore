@@ -1,0 +1,30 @@
+# Singularity/Apptainer container images
+*.sif
+*.simg
+
+# Compiled binaries
+src/AutoDock-Vina-GPU-2.1/AutoDock-Vina-GPU-2-1
+
+# Compiled OpenCL kernel binaries (machine-specific, regenerated on first run)
+Kernel1_Opt.bin
+Kernel2_Opt.bin
+
+# Build artifacts
+*.o
+*.a
+
+# Diagnostic / dev binaries
+src/AutoDock-Vina-GPU-2.1/AutoDock-Vina-GPU-2-1-diag
+
+# Metal validation — runtime / scratch directories
+metal_validation/tmp_lig/
+metal_validation/tmp_work/
+metal_validation/results/
+metal_validation/results_metal/
+metal_validation/ocl_cache/
+metal_validation/baseline_run.log
+metal_validation/baseline_run.err
+metal_validation/fix_missing_targets.py
+
+# Benchmark / ligandscope results (large, machine-specific)
+ligandscope_results/

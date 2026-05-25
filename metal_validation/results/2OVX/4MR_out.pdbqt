@@ -1,0 +1,513 @@
+MODEL 1
+REMARK VINA RESULT:     -11.9      0.000      0.000
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/2OVX_4MR.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAD_6  and  OAG_7
+REMARK    2  A    between atoms: OAG_7  and  CAJ_8
+REMARK    3  A    between atoms: CAK_13  and  CAY_14
+REMARK    4  A    between atoms: CAY_14  and  NAX_23
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAY 4MR A 501      25.944   9.048  50.306  0.00  0.00    +0.000 C 
+ATOM      2  CAZ 4MR A 501      25.352   8.569  48.976  0.00  0.00    +0.000 C 
+ATOM      3  OAS 4MR A 501      24.192   8.161  48.955  0.00  0.00    +0.000 OA
+ATOM      4  NBA 4MR A 501      26.052   8.681  47.769  0.00  0.00    +0.000 NA
+ATOM      5  CBF 4MR A 501      27.313   9.285  47.702  0.00  0.00    +0.000 C 
+ATOM      6  OBG 4MR A 501      27.965   9.212  46.662  0.00  0.00    +0.000 OA
+ATOM      7  NBE 4MR A 501      27.889   9.851  48.847  0.00  0.00    +0.000 NA
+ATOM      8  CBD 4MR A 501      27.232   9.850  50.084  0.00  0.00    +0.000 C 
+ATOM      9  OBH 4MR A 501      27.790  10.370  51.049  0.00  0.00    +0.000 OA
+ENDROOT
+BRANCH   1  10
+ATOM     10  NAX 4MR A 501      24.934   9.843  51.031  0.00  0.00    +0.000 NA
+ATOM     11  CAR 4MR A 501      25.333  10.147  52.416  0.00  0.00    +0.000 C 
+ATOM     12  CAQ 4MR A 501      24.179  10.842  53.142  0.00  0.00    +0.000 C 
+ATOM     13  CBC 4MR A 501      24.559  11.069  50.306  0.00  0.00    +0.000 C 
+ATOM     14  CBB 4MR A 501      23.409  11.773  51.032  0.00  0.00    +0.000 C 
+ATOM     15  NAW 4MR A 501      23.839  12.071  52.408  0.00  0.00    +0.000 N 
+ATOM     16  CAV 4MR A 501      22.925  12.956  53.145  0.00  0.00    +0.000 A 
+ATOM     17  NAU 4MR A 501      23.079  13.092  54.471  0.00  0.00    +0.000 NA
+ATOM     18  CAT 4MR A 501      22.519  14.089  55.134  0.00  0.00    +0.000 A 
+ATOM     19  CAN 4MR A 501      21.740  15.019  54.454  0.00  0.00    +0.000 A 
+ATOM     20  CAO 4MR A 501      21.577  14.846  53.084  0.00  0.00    +0.000 A 
+ATOM     21  NAP 4MR A 501      22.162  13.831  52.472  0.00  0.00    +0.000 NA
+ENDBRANCH   1  10
+BRANCH   1  27
+ATOM     22  CAJ 4MR A 501      26.583   5.121  51.965  0.00  0.00    +0.000 A 
+ATOM     23  CAM 4MR A 501      27.583   5.737  51.218  0.00  0.00    +0.000 A 
+ATOM     24  CAL 4MR A 501      27.432   7.053  50.789  0.00  0.00    +0.000 A 
+ATOM     25  CAI 4MR A 501      25.436   5.844  52.287  0.00  0.00    +0.000 A 
+ATOM     26  CAH 4MR A 501      25.282   7.156  51.848  0.00  0.00    +0.000 A 
+ATOM     27  CAK 4MR A 501      26.273   7.767  51.084  0.00  0.00    +0.000 A 
+BRANCH  22  28
+ATOM     28  OAG 4MR A 501      26.836   3.884  52.477  0.00  0.00    +0.000 OA
+BRANCH  28  34
+ATOM     29  CAA 4MR A 501      24.742   2.946  51.773  0.00  0.00    +0.000 A 
+ATOM     30  CAB 4MR A 501      23.781   1.949  51.915  0.00  0.00    +0.000 A 
+ATOM     31  CAC 4MR A 501      23.859   1.049  52.975  0.00  0.00    +0.000 A 
+ATOM     32  CAF 4MR A 501      24.893   1.156  53.900  0.00  0.00    +0.000 A 
+ATOM     33  CAE 4MR A 501      25.844   2.163  53.765  0.00  0.00    +0.000 A 
+ATOM     34  CAD 4MR A 501      25.777   3.057  52.699  0.00  0.00    +0.000 A 
+ENDBRANCH  28  34
+ENDBRANCH  22  28
+ENDBRANCH   1  27
+TORSDOF 4
+ENDMDL
+MODEL 2
+REMARK VINA RESULT:     -11.8      3.453      9.073
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/2OVX_4MR.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAD_6  and  OAG_7
+REMARK    2  A    between atoms: OAG_7  and  CAJ_8
+REMARK    3  A    between atoms: CAK_13  and  CAY_14
+REMARK    4  A    between atoms: CAY_14  and  NAX_23
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAY 4MR A 501      25.806   9.787  49.758  0.00  0.00    +0.000 C 
+ATOM      2  CAZ 4MR A 501      24.353  10.254  49.902  0.00  0.00    +0.000 C 
+ATOM      3  OAS 4MR A 501      23.457   9.568  49.410  0.00  0.00    +0.000 OA
+ATOM      4  NBA 4MR A 501      24.005  11.374  50.666  0.00  0.00    +0.000 NA
+ATOM      5  CBF 4MR A 501      24.962  12.101  51.384  0.00  0.00    +0.000 C 
+ATOM      6  OBG 4MR A 501      24.646  13.172  51.900  0.00  0.00    +0.000 OA
+ATOM      7  NBE 4MR A 501      26.300  11.687  51.402  0.00  0.00    +0.000 NA
+ATOM      8  CBD 4MR A 501      26.728  10.538  50.726  0.00  0.00    +0.000 C 
+ATOM      9  OBH 4MR A 501      27.917  10.224  50.787  0.00  0.00    +0.000 OA
+ENDROOT
+BRANCH   1  10
+ATOM     10  NAX 4MR A 501      25.873   8.329  49.973  0.00  0.00    +0.000 NA
+ATOM     11  CAR 4MR A 501      26.927   7.940  50.925  0.00  0.00    +0.000 C 
+ATOM     12  CAQ 4MR A 501      27.031   6.414  50.983  0.00  0.00    +0.000 C 
+ATOM     13  CBC 4MR A 501      24.571   7.758  50.363  0.00  0.00    +0.000 C 
+ATOM     14  CBB 4MR A 501      24.671   6.231  50.430  0.00  0.00    +0.000 C 
+ATOM     15  NAW 4MR A 501      25.725   5.874  51.392  0.00  0.00    +0.000 N 
+ATOM     16  CAV 4MR A 501      25.768   4.445  51.734  0.00  0.00    +0.000 A 
+ATOM     17  NAU 4MR A 501      26.832   3.966  52.397  0.00  0.00    +0.000 NA
+ATOM     18  CAT 4MR A 501      26.796   2.793  53.006  0.00  0.00    +0.000 A 
+ATOM     19  CAN 4MR A 501      25.639   2.024  52.957  0.00  0.00    +0.000 A 
+ATOM     20  CAO 4MR A 501      24.556   2.531  52.246  0.00  0.00    +0.000 A 
+ATOM     21  NAP 4MR A 501      24.647   3.711  51.658  0.00  0.00    +0.000 NA
+ENDBRANCH   1  10
+BRANCH   1  27
+ATOM     22  CAJ 4MR A 501      27.428  11.096  45.985  0.00  0.00    +0.000 A 
+ATOM     23  CAM 4MR A 501      27.781   9.855  46.507  0.00  0.00    +0.000 A 
+ATOM     24  CAL 4MR A 501      27.163   9.373  47.657  0.00  0.00    +0.000 A 
+ATOM     25  CAI 4MR A 501      26.441  11.843  46.625  0.00  0.00    +0.000 A 
+ATOM     26  CAH 4MR A 501      25.832  11.364  47.782  0.00  0.00    +0.000 A 
+ATOM     27  CAK 4MR A 501      26.197  10.131  48.315  0.00  0.00    +0.000 A 
+BRANCH  22  28
+ATOM     28  OAG 4MR A 501      27.959  11.461  44.785  0.00  0.00    +0.000 OA
+BRANCH  28  34
+ATOM     29  CAA 4MR A 501      26.726  13.191  43.666  0.00  0.00    +0.000 A 
+ATOM     30  CAB 4MR A 501      26.508  14.550  43.463  0.00  0.00    +0.000 A 
+ATOM     31  CAC 4MR A 501      27.384  15.487  44.005  0.00  0.00    +0.000 A 
+ATOM     32  CAF 4MR A 501      28.486  15.061  44.740  0.00  0.00    +0.000 A 
+ATOM     33  CAE 4MR A 501      28.711  13.701  44.929  0.00  0.00    +0.000 A 
+ATOM     34  CAD 4MR A 501      27.830  12.761  44.399  0.00  0.00    +0.000 A 
+ENDBRANCH  28  34
+ENDBRANCH  22  28
+ENDBRANCH   1  27
+TORSDOF 4
+ENDMDL
+MODEL 3
+REMARK VINA RESULT:     -11.7      0.781      1.136
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/2OVX_4MR.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAD_6  and  OAG_7
+REMARK    2  A    between atoms: OAG_7  and  CAJ_8
+REMARK    3  A    between atoms: CAK_13  and  CAY_14
+REMARK    4  A    between atoms: CAY_14  and  NAX_23
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAY 4MR A 501      25.670   8.975  50.312  0.00  0.00    +0.000 C 
+ATOM      2  CAZ 4MR A 501      25.282   8.460  48.921  0.00  0.00    +0.000 C 
+ATOM      3  OAS 4MR A 501      24.208   7.877  48.783  0.00  0.00    +0.000 OA
+ATOM      4  NBA 4MR A 501      26.059   8.727  47.788  0.00  0.00    +0.000 NA
+ATOM      5  CBF 4MR A 501      27.208   9.523  47.853  0.00  0.00    +0.000 C 
+ATOM      6  OBG 4MR A 501      27.953   9.593  46.877  0.00  0.00    +0.000 OA
+ATOM      7  NBE 4MR A 501      27.583  10.129  49.060  0.00  0.00    +0.000 NA
+ATOM      8  CBD 4MR A 501      26.828   9.977  50.230  0.00  0.00    +0.000 C 
+ATOM      9  OBH 4MR A 501      27.207  10.542  51.255  0.00  0.00    +0.000 OA
+ENDROOT
+BRANCH   1  10
+ATOM     10  NAX 4MR A 501      24.486   9.574  50.958  0.00  0.00    +0.000 NA
+ATOM     11  CAR 4MR A 501      24.650   9.739  52.412  0.00  0.00    +0.000 C 
+ATOM     12  CAQ 4MR A 501      23.335  10.225  53.027  0.00  0.00    +0.000 C 
+ATOM     13  CBC 4MR A 501      24.081  10.841  50.323  0.00  0.00    +0.000 C 
+ATOM     14  CBB 4MR A 501      22.769  11.336  50.939  0.00  0.00    +0.000 C 
+ATOM     15  NAW 4MR A 501      22.966  11.498  52.389  0.00  0.00    +0.000 N 
+ATOM     16  CAV 4MR A 501      21.865  12.193  53.072  0.00  0.00    +0.000 A 
+ATOM     17  NAU 4MR A 501      21.815  12.175  54.413  0.00  0.00    +0.000 NA
+ATOM     18  CAT 4MR A 501      21.060  13.024  55.088  0.00  0.00    +0.000 A 
+ATOM     19  CAN 4MR A 501      20.285  13.954  54.404  0.00  0.00    +0.000 A 
+ATOM     20  CAO 4MR A 501      20.335  13.940  53.014  0.00  0.00    +0.000 A 
+ATOM     21  NAP 4MR A 501      21.110  13.070  52.391  0.00  0.00    +0.000 NA
+ENDBRANCH   1  10
+BRANCH   1  27
+ATOM     22  CAJ 4MR A 501      26.706   5.131  51.964  0.00  0.00    +0.000 A 
+ATOM     23  CAM 4MR A 501      27.635   5.844  51.212  0.00  0.00    +0.000 A 
+ATOM     24  CAL 4MR A 501      27.352   7.139  50.786  0.00  0.00    +0.000 A 
+ATOM     25  CAI 4MR A 501      25.494   5.735  52.291  0.00  0.00    +0.000 A 
+ATOM     26  CAH 4MR A 501      25.208   7.026  51.855  0.00  0.00    +0.000 A 
+ATOM     27  CAK 4MR A 501      26.129   7.734  51.087  0.00  0.00    +0.000 A 
+BRANCH  22  28
+ATOM     28  OAG 4MR A 501      27.084   3.926  52.473  0.00  0.00    +0.000 OA
+BRANCH  28  34
+ATOM     29  CAA 4MR A 501      26.056   2.187  53.771  0.00  0.00    +0.000 A 
+ATOM     30  CAB 4MR A 501      24.955   1.365  53.991  0.00  0.00    +0.000 A 
+ATOM     31  CAC 4MR A 501      23.913   1.329  53.068  0.00  0.00    +0.000 A 
+ATOM     32  CAF 4MR A 501      23.981   2.108  51.917  0.00  0.00    +0.000 A 
+ATOM     33  CAE 4MR A 501      25.090   2.918  51.691  0.00  0.00    +0.000 A 
+ATOM     34  CAD 4MR A 501      26.127   2.967  52.618  0.00  0.00    +0.000 A 
+ENDBRANCH  28  34
+ENDBRANCH  22  28
+ENDBRANCH   1  27
+TORSDOF 4
+ENDMDL
+MODEL 4
+REMARK VINA RESULT:     -11.2      3.562      9.146
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/2OVX_4MR.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAD_6  and  OAG_7
+REMARK    2  A    between atoms: OAG_7  and  CAJ_8
+REMARK    3  A    between atoms: CAK_13  and  CAY_14
+REMARK    4  A    between atoms: CAY_14  and  NAX_23
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAY 4MR A 501      25.457  10.350  49.652  0.00  0.00    +0.000 C 
+ATOM      2  CAZ 4MR A 501      23.968  10.662  49.460  0.00  0.00    +0.000 C 
+ATOM      3  OAS 4MR A 501      23.292   9.917  48.751  0.00  0.00    +0.000 OA
+ATOM      4  NBA 4MR A 501      23.333  11.702  50.148  0.00  0.00    +0.000 NA
+ATOM      5  CBF 4MR A 501      24.011  12.483  51.092  0.00  0.00    +0.000 C 
+ATOM      6  OBG 4MR A 501      23.469  13.489  51.546  0.00  0.00    +0.000 OA
+ATOM      7  NBE 4MR A 501      25.344  12.204  51.415  0.00  0.00    +0.000 NA
+ATOM      8  CBD 4MR A 501      26.041  11.139  50.830  0.00  0.00    +0.000 C 
+ATOM      9  OBH 4MR A 501      27.209  10.942  51.164  0.00  0.00    +0.000 OA
+ENDROOT
+BRANCH   1  10
+ATOM     10  NAX 4MR A 501      25.630   8.897  49.839  0.00  0.00    +0.000 NA
+ATOM     11  CAR 4MR A 501      26.663   8.568  50.836  0.00  0.00    +0.000 C 
+ATOM     12  CAQ 4MR A 501      26.886   7.054  50.866  0.00  0.00    +0.000 C 
+ATOM     13  CBC 4MR A 501      24.360   8.215  50.147  0.00  0.00    +0.000 C 
+ATOM     14  CBB 4MR A 501      24.578   6.700  50.185  0.00  0.00    +0.000 C 
+ATOM     15  NAW 4MR A 501      25.608   6.403  51.194  0.00  0.00    +0.000 N 
+ATOM     16  CAV 4MR A 501      25.748   4.973  51.507  0.00  0.00    +0.000 A 
+ATOM     17  NAU 4MR A 501      26.812   4.562  52.214  0.00  0.00    +0.000 NA
+ATOM     18  CAT 4MR A 501      26.840   3.375  52.794  0.00  0.00    +0.000 A 
+ATOM     19  CAN 4MR A 501      25.752   2.518  52.668  0.00  0.00    +0.000 A 
+ATOM     20  CAO 4MR A 501      24.670   2.956  51.912  0.00  0.00    +0.000 A 
+ATOM     21  NAP 4MR A 501      24.695   4.154  51.355  0.00  0.00    +0.000 NA
+ENDBRANCH   1  10
+BRANCH   1  27
+ATOM     22  CAJ 4MR A 501      26.827  11.337  45.686  0.00  0.00    +0.000 A 
+ATOM     23  CAM 4MR A 501      26.072  12.252  46.414  0.00  0.00    +0.000 A 
+ATOM     24  CAL 4MR A 501      25.737  11.991  47.740  0.00  0.00    +0.000 A 
+ATOM     25  CAI 4MR A 501      27.250  10.163  46.306  0.00  0.00    +0.000 A 
+ATOM     26  CAH 4MR A 501      26.905   9.899  47.628  0.00  0.00    +0.000 A 
+ATOM     27  CAK 4MR A 501      26.134  10.805  48.353  0.00  0.00    +0.000 A 
+BRANCH  22  28
+ATOM     28  OAG 4MR A 501      27.245  11.699  44.441  0.00  0.00    +0.000 OA
+BRANCH  28  34
+ATOM     29  CAA 4MR A 501      26.579  13.808  43.508  0.00  0.00    +0.000 A 
+ATOM     30  CAB 4MR A 501      26.742  15.189  43.462  0.00  0.00    +0.000 A 
+ATOM     31  CAC 4MR A 501      27.806  15.790  44.129  0.00  0.00    +0.000 A 
+ATOM     32  CAF 4MR A 501      28.715  15.005  44.832  0.00  0.00    +0.000 A 
+ATOM     33  CAE 4MR A 501      28.559  13.623  44.864  0.00  0.00    +0.000 A 
+ATOM     34  CAD 4MR A 501      27.488  13.019  44.209  0.00  0.00    +0.000 A 
+ENDBRANCH  28  34
+ENDBRANCH  22  28
+ENDBRANCH   1  27
+TORSDOF 4
+ENDMDL
+MODEL 5
+REMARK VINA RESULT:     -11.1      0.523      1.006
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/2OVX_4MR.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAD_6  and  OAG_7
+REMARK    2  A    between atoms: OAG_7  and  CAJ_8
+REMARK    3  A    between atoms: CAK_13  and  CAY_14
+REMARK    4  A    between atoms: CAY_14  and  NAX_23
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAY 4MR A 501      25.914   8.995  49.998  0.00  0.00    +0.000 C 
+ATOM      2  CAZ 4MR A 501      25.281   8.828  48.612  0.00  0.00    +0.000 C 
+ATOM      3  OAS 4MR A 501      24.079   8.577  48.536  0.00  0.00    +0.000 OA
+ATOM      4  NBA 4MR A 501      26.001   9.057  47.435  0.00  0.00    +0.000 NA
+ATOM      5  CBF 4MR A 501      27.328   9.503  47.458  0.00  0.00    +0.000 C 
+ATOM      6  OBG 4MR A 501      27.976   9.528  46.413  0.00  0.00    +0.000 OA
+ATOM      7  NBE 4MR A 501      27.958   9.789  48.675  0.00  0.00    +0.000 NA
+ATOM      8  CBD 4MR A 501      27.294   9.658  49.902  0.00  0.00    +0.000 C 
+ATOM      9  OBH 4MR A 501      27.902   9.932  50.936  0.00  0.00    +0.000 OA
+ENDROOT
+BRANCH   1  10
+ATOM     10  NAX 4MR A 501      25.004   9.773  50.860  0.00  0.00    +0.000 NA
+ATOM     11  CAR 4MR A 501      25.320   9.642  52.292  0.00  0.00    +0.000 C 
+ATOM     12  CAQ 4MR A 501      24.250  10.354  53.123  0.00  0.00    +0.000 C 
+ATOM     13  CBC 4MR A 501      24.928  11.190  50.461  0.00  0.00    +0.000 C 
+ATOM     14  CBB 4MR A 501      23.863  11.910  51.295  0.00  0.00    +0.000 C 
+ATOM     15  NAW 4MR A 501      24.210  11.768  52.718  0.00  0.00    +0.000 N 
+ATOM     16  CAV 4MR A 501      23.409  12.609  53.619  0.00  0.00    +0.000 A 
+ATOM     17  NAU 4MR A 501      23.461  12.381  54.941  0.00  0.00    +0.000 NA
+ATOM     18  CAT 4MR A 501      23.033  13.276  55.814  0.00  0.00    +0.000 A 
+ATOM     19  CAN 4MR A 501      22.504  14.482  55.365  0.00  0.00    +0.000 A 
+ATOM     20  CAO 4MR A 501      22.440  14.687  53.991  0.00  0.00    +0.000 A 
+ATOM     21  NAP 4MR A 501      22.885  13.757  53.163  0.00  0.00    +0.000 NA
+ENDBRANCH   1  10
+BRANCH   1  27
+ATOM     22  CAJ 4MR A 501      26.645   5.289  52.074  0.00  0.00    +0.000 A 
+ATOM     23  CAM 4MR A 501      25.413   5.925  52.190  0.00  0.00    +0.000 A 
+ATOM     24  CAL 4MR A 501      25.127   7.051  51.422  0.00  0.00    +0.000 A 
+ATOM     25  CAI 4MR A 501      27.583   5.789  51.173  0.00  0.00    +0.000 A 
+ATOM     26  CAH 4MR A 501      27.299   6.921  50.414  0.00  0.00    +0.000 A 
+ATOM     27  CAK 4MR A 501      26.074   7.570  50.542  0.00  0.00    +0.000 A 
+BRANCH  22  28
+ATOM     28  OAG 4MR A 501      26.824   4.115  52.741  0.00  0.00    +0.000 OA
+BRANCH  28  34
+ATOM     29  CAA 4MR A 501      24.732   3.286  51.905  0.00  0.00    +0.000 A 
+ATOM     30  CAB 4MR A 501      23.766   2.285  51.911  0.00  0.00    +0.000 A 
+ATOM     31  CAC 4MR A 501      23.830   1.256  52.847  0.00  0.00    +0.000 A 
+ATOM     32  CAF 4MR A 501      24.856   1.238  53.787  0.00  0.00    +0.000 A 
+ATOM     33  CAE 4MR A 501      25.813   2.249  53.790  0.00  0.00    +0.000 A 
+ATOM     34  CAD 4MR A 501      25.759   3.272  52.846  0.00  0.00    +0.000 A 
+ENDBRANCH  28  34
+ENDBRANCH  22  28
+ENDBRANCH   1  27
+TORSDOF 4
+ENDMDL
+MODEL 6
+REMARK VINA RESULT:     -11.1      0.889      1.434
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/2OVX_4MR.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAD_6  and  OAG_7
+REMARK    2  A    between atoms: OAG_7  and  CAJ_8
+REMARK    3  A    between atoms: CAK_13  and  CAY_14
+REMARK    4  A    between atoms: CAY_14  and  NAX_23
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAY 4MR A 501      26.052   9.118  50.609  0.00  0.00    +0.000 C 
+ATOM      2  CAZ 4MR A 501      24.984   8.999  49.517  0.00  0.00    +0.000 C 
+ATOM      3  OAS 4MR A 501      23.803   8.909  49.849  0.00  0.00    +0.000 OA
+ATOM      4  NBA 4MR A 501      25.299   9.097  48.156  0.00  0.00    +0.000 NA
+ATOM      5  CBF 4MR A 501      26.602   9.362  47.720  0.00  0.00    +0.000 C 
+ATOM      6  OBG 4MR A 501      26.870   9.271  46.523  0.00  0.00    +0.000 OA
+ATOM      7  NBE 4MR A 501      27.626   9.595  48.646  0.00  0.00    +0.000 NA
+ATOM      8  CBD 4MR A 501      27.391   9.588  50.027  0.00  0.00    +0.000 C 
+ATOM      9  OBH 4MR A 501      28.333   9.807  50.788  0.00  0.00    +0.000 OA
+ENDROOT
+BRANCH   1  10
+ATOM     10  NAX 4MR A 501      25.573  10.035  51.661  0.00  0.00    +0.000 NA
+ATOM     11  CAR 4MR A 501      24.896  11.225  51.118  0.00  0.00    +0.000 C 
+ATOM     12  CAQ 4MR A 501      24.561  12.192  52.256  0.00  0.00    +0.000 C 
+ATOM     13  CBC 4MR A 501      24.727   9.354  52.657  0.00  0.00    +0.000 C 
+ATOM     14  CBB 4MR A 501      24.383  10.319  53.796  0.00  0.00    +0.000 C 
+ATOM     15  NAW 4MR A 501      23.702  11.491  53.223  0.00  0.00    +0.000 N 
+ATOM     16  CAV 4MR A 501      23.103  12.387  54.224  0.00  0.00    +0.000 A 
+ATOM     17  NAU 4MR A 501      22.681  13.602  53.841  0.00  0.00    +0.000 NA
+ATOM     18  CAT 4MR A 501      21.862  14.318  54.592  0.00  0.00    +0.000 A 
+ATOM     19  CAN 4MR A 501      21.428  13.816  55.814  0.00  0.00    +0.000 A 
+ATOM     20  CAO 4MR A 501      21.895  12.564  56.200  0.00  0.00    +0.000 A 
+ATOM     21  NAP 4MR A 501      22.712  11.891  55.409  0.00  0.00    +0.000 NA
+ENDBRANCH   1  10
+BRANCH   1  27
+ATOM     22  CAJ 4MR A 501      26.451   4.929  51.538  0.00  0.00    +0.000 A 
+ATOM     23  CAM 4MR A 501      27.583   5.712  51.338  0.00  0.00    +0.000 A 
+ATOM     24  CAL 4MR A 501      27.465   7.089  51.166  0.00  0.00    +0.000 A 
+ATOM     25  CAI 4MR A 501      25.200   5.542  51.573  0.00  0.00    +0.000 A 
+ATOM     26  CAH 4MR A 501      25.083   6.917  51.390  0.00  0.00    +0.000 A 
+ATOM     27  CAK 4MR A 501      26.214   7.701  51.171  0.00  0.00    +0.000 A 
+BRANCH  22  28
+ATOM     28  OAG 4MR A 501      26.629   3.612  51.839  0.00  0.00    +0.000 OA
+BRANCH  28  34
+ATOM     29  CAA 4MR A 501      24.402   2.717  51.750  0.00  0.00    +0.000 A 
+ATOM     30  CAB 4MR A 501      23.445   1.863  52.288  0.00  0.00    +0.000 A 
+ATOM     31  CAC 4MR A 501      23.683   1.222  53.501  0.00  0.00    +0.000 A 
+ATOM     32  CAF 4MR A 501      24.875   1.448  54.182  0.00  0.00    +0.000 A 
+ATOM     33  CAE 4MR A 501      25.825   2.316  53.650  0.00  0.00    +0.000 A 
+ATOM     34  CAD 4MR A 501      25.596   2.948  52.430  0.00  0.00    +0.000 A 
+ENDBRANCH  28  34
+ENDBRANCH  22  28
+ENDBRANCH   1  27
+TORSDOF 4
+ENDMDL
+MODEL 7
+REMARK VINA RESULT:     -11.1      3.779      9.398
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/2OVX_4MR.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAD_6  and  OAG_7
+REMARK    2  A    between atoms: OAG_7  and  CAJ_8
+REMARK    3  A    between atoms: CAK_13  and  CAY_14
+REMARK    4  A    between atoms: CAY_14  and  NAX_23
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAY 4MR A 501      25.155  10.723  49.700  0.00  0.00    +0.000 C 
+ATOM      2  CAZ 4MR A 501      23.662  10.922  49.417  0.00  0.00    +0.000 C 
+ATOM      3  OAS 4MR A 501      23.104  10.170  48.620  0.00  0.00    +0.000 OA
+ATOM      4  NBA 4MR A 501      22.892  11.860  50.115  0.00  0.00    +0.000 NA
+ATOM      5  CBF 4MR A 501      23.433  12.633  51.149  0.00  0.00    +0.000 C 
+ATOM      6  OBG 4MR A 501      22.776  13.560  51.619  0.00  0.00    +0.000 OA
+ATOM      7  NBE 4MR A 501      24.761  12.446  51.554  0.00  0.00    +0.000 NA
+ATOM      8  CBD 4MR A 501      25.587  11.481  50.961  0.00  0.00    +0.000 C 
+ATOM      9  OBH 4MR A 501      26.742  11.362  51.368  0.00  0.00    +0.000 OA
+ENDROOT
+BRANCH   1  10
+ATOM     10  NAX 4MR A 501      25.441   9.281  49.816  0.00  0.00    +0.000 NA
+ATOM     11  CAR 4MR A 501      26.541   8.989  50.752  0.00  0.00    +0.000 C 
+ATOM     12  CAQ 4MR A 501      26.874   7.496  50.706  0.00  0.00    +0.000 C 
+ATOM     13  CBC 4MR A 501      24.240   8.495  50.150  0.00  0.00    +0.000 C 
+ATOM     14  CBB 4MR A 501      24.569   6.999  50.113  0.00  0.00    +0.000 C 
+ATOM     15  NAW 4MR A 501      25.664   6.739  51.061  0.00  0.00    +0.000 N 
+ATOM     16  CAV 4MR A 501      25.921   5.312  51.306  0.00  0.00    +0.000 A 
+ATOM     17  NAU 4MR A 501      27.044   4.953  51.947  0.00  0.00    +0.000 NA
+ATOM     18  CAT 4MR A 501      27.185   3.749  52.473  0.00  0.00    +0.000 A 
+ATOM     19  CAN 4MR A 501      26.157   2.820  52.358  0.00  0.00    +0.000 A 
+ATOM     20  CAO 4MR A 501      25.011   3.206  51.670  0.00  0.00    +0.000 A 
+ATOM     21  NAP 4MR A 501      24.924   4.425  51.165  0.00  0.00    +0.000 NA
+ENDBRANCH   1  10
+BRANCH   1  27
+ATOM     22  CAJ 4MR A 501      26.732  12.030  45.907  0.00  0.00    +0.000 A 
+ATOM     23  CAM 4MR A 501      25.789  12.803  46.578  0.00  0.00    +0.000 A 
+ATOM     24  CAL 4MR A 501      25.373  12.452  47.859  0.00  0.00    +0.000 A 
+ATOM     25  CAI 4MR A 501      27.260  10.907  46.541  0.00  0.00    +0.000 A 
+ATOM     26  CAH 4MR A 501      26.835  10.551  47.818  0.00  0.00    +0.000 A 
+ATOM     27  CAK 4MR A 501      25.878  11.314  48.483  0.00  0.00    +0.000 A 
+BRANCH  22  28
+ATOM     28  OAG 4MR A 501      27.207  12.490  44.717  0.00  0.00    +0.000 OA
+BRANCH  28  34
+ATOM     29  CAA 4MR A 501      28.665  14.333  45.211  0.00  0.00    +0.000 A 
+ATOM     30  CAB 4MR A 501      29.069  15.634  44.930  0.00  0.00    +0.000 A 
+ATOM     31  CAC 4MR A 501      28.334  16.418  44.044  0.00  0.00    +0.000 A 
+ATOM     32  CAF 4MR A 501      27.185  15.903  43.452  0.00  0.00    +0.000 A 
+ATOM     33  CAE 4MR A 501      26.774  14.606  43.747  0.00  0.00    +0.000 A 
+ATOM     34  CAD 4MR A 501      27.514  13.814  44.621  0.00  0.00    +0.000 A 
+ENDBRANCH  28  34
+ENDBRANCH  22  28
+ENDBRANCH   1  27
+TORSDOF 4
+ENDMDL
+MODEL 8
+REMARK VINA RESULT:     -10.8      3.394      8.817
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/2OVX_4MR.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAD_6  and  OAG_7
+REMARK    2  A    between atoms: OAG_7  and  CAJ_8
+REMARK    3  A    between atoms: CAK_13  and  CAY_14
+REMARK    4  A    between atoms: CAY_14  and  NAX_23
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAY 4MR A 501      25.923   9.910  49.728  0.00  0.00    +0.000 C 
+ATOM      2  CAZ 4MR A 501      24.483  10.412  49.578  0.00  0.00    +0.000 C 
+ATOM      3  OAS 4MR A 501      23.692   9.752  48.904  0.00  0.00    +0.000 OA
+ATOM      4  NBA 4MR A 501      24.012  11.534  50.268  0.00  0.00    +0.000 NA
+ATOM      5  CBF 4MR A 501      24.817  12.231  51.176  0.00  0.00    +0.000 C 
+ATOM      6  OBG 4MR A 501      24.426  13.306  51.631  0.00  0.00    +0.000 OA
+ATOM      7  NBE 4MR A 501      26.113  11.784  51.463  0.00  0.00    +0.000 NA
+ATOM      8  CBD 4MR A 501      26.645  10.630  50.874  0.00  0.00    +0.000 C 
+ATOM      9  OBH 4MR A 501      27.788  10.286  51.174  0.00  0.00    +0.000 OA
+ENDROOT
+BRANCH   1  10
+ATOM     10  NAX 4MR A 501      25.912   8.449  49.934  0.00  0.00    +0.000 NA
+ATOM     11  CAR 4MR A 501      27.043   7.978  50.751  0.00  0.00    +0.000 C 
+ATOM     12  CAQ 4MR A 501      27.044   6.448  50.797  0.00  0.00    +0.000 C 
+ATOM     13  CBC 4MR A 501      24.629   7.969  50.479  0.00  0.00    +0.000 C 
+ATOM     14  CBB 4MR A 501      24.626   6.438  50.533  0.00  0.00    +0.000 C 
+ATOM     15  NAW 4MR A 501      25.761   5.999  51.361  0.00  0.00    +0.000 N 
+ATOM     16  CAV 4MR A 501      25.743   4.567  51.696  0.00  0.00    +0.000 A 
+ATOM     17  NAU 4MR A 501      26.842   4.008  52.225  0.00  0.00    +0.000 NA
+ATOM     18  CAT 4MR A 501      26.796   2.836  52.834  0.00  0.00    +0.000 A 
+ATOM     19  CAN 4MR A 501      25.589   2.151  52.926  0.00  0.00    +0.000 A 
+ATOM     20  CAO 4MR A 501      24.468   2.740  52.351  0.00  0.00    +0.000 A 
+ATOM     21  NAP 4MR A 501      24.571   3.915  51.755  0.00  0.00    +0.000 NA
+ENDBRANCH   1  10
+BRANCH   1  27
+ATOM     22  CAJ 4MR A 501      27.261  10.702  45.708  0.00  0.00    +0.000 A 
+ATOM     23  CAM 4MR A 501      26.730  11.728  46.485  0.00  0.00    +0.000 A 
+ATOM     24  CAL 4MR A 501      26.416  11.507  47.823  0.00  0.00    +0.000 A 
+ATOM     25  CAI 4MR A 501      27.483   9.457  46.292  0.00  0.00    +0.000 A 
+ATOM     26  CAH 4MR A 501      27.159   9.235  47.628  0.00  0.00    +0.000 A 
+ATOM     27  CAK 4MR A 501      26.610  10.255  48.401  0.00  0.00    +0.000 A 
+BRANCH  22  28
+ATOM     28  OAG 4MR A 501      27.679  11.005  44.447  0.00  0.00    +0.000 OA
+BRANCH  28  34
+ATOM     29  CAA 4MR A 501      25.778  10.955  42.981  0.00  0.00    +0.000 A 
+ATOM     30  CAB 4MR A 501      24.776  11.653  42.315  0.00  0.00    +0.000 A 
+ATOM     31  CAC 4MR A 501      24.786  13.045  42.299  0.00  0.00    +0.000 A 
+ATOM     32  CAF 4MR A 501      25.808  13.738  42.940  0.00  0.00    +0.000 A 
+ATOM     33  CAE 4MR A 501      26.818  13.038  43.593  0.00  0.00    +0.000 A 
+ATOM     34  CAD 4MR A 501      26.804  11.646  43.622  0.00  0.00    +0.000 A 
+ENDBRANCH  28  34
+ENDBRANCH  22  28
+ENDBRANCH   1  27
+TORSDOF 4
+ENDMDL
+MODEL 9
+REMARK VINA RESULT:     -10.5      2.889      7.289
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/2OVX_4MR.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAD_6  and  OAG_7
+REMARK    2  A    between atoms: OAG_7  and  CAJ_8
+REMARK    3  A    between atoms: CAK_13  and  CAY_14
+REMARK    4  A    between atoms: CAY_14  and  NAX_23
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAY 4MR A 501      25.902   9.297  49.819  0.00  0.00    +0.000 C 
+ATOM      2  CAZ 4MR A 501      27.266   9.358  50.514  0.00  0.00    +0.000 C 
+ATOM      3  OAS 4MR A 501      27.773  10.458  50.731  0.00  0.00    +0.000 OA
+ATOM      4  NBA 4MR A 501      27.902   8.212  51.004  0.00  0.00    +0.000 NA
+ATOM      5  CBF 4MR A 501      27.302   6.950  50.933  0.00  0.00    +0.000 C 
+ATOM      6  OBG 4MR A 501      27.959   5.950  51.217  0.00  0.00    +0.000 OA
+ATOM      7  NBE 4MR A 501      26.008   6.808  50.414  0.00  0.00    +0.000 NA
+ATOM      8  CBD 4MR A 501      25.267   7.909  49.964  0.00  0.00    +0.000 C 
+ATOM      9  OBH 4MR A 501      24.133   7.718  49.526  0.00  0.00    +0.000 OA
+ENDROOT
+BRANCH   1  10
+ATOM     10  NAX 4MR A 501      25.026  10.349  50.370  0.00  0.00    +0.000 NA
+ATOM     11  CAR 4MR A 501      24.641  10.096  51.769  0.00  0.00    +0.000 C 
+ATOM     12  CAQ 4MR A 501      23.621  11.146  52.220  0.00  0.00    +0.000 C 
+ATOM     13  CBC 4MR A 501      25.600  11.697  50.214  0.00  0.00    +0.000 C 
+ATOM     14  CBB 4MR A 501      24.588  12.751  50.670  0.00  0.00    +0.000 C 
+ATOM     15  NAW 4MR A 501      24.228  12.477  52.071  0.00  0.00    +0.000 N 
+ATOM     16  CAV 4MR A 501      23.448  13.546  52.712  0.00  0.00    +0.000 A 
+ATOM     17  NAU 4MR A 501      22.855  13.303  53.891  0.00  0.00    +0.000 NA
+ATOM     18  CAT 4MR A 501      22.420  14.285  54.661  0.00  0.00    +0.000 A 
+ATOM     19  CAN 4MR A 501      22.564  15.605  54.247  0.00  0.00    +0.000 A 
+ATOM     20  CAO 4MR A 501      23.162  15.832  53.012  0.00  0.00    +0.000 A 
+ATOM     21  NAP 4MR A 501      23.580  14.812  52.283  0.00  0.00    +0.000 NA
+ENDBRANCH   1  10
+BRANCH   1  27
+ATOM     22  CAJ 4MR A 501      27.005  10.639  45.874  0.00  0.00    +0.000 A 
+ATOM     23  CAM 4MR A 501      27.848   9.792  46.587  0.00  0.00    +0.000 A 
+ATOM     24  CAL 4MR A 501      27.440   9.254  47.804  0.00  0.00    +0.000 A 
+ATOM     25  CAI 4MR A 501      25.744  10.932  46.391  0.00  0.00    +0.000 A 
+ATOM     26  CAH 4MR A 501      25.342  10.401  47.613  0.00  0.00    +0.000 A 
+ATOM     27  CAK 4MR A 501      26.192   9.568  48.337  0.00  0.00    +0.000 A 
+BRANCH  22  28
+ATOM     28  OAG 4MR A 501      27.393  11.028  44.628  0.00  0.00    +0.000 OA
+BRANCH  28  34
+ATOM     29  CAA 4MR A 501      26.461  12.988  43.601  0.00  0.00    +0.000 A 
+ATOM     30  CAB 4MR A 501      26.417  14.376  43.518  0.00  0.00    +0.000 A 
+ATOM     31  CAC 4MR A 501      27.347  15.148  44.210  0.00  0.00    +0.000 A 
+ATOM     32  CAF 4MR A 501      28.331  14.527  44.973  0.00  0.00    +0.000 A 
+ATOM     33  CAE 4MR A 501      28.383  13.138  45.043  0.00  0.00    +0.000 A 
+ATOM     34  CAD 4MR A 501      27.445  12.364  44.364  0.00  0.00    +0.000 A 
+ENDBRANCH  28  34
+ENDBRANCH  22  28
+ENDBRANCH   1  27
+TORSDOF 4
+ENDMDL

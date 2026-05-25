@@ -1,0 +1,46 @@
+# Vina-GPU 2.1 PRO — example config for Singularity SIF workflow
+#
+# Usage:
+#   singularity run --nv -B /path/to/work:/work autodock-vina-gpu.sif --config /work/config.txt
+#   singularity run --nv -B /path/to/work:/work autodock-vina-gpu.sif --config /work/config.txt --gpu_id all
+#
+# All paths must use the bind destination (/work/).
+# Put receptor, ligands/, output/, ocl_cache/ and this config under the same host directory.
+#
+# Directory layout expected:
+#   /path/to/work/
+#     config.txt            <- this file
+#     receptor.pdbqt        <- prepared receptor (metal retained, co-ligand removed)
+#     ligands/              <- one .pdbqt per ligand
+#     output/               <- created automatically if missing
+#     ocl_cache/            <- kernel cache; compiled on first run (~30 s), reused after
+
+# ── Input ─────────────────────────────────────────────────────────────────────
+receptor           = /work/receptor.pdbqt
+ligand_directory   = /work/ligands
+output_directory   = /work/output
+
+# ── OpenCL kernel cache ───────────────────────────────────────────────────────
+# Must point to a writable directory bound into the container.
+# First run compiles Kernel1_Opt.bin + Kernel2_Opt.bin here (~30 s).
+# Subsequent runs load the cache instantly.
+opencl_binary_path = /work/ocl_cache
+
+# ── Binding site (Angstroms) ──────────────────────────────────────────────────
+# Replace with the centre and dimensions of your binding pocket.
+# Use a PDB viewer (PyMOL, UCSF Chimera) to determine these values.
+center_x = 10.0
+center_y = 20.0
+center_z =  5.0
+size_x   = 25
+size_y   = 25
+size_z   = 25
+
+# ── GPU compute settings ──────────────────────────────────────────────────────
+thread = 8000    # GPU work-items; 8000 recommended for RTX / A-series
+
+# ── Search depth ──────────────────────────────────────────────────────────────
+# 4  → 7.5 mol/s,  median 18/20 (< 2 Å) — virtual screening (recommended)
+# 8  → 4.3 mol/s,  ~19/20               — balanced
+# 32 → 1.3 mol/s,  20/20 confirmed      — validation / publication
+search_depth = 4

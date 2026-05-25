@@ -1,0 +1,558 @@
+MODEL 1
+REMARK VINA RESULT:      -8.3      0.000      0.000
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1MMQ_RRS.pdb
+REMARK  6 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  C2_5
+REMARK    2  A    between atoms: C2_5  and  C3_6
+REMARK    3  A    between atoms: C3_6  and  C4_7
+REMARK    4  A    between atoms: C3_6  and  C13_21
+REMARK    5  A    between atoms: N2_9  and  C5_10
+REMARK    6  A    between atoms: C13_21  and  C14_22
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C5  RRS A 269      49.463 -36.107  46.732  0.00  0.00    +0.000 C 
+ATOM      2  C6  RRS A 269      49.804 -34.663  46.398  0.00  0.00    +0.000 C 
+ATOM      3  O4  RRS A 269      48.955 -33.777  46.510  0.00  0.00    +0.000 OA
+ATOM      4  N3  RRS A 269      51.011 -34.428  45.908  0.00  0.00    +0.000 NA
+ATOM      5  C7  RRS A 269      51.463 -33.086  45.487  0.00  0.00    +0.000 C 
+ATOM      6  C8  RRS A 269      52.596 -33.264  44.449  0.00  0.00    +0.000 C 
+ATOM      7  C9  RRS A 269      52.189 -34.083  43.205  0.00  0.00    +0.000 C 
+ATOM      8  C10 RRS A 269      51.279 -33.340  42.203  0.00  0.00    +0.000 C 
+ATOM      9  C11 RRS A 269      50.856 -34.189  40.979  0.00  0.00    +0.000 C 
+ATOM     10  C12 RRS A 269      49.503 -34.942  41.055  0.00  0.00    +0.000 C 
+ATOM     11  N4  RRS A 269      49.422 -35.865  42.201  0.00  0.00    +0.000 N 
+ATOM     12  C17 RRS A 269      48.465 -36.736  45.703  0.00  0.00    +0.000 C 
+ATOM     13  C18 RRS A 269      48.975 -36.655  44.311  0.00  0.00    +0.000 A 
+ATOM     14  C19 RRS A 269      48.775 -35.605  43.380  0.00  0.00    +0.000 A 
+ATOM     15  C20 RRS A 269      49.789 -37.591  43.642  0.00  0.00    +0.000 A 
+ATOM     16  C21 RRS A 269      50.047 -37.070  42.332  0.00  0.00    +0.000 A 
+ATOM     17  C22 RRS A 269      50.320 -38.825  44.041  0.00  0.00    +0.000 A 
+ATOM     18  C23 RRS A 269      50.835 -37.805  41.443  0.00  0.00    +0.000 A 
+ATOM     19  C24 RRS A 269      51.109 -39.550  43.140  0.00  0.00    +0.000 A 
+ATOM     20  C25 RRS A 269      51.359 -39.040  41.854  0.00  0.00    +0.000 A 
+ENDROOT
+BRANCH   1  23
+ATOM     21  C4  RRS A 269      49.329 -37.273  48.851  0.00  0.00    +0.000 C 
+ATOM     22  O3  RRS A 269      50.319 -37.961  48.587  0.00  0.00    +0.000 OA
+ATOM     23  N2  RRS A 269      48.864 -36.344  48.040  0.00  0.00    +0.000 NA
+BRANCH  21  24
+ATOM     24  C3  RRS A 269      48.554 -37.445  50.138  0.00  0.00    +0.000 C 
+BRANCH  24  25
+ATOM     25  C2  RRS A 269      49.104 -38.768  50.730  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C1  RRS A 269      48.052 -39.838  50.642  0.00  0.00    +0.000 C 
+ATOM     27  O2  RRS A 269      46.935 -39.254  50.626  0.00  0.00    +0.000 OA
+ATOM     28  N1  RRS A 269      48.439 -41.097  50.713  0.00  0.00    +0.000 NA
+ATOM     29  O1  RRS A 269      47.390 -42.012  50.756  0.00  0.00    +0.000 OA
+ENDBRANCH  25  26
+ENDBRANCH  24  25
+BRANCH  24  30
+ATOM     30  C13 RRS A 269      48.705 -36.208  51.055  0.00  0.00    +0.000 C 
+BRANCH  30  31
+ATOM     31  C14 RRS A 269      47.691 -36.155  52.228  0.00  0.00    +0.000 C 
+ATOM     32  C15 RRS A 269      48.060 -35.077  53.264  0.00  0.00    +0.000 C 
+ATOM     33  C16 RRS A 269      46.313 -35.827  51.640  0.00  0.00    +0.000 C 
+ENDBRANCH  30  31
+ENDBRANCH  24  30
+ENDBRANCH  21  24
+ENDBRANCH   1  23
+TORSDOF 6
+ENDMDL
+MODEL 2
+REMARK VINA RESULT:      -7.8      1.027      1.128
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1MMQ_RRS.pdb
+REMARK  6 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  C2_5
+REMARK    2  A    between atoms: C2_5  and  C3_6
+REMARK    3  A    between atoms: C3_6  and  C4_7
+REMARK    4  A    between atoms: C3_6  and  C13_21
+REMARK    5  A    between atoms: N2_9  and  C5_10
+REMARK    6  A    between atoms: C13_21  and  C14_22
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C5  RRS A 269      49.807 -35.536  46.668  0.00  0.00    +0.000 C 
+ATOM      2  C6  RRS A 269      50.337 -34.115  46.570  0.00  0.00    +0.000 C 
+ATOM      3  O4  RRS A 269      49.614 -33.157  46.846  0.00  0.00    +0.000 OA
+ATOM      4  N3  RRS A 269      51.564 -33.962  46.097  0.00  0.00    +0.000 NA
+ATOM      5  C7  RRS A 269      52.190 -32.639  45.894  0.00  0.00    +0.000 C 
+ATOM      6  C8  RRS A 269      53.289 -32.788  44.815  0.00  0.00    +0.000 C 
+ATOM      7  C9  RRS A 269      52.775 -33.327  43.462  0.00  0.00    +0.000 C 
+ATOM      8  C10 RRS A 269      51.971 -32.314  42.618  0.00  0.00    +0.000 C 
+ATOM      9  C11 RRS A 269      51.438 -32.884  41.281  0.00  0.00    +0.000 C 
+ATOM     10  C12 RRS A 269      49.997 -33.455  41.263  0.00  0.00    +0.000 C 
+ATOM     11  N4  RRS A 269      49.794 -34.537  42.241  0.00  0.00    +0.000 N 
+ATOM     12  C17 RRS A 269      48.733 -35.848  45.572  0.00  0.00    +0.000 C 
+ATOM     13  C18 RRS A 269      49.248 -35.603  44.201  0.00  0.00    +0.000 A 
+ATOM     14  C19 RRS A 269      49.189 -34.396  43.462  0.00  0.00    +0.000 A 
+ATOM     15  C20 RRS A 269      49.929 -36.514  43.368  0.00  0.00    +0.000 A 
+ATOM     16  C21 RRS A 269      50.253 -35.819  42.156  0.00  0.00    +0.000 A 
+ATOM     17  C22 RRS A 269      50.292 -37.855  43.544  0.00  0.00    +0.000 A 
+ATOM     18  C23 RRS A 269      50.935 -36.491  41.140  0.00  0.00    +0.000 A 
+ATOM     19  C24 RRS A 269      50.977 -38.517  42.518  0.00  0.00    +0.000 A 
+ATOM     20  C25 RRS A 269      51.291 -37.836  41.329  0.00  0.00    +0.000 A 
+ENDROOT
+BRANCH   1  23
+ATOM     21  C4  RRS A 269      49.491 -37.033  48.546  0.00  0.00    +0.000 C 
+ATOM     22  O3  RRS A 269      50.352 -37.812  48.128  0.00  0.00    +0.000 OA
+ATOM     23  N2  RRS A 269      49.183 -35.908  47.931  0.00  0.00    +0.000 NA
+BRANCH  21  24
+ATOM     24  C3  RRS A 269      48.705 -37.309  49.808  0.00  0.00    +0.000 C 
+BRANCH  24  25
+ATOM     25  C2  RRS A 269      49.495 -38.450  50.498  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C1  RRS A 269      48.800 -39.762  50.267  0.00  0.00    +0.000 C 
+ATOM     27  O2  RRS A 269      49.598 -40.490  49.616  0.00  0.00    +0.000 OA
+ATOM     28  N1  RRS A 269      47.542 -39.874  50.644  0.00  0.00    +0.000 NA
+ATOM     29  O1  RRS A 269      46.941 -41.074  50.272  0.00  0.00    +0.000 OA
+ENDBRANCH  25  26
+ENDBRANCH  24  25
+BRANCH  24  30
+ATOM     30  C13 RRS A 269      48.534 -36.027  50.656  0.00  0.00    +0.000 C 
+BRANCH  30  31
+ATOM     31  C14 RRS A 269      47.609 -36.197  51.890  0.00  0.00    +0.000 C 
+ATOM     32  C15 RRS A 269      48.073 -35.340  53.084  0.00  0.00    +0.000 C 
+ATOM     33  C16 RRS A 269      46.198 -35.754  51.481  0.00  0.00    +0.000 C 
+ENDBRANCH  30  31
+ENDBRANCH  24  30
+ENDBRANCH  21  24
+ENDBRANCH   1  23
+TORSDOF 6
+ENDMDL
+MODEL 3
+REMARK VINA RESULT:      -7.5      0.838      1.090
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1MMQ_RRS.pdb
+REMARK  6 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  C2_5
+REMARK    2  A    between atoms: C2_5  and  C3_6
+REMARK    3  A    between atoms: C3_6  and  C4_7
+REMARK    4  A    between atoms: C3_6  and  C13_21
+REMARK    5  A    between atoms: N2_9  and  C5_10
+REMARK    6  A    between atoms: C13_21  and  C14_22
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C5  RRS A 269      49.292 -37.084  46.676  0.00  0.00    +0.000 C 
+ATOM      2  C6  RRS A 269      49.457 -35.575  46.596  0.00  0.00    +0.000 C 
+ATOM      3  O4  RRS A 269      48.501 -34.828  46.813  0.00  0.00    +0.000 OA
+ATOM      4  N3  RRS A 269      50.636 -35.118  46.203  0.00  0.00    +0.000 NA
+ATOM      5  C7  RRS A 269      50.925 -33.680  46.026  0.00  0.00    +0.000 C 
+ATOM      6  C8  RRS A 269      52.095 -33.545  45.023  0.00  0.00    +0.000 C 
+ATOM      7  C9  RRS A 269      51.823 -34.188  43.646  0.00  0.00    +0.000 C 
+ATOM      8  C10 RRS A 269      50.850 -33.404  42.739  0.00  0.00    +0.000 C 
+ATOM      9  C11 RRS A 269      50.565 -34.082  41.376  0.00  0.00    +0.000 C 
+ATOM     10  C12 RRS A 269      49.316 -34.993  41.270  0.00  0.00    +0.000 C 
+ATOM     11  N4  RRS A 269      49.325 -36.097  42.246  0.00  0.00    +0.000 N 
+ATOM     12  C17 RRS A 269      48.405 -37.648  45.515  0.00  0.00    +0.000 C 
+ATOM     13  C18 RRS A 269      48.932 -37.275  44.178  0.00  0.00    +0.000 A 
+ATOM     14  C19 RRS A 269      48.624 -36.117  43.423  0.00  0.00    +0.000 A 
+ATOM     15  C20 RRS A 269      49.873 -37.983  43.402  0.00  0.00    +0.000 A 
+ATOM     16  C21 RRS A 269      50.093 -37.224  42.207  0.00  0.00    +0.000 A 
+ATOM     17  C22 RRS A 269      50.545 -39.193  43.618  0.00  0.00    +0.000 A 
+ATOM     18  C23 RRS A 269      50.987 -37.700  41.245  0.00  0.00    +0.000 A 
+ATOM     19  C24 RRS A 269      51.440 -39.658  42.646  0.00  0.00    +0.000 A 
+ATOM     20  C25 RRS A 269      51.653 -38.915  41.472  0.00  0.00    +0.000 A 
+ENDROOT
+BRANCH   1  23
+ATOM     21  C4  RRS A 269      49.444 -38.030  48.900  0.00  0.00    +0.000 C 
+ATOM     22  O3  RRS A 269      50.677 -37.969  48.891  0.00  0.00    +0.000 OA
+ATOM     23  N2  RRS A 269      48.698 -37.606  47.900  0.00  0.00    +0.000 NA
+BRANCH  21  24
+ATOM     24  C3  RRS A 269      48.680 -38.609  50.069  0.00  0.00    +0.000 C 
+BRANCH  24  25
+ATOM     25  C2  RRS A 269      49.224 -40.055  50.191  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C1  RRS A 269      48.105 -40.988  50.561  0.00  0.00    +0.000 C 
+ATOM     27  O2  RRS A 269      47.027 -40.401  50.274  0.00  0.00    +0.000 OA
+ATOM     28  N1  RRS A 269      48.412 -42.112  51.179  0.00  0.00    +0.000 NA
+ATOM     29  O1  RRS A 269      47.308 -42.849  51.600  0.00  0.00    +0.000 OA
+ENDBRANCH  25  26
+ENDBRANCH  24  25
+BRANCH  24  30
+ATOM     30  C13 RRS A 269      48.847 -37.740  51.337  0.00  0.00    +0.000 C 
+BRANCH  30  31
+ATOM     31  C14 RRS A 269      48.317 -36.289  51.192  0.00  0.00    +0.000 C 
+ATOM     32  C15 RRS A 269      46.781 -36.221  51.288  0.00  0.00    +0.000 C 
+ATOM     33  C16 RRS A 269      48.922 -35.454  52.328  0.00  0.00    +0.000 C 
+ENDBRANCH  30  31
+ENDBRANCH  24  30
+ENDBRANCH  21  24
+ENDBRANCH   1  23
+TORSDOF 6
+ENDMDL
+MODEL 4
+REMARK VINA RESULT:      -7.5      4.504      8.937
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1MMQ_RRS.pdb
+REMARK  6 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  C2_5
+REMARK    2  A    between atoms: C2_5  and  C3_6
+REMARK    3  A    between atoms: C3_6  and  C4_7
+REMARK    4  A    between atoms: C3_6  and  C13_21
+REMARK    5  A    between atoms: N2_9  and  C5_10
+REMARK    6  A    between atoms: C13_21  and  C14_22
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C5  RRS A 269      48.240 -41.455  49.147  0.00  0.00    +0.000 C 
+ATOM      2  C6  RRS A 269      48.617 -42.524  50.160  0.00  0.00    +0.000 C 
+ATOM      3  O4  RRS A 269      49.797 -42.831  50.335  0.00  0.00    +0.000 OA
+ATOM      4  N3  RRS A 269      47.625 -43.155  50.767  0.00  0.00    +0.000 NA
+ATOM      5  C7  RRS A 269      47.838 -44.252  51.733  0.00  0.00    +0.000 C 
+ATOM      6  C8  RRS A 269      46.560 -45.124  51.760  0.00  0.00    +0.000 C 
+ATOM      7  C9  RRS A 269      46.171 -45.715  50.388  0.00  0.00    +0.000 C 
+ATOM      8  C10 RRS A 269      47.055 -46.886  49.906  0.00  0.00    +0.000 C 
+ATOM      9  C11 RRS A 269      46.669 -47.443  48.514  0.00  0.00    +0.000 C 
+ATOM     10  C12 RRS A 269      47.415 -46.879  47.278  0.00  0.00    +0.000 C 
+ATOM     11  N4  RRS A 269      47.288 -45.417  47.147  0.00  0.00    +0.000 N 
+ATOM     12  C17 RRS A 269      48.486 -41.920  47.672  0.00  0.00    +0.000 C 
+ATOM     13  C18 RRS A 269      47.767 -43.180  47.356  0.00  0.00    +0.000 A 
+ATOM     14  C19 RRS A 269      48.243 -44.505  47.516  0.00  0.00    +0.000 A 
+ATOM     15  C20 RRS A 269      46.454 -43.316  46.864  0.00  0.00    +0.000 A 
+ATOM     16  C21 RRS A 269      46.188 -44.719  46.743  0.00  0.00    +0.000 A 
+ATOM     17  C22 RRS A 269      45.482 -42.369  46.514  0.00  0.00    +0.000 A 
+ATOM     18  C23 RRS A 269      44.946 -45.145  46.269  0.00  0.00    +0.000 A 
+ATOM     19  C24 RRS A 269      44.240 -42.811  46.042  0.00  0.00    +0.000 A 
+ATOM     20  C25 RRS A 269      43.981 -44.187  45.921  0.00  0.00    +0.000 A 
+ENDROOT
+BRANCH   1  23
+ATOM     21  C4  RRS A 269      48.577 -39.286  50.171  0.00  0.00    +0.000 C 
+ATOM     22  O3  RRS A 269      47.685 -39.489  51.000  0.00  0.00    +0.000 OA
+ATOM     23  N2  RRS A 269      48.930 -40.178  49.266  0.00  0.00    +0.000 NA
+BRANCH  21  24
+ATOM     24  C3  RRS A 269      49.342 -37.983  50.119  0.00  0.00    +0.000 C 
+BRANCH  24  25
+ATOM     25  C2  RRS A 269      48.579 -37.144  49.064  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C1  RRS A 269      49.539 -36.644  48.021  0.00  0.00    +0.000 C 
+ATOM     27  O2  RRS A 269      50.594 -37.325  48.138  0.00  0.00    +0.000 OA
+ATOM     28  N1  RRS A 269      49.189 -35.593  47.307  0.00  0.00    +0.000 NA
+ATOM     29  O1  RRS A 269      50.190 -35.121  46.461  0.00  0.00    +0.000 OA
+ENDBRANCH  25  26
+ENDBRANCH  24  25
+BRANCH  24  30
+ATOM     30  C13 RRS A 269      49.444 -37.335  51.520  0.00  0.00    +0.000 C 
+BRANCH  30  31
+ATOM     31  C14 RRS A 269      48.742 -35.957  51.638  0.00  0.00    +0.000 C 
+ATOM     32  C15 RRS A 269      47.290 -36.088  52.136  0.00  0.00    +0.000 C 
+ATOM     33  C16 RRS A 269      49.536 -35.112  52.642  0.00  0.00    +0.000 C 
+ENDBRANCH  30  31
+ENDBRANCH  24  30
+ENDBRANCH  21  24
+ENDBRANCH   1  23
+TORSDOF 6
+ENDMDL
+MODEL 5
+REMARK VINA RESULT:      -7.4      1.595      2.685
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1MMQ_RRS.pdb
+REMARK  6 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  C2_5
+REMARK    2  A    between atoms: C2_5  and  C3_6
+REMARK    3  A    between atoms: C3_6  and  C4_7
+REMARK    4  A    between atoms: C3_6  and  C13_21
+REMARK    5  A    between atoms: N2_9  and  C5_10
+REMARK    6  A    between atoms: C13_21  and  C14_22
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C5  RRS A 269      49.482 -36.587  46.973  0.00  0.00    +0.000 C 
+ATOM      2  C6  RRS A 269      49.722 -35.125  46.636  0.00  0.00    +0.000 C 
+ATOM      3  O4  RRS A 269      48.821 -34.295  46.768  0.00  0.00    +0.000 OA
+ATOM      4  N3  RRS A 269      50.900 -34.811  46.120  0.00  0.00    +0.000 NA
+ATOM      5  C7  RRS A 269      51.256 -33.443  45.693  0.00  0.00    +0.000 C 
+ATOM      6  C8  RRS A 269      52.375 -33.545  44.631  0.00  0.00    +0.000 C 
+ATOM      7  C9  RRS A 269      51.995 -34.387  43.393  0.00  0.00    +0.000 C 
+ATOM      8  C10 RRS A 269      51.018 -33.703  42.413  0.00  0.00    +0.000 C 
+ATOM      9  C11 RRS A 269      50.624 -34.576  41.196  0.00  0.00    +0.000 C 
+ATOM     10  C12 RRS A 269      49.324 -35.414  41.299  0.00  0.00    +0.000 C 
+ATOM     11  N4  RRS A 269      49.327 -36.342  42.444  0.00  0.00    +0.000 N 
+ATOM     12  C17 RRS A 269      48.504 -37.278  45.963  0.00  0.00    +0.000 C 
+ATOM     13  C18 RRS A 269      48.978 -37.162  44.561  0.00  0.00    +0.000 A 
+ATOM     14  C19 RRS A 269      48.691 -36.127  43.638  0.00  0.00    +0.000 A 
+ATOM     15  C20 RRS A 269      49.836 -38.044  43.872  0.00  0.00    +0.000 A 
+ATOM     16  C21 RRS A 269      50.031 -37.505  42.558  0.00  0.00    +0.000 A 
+ATOM     17  C22 RRS A 269      50.454 -39.241  44.255  0.00  0.00    +0.000 A 
+ATOM     18  C23 RRS A 269      50.845 -38.185  41.650  0.00  0.00    +0.000 A 
+ATOM     19  C24 RRS A 269      51.269 -39.912  43.336  0.00  0.00    +0.000 A 
+ATOM     20  C25 RRS A 269      51.457 -39.385  42.046  0.00  0.00    +0.000 A 
+ENDROOT
+BRANCH   1  23
+ATOM     21  C4  RRS A 269      49.567 -37.623  49.161  0.00  0.00    +0.000 C 
+ATOM     22  O3  RRS A 269      50.684 -38.101  48.941  0.00  0.00    +0.000 OA
+ATOM     23  N2  RRS A 269      48.928 -36.865  48.292  0.00  0.00    +0.000 NA
+BRANCH  21  24
+ATOM     24  C3  RRS A 269      48.828 -37.875  50.456  0.00  0.00    +0.000 C 
+BRANCH  24  25
+ATOM     25  C2  RRS A 269      47.506 -37.084  50.291  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C1  RRS A 269      47.203 -36.333  51.556  0.00  0.00    +0.000 C 
+ATOM     27  O2  RRS A 269      46.088 -35.767  51.388  0.00  0.00    +0.000 OA
+ATOM     28  N1  RRS A 269      48.127 -36.298  52.496  0.00  0.00    +0.000 NA
+ATOM     29  O1  RRS A 269      47.813 -35.472  53.572  0.00  0.00    +0.000 OA
+ENDBRANCH  25  26
+ENDBRANCH  24  25
+BRANCH  24  30
+ATOM     30  C13 RRS A 269      48.655 -39.390  50.718  0.00  0.00    +0.000 C 
+BRANCH  30  31
+ATOM     31  C14 RRS A 269      48.390 -40.233  49.443  0.00  0.00    +0.000 C 
+ATOM     32  C15 RRS A 269      49.312 -41.464  49.361  0.00  0.00    +0.000 C 
+ATOM     33  C16 RRS A 269      46.932 -40.708  49.492  0.00  0.00    +0.000 C 
+ENDBRANCH  30  31
+ENDBRANCH  24  30
+ENDBRANCH  21  24
+ENDBRANCH   1  23
+TORSDOF 6
+ENDMDL
+MODEL 6
+REMARK VINA RESULT:      -7.3      4.335      8.825
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1MMQ_RRS.pdb
+REMARK  6 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  C2_5
+REMARK    2  A    between atoms: C2_5  and  C3_6
+REMARK    3  A    between atoms: C3_6  and  C4_7
+REMARK    4  A    between atoms: C3_6  and  C13_21
+REMARK    5  A    between atoms: N2_9  and  C5_10
+REMARK    6  A    between atoms: C13_21  and  C14_22
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C5  RRS A 269      49.009 -41.164  48.462  0.00  0.00    +0.000 C 
+ATOM      2  C6  RRS A 269      49.415 -41.900  47.195  0.00  0.00    +0.000 C 
+ATOM      3  O4  RRS A 269      48.907 -41.608  46.112  0.00  0.00    +0.000 OA
+ATOM      4  N3  RRS A 269      50.262 -42.908  47.330  0.00  0.00    +0.000 NA
+ATOM      5  C7  RRS A 269      50.703 -43.748  46.198  0.00  0.00    +0.000 C 
+ATOM      6  C8  RRS A 269      51.148 -45.119  46.760  0.00  0.00    +0.000 C 
+ATOM      7  C9  RRS A 269      50.051 -45.861  47.553  0.00  0.00    +0.000 C 
+ATOM      8  C10 RRS A 269      48.933 -46.487  46.692  0.00  0.00    +0.000 C 
+ATOM      9  C11 RRS A 269      47.825 -47.198  47.509  0.00  0.00    +0.000 C 
+ATOM     10  C12 RRS A 269      46.558 -46.383  47.870  0.00  0.00    +0.000 C 
+ATOM     11  N4  RRS A 269      46.860 -45.158  48.631  0.00  0.00    +0.000 N 
+ATOM     12  C17 RRS A 269      47.543 -41.497  48.899  0.00  0.00    +0.000 C 
+ATOM     13  C18 RRS A 269      47.332 -42.956  49.081  0.00  0.00    +0.000 A 
+ATOM     14  C19 RRS A 269      46.916 -43.894  48.105  0.00  0.00    +0.000 A 
+ATOM     15  C20 RRS A 269      47.535 -43.709  50.255  0.00  0.00    +0.000 A 
+ATOM     16  C21 RRS A 269      47.231 -45.074  49.942  0.00  0.00    +0.000 A 
+ATOM     17  C22 RRS A 269      47.948 -43.344  51.543  0.00  0.00    +0.000 A 
+ATOM     18  C23 RRS A 269      47.345 -46.050  50.934  0.00  0.00    +0.000 A 
+ATOM     19  C24 RRS A 269      48.060 -44.333  52.529  0.00  0.00    +0.000 A 
+ATOM     20  C25 RRS A 269      47.758 -45.671  52.221  0.00  0.00    +0.000 A 
+ENDROOT
+BRANCH   1  23
+ATOM     21  C4  RRS A 269      49.893 -39.031  49.192  0.00  0.00    +0.000 C 
+ATOM     22  O3  RRS A 269      50.687 -39.573  49.966  0.00  0.00    +0.000 OA
+ATOM     23  N2  RRS A 269      49.073 -39.709  48.415  0.00  0.00    +0.000 NA
+BRANCH  21  24
+ATOM     24  C3  RRS A 269      49.789 -37.527  49.076  0.00  0.00    +0.000 C 
+BRANCH  24  25
+ATOM     25  C2  RRS A 269      50.222 -37.235  47.617  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C1  RRS A 269      49.184 -36.384  46.941  0.00  0.00    +0.000 C 
+ATOM     27  O2  RRS A 269      48.343 -37.170  46.427  0.00  0.00    +0.000 OA
+ATOM     28  N1  RRS A 269      49.379 -35.080  46.900  0.00  0.00    +0.000 NA
+ATOM     29  O1  RRS A 269      48.439 -34.388  46.142  0.00  0.00    +0.000 OA
+ENDBRANCH  25  26
+ENDBRANCH  24  25
+BRANCH  24  30
+ATOM     30  C13 RRS A 269      48.372 -37.031  49.448  0.00  0.00    +0.000 C 
+BRANCH  30  31
+ATOM     31  C14 RRS A 269      48.313 -36.180  50.744  0.00  0.00    +0.000 C 
+ATOM     32  C15 RRS A 269      46.894 -36.132  51.342  0.00  0.00    +0.000 C 
+ATOM     33  C16 RRS A 269      49.261 -36.819  51.767  0.00  0.00    +0.000 C 
+ENDBRANCH  30  31
+ENDBRANCH  24  30
+ENDBRANCH  21  24
+ENDBRANCH   1  23
+TORSDOF 6
+ENDMDL
+MODEL 7
+REMARK VINA RESULT:      -7.3      1.830      3.928
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1MMQ_RRS.pdb
+REMARK  6 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  C2_5
+REMARK    2  A    between atoms: C2_5  and  C3_6
+REMARK    3  A    between atoms: C3_6  and  C4_7
+REMARK    4  A    between atoms: C3_6  and  C13_21
+REMARK    5  A    between atoms: N2_9  and  C5_10
+REMARK    6  A    between atoms: C13_21  and  C14_22
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C5  RRS A 269      48.961 -35.567  46.714  0.00  0.00    +0.000 C 
+ATOM      2  C6  RRS A 269      48.873 -36.481  45.502  0.00  0.00    +0.000 C 
+ATOM      3  O4  RRS A 269      49.472 -37.556  45.484  0.00  0.00    +0.000 OA
+ATOM      4  N3  RRS A 269      48.202 -36.027  44.455  0.00  0.00    +0.000 NA
+ATOM      5  C7  RRS A 269      48.079 -36.779  43.189  0.00  0.00    +0.000 C 
+ATOM      6  C8  RRS A 269      47.803 -35.766  42.053  0.00  0.00    +0.000 C 
+ATOM      7  C9  RRS A 269      48.887 -34.677  41.901  0.00  0.00    +0.000 C 
+ATOM      8  C10 RRS A 269      50.208 -35.156  41.261  0.00  0.00    +0.000 C 
+ATOM      9  C11 RRS A 269      51.294 -34.057  41.147  0.00  0.00    +0.000 C 
+ATOM     10  C12 RRS A 269      52.336 -33.951  42.289  0.00  0.00    +0.000 C 
+ATOM     11  N4  RRS A 269      51.721 -33.739  43.611  0.00  0.00    +0.000 N 
+ATOM     12  C17 RRS A 269      50.385 -34.939  46.884  0.00  0.00    +0.000 C 
+ATOM     13  C18 RRS A 269      50.816 -34.199  45.672  0.00  0.00    +0.000 A 
+ATOM     14  C19 RRS A 269      51.524 -34.711  44.556  0.00  0.00    +0.000 A 
+ATOM     15  C20 RRS A 269      50.581 -32.842  45.369  0.00  0.00    +0.000 A 
+ATOM     16  C21 RRS A 269      51.158 -32.588  44.082  0.00  0.00    +0.000 A 
+ATOM     17  C22 RRS A 269      49.931 -31.823  46.077  0.00  0.00    +0.000 A 
+ATOM     18  C23 RRS A 269      51.074 -31.308  43.531  0.00  0.00    +0.000 A 
+ATOM     19  C24 RRS A 269      49.853 -30.544  45.512  0.00  0.00    +0.000 A 
+ATOM     20  C25 RRS A 269      50.422 -30.295  44.251  0.00  0.00    +0.000 A 
+ENDROOT
+BRANCH   1  23
+ATOM     21  C4  RRS A 269      49.507 -36.974  48.609  0.00  0.00    +0.000 C 
+ATOM     22  O3  RRS A 269      50.629 -37.223  48.158  0.00  0.00    +0.000 OA
+ATOM     23  N2  RRS A 269      48.653 -36.173  48.004  0.00  0.00    +0.000 NA
+BRANCH  21  24
+ATOM     24  C3  RRS A 269      49.012 -37.579  49.903  0.00  0.00    +0.000 C 
+BRANCH  24  25
+ATOM     25  C2  RRS A 269      49.925 -38.813  50.111  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C1  RRS A 269      49.106 -40.070  50.026  0.00  0.00    +0.000 C 
+ATOM     27  O2  RRS A 269      49.535 -40.721  49.035  0.00  0.00    +0.000 OA
+ATOM     28  N1  RRS A 269      48.090 -40.208  50.855  0.00  0.00    +0.000 NA
+ATOM     29  O1  RRS A 269      47.310 -41.338  50.617  0.00  0.00    +0.000 OA
+ENDBRANCH  25  26
+ENDBRANCH  24  25
+BRANCH  24  30
+ATOM     30  C13 RRS A 269      49.039 -36.545  51.054  0.00  0.00    +0.000 C 
+BRANCH  30  31
+ATOM     31  C14 RRS A 269      47.775 -36.558  51.954  0.00  0.00    +0.000 C 
+ATOM     32  C15 RRS A 269      47.835 -35.478  53.051  0.00  0.00    +0.000 C 
+ATOM     33  C16 RRS A 269      46.561 -36.287  51.057  0.00  0.00    +0.000 C 
+ENDBRANCH  30  31
+ENDBRANCH  24  30
+ENDBRANCH  21  24
+ENDBRANCH   1  23
+TORSDOF 6
+ENDMDL
+MODEL 8
+REMARK VINA RESULT:      -7.2      4.332      7.408
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1MMQ_RRS.pdb
+REMARK  6 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  C2_5
+REMARK    2  A    between atoms: C2_5  and  C3_6
+REMARK    3  A    between atoms: C3_6  and  C4_7
+REMARK    4  A    between atoms: C3_6  and  C13_21
+REMARK    5  A    between atoms: N2_9  and  C5_10
+REMARK    6  A    between atoms: C13_21  and  C14_22
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C5  RRS A 269      48.119 -42.211  47.832  0.00  0.00    +0.000 C 
+ATOM      2  C6  RRS A 269      47.574 -42.292  46.415  0.00  0.00    +0.000 C 
+ATOM      3  O4  RRS A 269      48.074 -43.063  45.595  0.00  0.00    +0.000 OA
+ATOM      4  N3  RRS A 269      46.611 -41.444  46.092  0.00  0.00    +0.000 NA
+ATOM      5  C7  RRS A 269      46.023 -41.369  44.738  0.00  0.00    +0.000 C 
+ATOM      6  C8  RRS A 269      45.428 -39.954  44.550  0.00  0.00    +0.000 C 
+ATOM      7  C9  RRS A 269      46.449 -38.811  44.730  0.00  0.00    +0.000 C 
+ATOM      8  C10 RRS A 269      47.445 -38.634  43.563  0.00  0.00    +0.000 C 
+ATOM      9  C11 RRS A 269      48.482 -37.504  43.778  0.00  0.00    +0.000 C 
+ATOM     10  C12 RRS A 269      49.856 -37.890  44.382  0.00  0.00    +0.000 C 
+ATOM     11  N4  RRS A 269      49.743 -38.552  45.693  0.00  0.00    +0.000 N 
+ATOM     12  C17 RRS A 269      49.546 -41.568  47.885  0.00  0.00    +0.000 C 
+ATOM     13  C18 RRS A 269      49.575 -40.220  47.263  0.00  0.00    +0.000 A 
+ATOM     14  C19 RRS A 269      49.830 -39.903  45.906  0.00  0.00    +0.000 A 
+ATOM     15  C20 RRS A 269      49.321 -38.983  47.890  0.00  0.00    +0.000 A 
+ATOM     16  C21 RRS A 269      49.436 -37.967  46.887  0.00  0.00    +0.000 A 
+ATOM     17  C22 RRS A 269      49.007 -38.651  49.215  0.00  0.00    +0.000 A 
+ATOM     18  C23 RRS A 269      49.235 -36.630  47.236  0.00  0.00    +0.000 A 
+ATOM     19  C24 RRS A 269      48.807 -37.307  49.551  0.00  0.00    +0.000 A 
+ATOM     20  C25 RRS A 269      48.923 -36.310  48.567  0.00  0.00    +0.000 A 
+ENDROOT
+BRANCH   1  23
+ATOM     21  C4  RRS A 269      48.083 -43.536  49.859  0.00  0.00    +0.000 C 
+ATOM     22  O3  RRS A 269      47.776 -42.559  50.547  0.00  0.00    +0.000 OA
+ATOM     23  N2  RRS A 269      48.241 -43.472  48.552  0.00  0.00    +0.000 NA
+BRANCH  21  24
+ATOM     24  C3  RRS A 269      48.313 -44.902  50.465  0.00  0.00    +0.000 C 
+BRANCH  24  25
+ATOM     25  C2  RRS A 269      46.885 -45.411  50.790  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C1  RRS A 269      46.761 -45.665  52.266  0.00  0.00    +0.000 C 
+ATOM     27  O2  RRS A 269      47.779 -45.160  52.812  0.00  0.00    +0.000 OA
+ATOM     28  N1  RRS A 269      45.759 -46.412  52.686  0.00  0.00    +0.000 NA
+ATOM     29  O1  RRS A 269      45.798 -46.704  54.047  0.00  0.00    +0.000 OA
+ENDBRANCH  25  26
+ENDBRANCH  24  25
+BRANCH  24  30
+ATOM     30  C13 RRS A 269      49.128 -45.810  49.514  0.00  0.00    +0.000 C 
+BRANCH  30  31
+ATOM     31  C14 RRS A 269      50.590 -46.062  49.970  0.00  0.00    +0.000 C 
+ATOM     32  C15 RRS A 269      50.765 -47.452  50.610  0.00  0.00    +0.000 C 
+ATOM     33  C16 RRS A 269      51.488 -45.971  48.729  0.00  0.00    +0.000 C 
+ENDBRANCH  30  31
+ENDBRANCH  24  30
+ENDBRANCH  21  24
+ENDBRANCH   1  23
+TORSDOF 6
+ENDMDL
+MODEL 9
+REMARK VINA RESULT:      -7.2      4.559      8.860
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1MMQ_RRS.pdb
+REMARK  6 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  C2_5
+REMARK    2  A    between atoms: C2_5  and  C3_6
+REMARK    3  A    between atoms: C3_6  and  C4_7
+REMARK    4  A    between atoms: C3_6  and  C13_21
+REMARK    5  A    between atoms: N2_9  and  C5_10
+REMARK    6  A    between atoms: C13_21  and  C14_22
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C5  RRS A 269      48.717 -41.328  48.202  0.00  0.00    +0.000 C 
+ATOM      2  C6  RRS A 269      49.182 -42.045  46.944  0.00  0.00    +0.000 C 
+ATOM      3  O4  RRS A 269      48.650 -41.812  45.858  0.00  0.00    +0.000 OA
+ATOM      4  N3  RRS A 269      50.109 -42.978  47.092  0.00  0.00    +0.000 NA
+ATOM      5  C7  RRS A 269      50.617 -43.794  45.970  0.00  0.00    +0.000 C 
+ATOM      6  C8  RRS A 269      51.174 -45.116  46.550  0.00  0.00    +0.000 C 
+ATOM      7  C9  RRS A 269      50.143 -45.935  47.356  0.00  0.00    +0.000 C 
+ATOM      8  C10 RRS A 269      49.079 -46.663  46.506  0.00  0.00    +0.000 C 
+ATOM      9  C11 RRS A 269      48.035 -47.452  47.335  0.00  0.00    +0.000 C 
+ATOM     10  C12 RRS A 269      46.705 -46.739  47.688  0.00  0.00    +0.000 C 
+ATOM     11  N4  RRS A 269      46.905 -45.483  48.431  0.00  0.00    +0.000 N 
+ATOM     12  C17 RRS A 269      47.283 -41.775  48.646  0.00  0.00    +0.000 C 
+ATOM     13  C18 RRS A 269      47.194 -43.243  48.849  0.00  0.00    +0.000 A 
+ATOM     14  C19 RRS A 269      46.856 -44.226  47.887  0.00  0.00    +0.000 A 
+ATOM     15  C20 RRS A 269      47.460 -43.960  50.033  0.00  0.00    +0.000 A 
+ATOM     16  C21 RRS A 269      47.269 -45.350  49.739  0.00  0.00    +0.000 A 
+ATOM     17  C22 RRS A 269      47.842 -43.544  51.315  0.00  0.00    +0.000 A 
+ATOM     18  C23 RRS A 269      47.464 -46.299  50.745  0.00  0.00    +0.000 A 
+ATOM     19  C24 RRS A 269      48.035 -44.506  52.314  0.00  0.00    +0.000 A 
+ATOM     20  C25 RRS A 269      47.845 -45.869  52.026  0.00  0.00    +0.000 A 
+ENDROOT
+BRANCH   1  23
+ATOM     21  C4  RRS A 269      49.011 -39.122  49.158  0.00  0.00    +0.000 C 
+ATOM     22  O3  RRS A 269      49.454 -39.589  50.212  0.00  0.00    +0.000 OA
+ATOM     23  N2  RRS A 269      48.660 -39.874  48.134  0.00  0.00    +0.000 NA
+BRANCH  21  24
+ATOM     24  C3  RRS A 269      48.827 -37.636  48.956  0.00  0.00    +0.000 C 
+BRANCH  24  25
+ATOM     25  C2  RRS A 269      49.318 -37.014  50.288  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C1  RRS A 269      48.140 -36.710  51.170  0.00  0.00    +0.000 C 
+ATOM     27  O2  RRS A 269      48.469 -37.033  52.344  0.00  0.00    +0.000 OA
+ATOM     28  N1  RRS A 269      47.022 -36.309  50.599  0.00  0.00    +0.000 NA
+ATOM     29  O1  RRS A 269      45.949 -36.180  51.477  0.00  0.00    +0.000 OA
+ENDBRANCH  25  26
+ENDBRANCH  24  25
+BRANCH  24  30
+ATOM     30  C13 RRS A 269      49.573 -37.144  47.692  0.00  0.00    +0.000 C 
+BRANCH  30  31
+ATOM     31  C14 RRS A 269      48.941 -35.895  47.024  0.00  0.00    +0.000 C 
+ATOM     32  C15 RRS A 269      49.957 -34.749  46.859  0.00  0.00    +0.000 C 
+ATOM     33  C16 RRS A 269      48.435 -36.312  45.637  0.00  0.00    +0.000 C 
+ENDBRANCH  30  31
+ENDBRANCH  24  30
+ENDBRANCH  21  24
+ENDBRANCH   1  23
+TORSDOF 6
+ENDMDL

@@ -1,0 +1,21 @@
+PDB_ID	Metal	Ki_nM	RMSD_top1	RMSD_best	delta_top1	delta_best	Status	Description
+1OQ5	ZN	9	4.12	1.28	+2.79↑	+0.75↑	OK	CAII + Acetazolamide
+1BNN	ZN	380	3.80	1.46	-0.69↓	+0.53↑	OK	CAII + aminobenzenesulfonamide
+3P5A	ZN	200	3.64	1.06	N/A	N/A	OK	CAII + dithiocarbamate (S->Zn)
+1A42	ZN	15	1.42	1.23	-3.33↓	-0.10↓	OK	CAII + Acetazolamide analog
+1YDB	ZN	2	1.08	0.53	-4.52↓	+0.16↑	OK	CAII + fluorinated sulfonamide
+3HS4	ZN	8300	1.15	0.72	-0.05↓	+0.08	OK	CAII + coumarin inhibitor
+2CBD	ZN	900	1.46	0.87	N/A	N/A	OK	CAII + sulfite (direct Zn)
+1G52	ZN	100	4.54	1.54	-0.27↓	-2.28↓	OK	CAII + fluorinated benzensulfonamide
+1ZNC	ZN	200	1.63	1.62	N/A	N/A	OK	CAII-IV + sulfate (direct Zn)
+1GKC	ZN	27	5.59	1.17	+4.43↑	+0.20↑	OK	MMP-2 + phosphonate inhibitor
+1MMQ	ZN	670	9.52	0.98	+8.29↑	+0.54↑	OK	MMP-1 + peptide hydroxamate
+1JAQ	ZN	10	2.34	1.62	N/A	N/A	OK	MMP-8 + tripeptide hydroxamate
+2OVX	ZN	26	1.54	0.77	+0.98↑	+0.21↑	OK	MMP-9 + hydroxamate
+1O86	ZN	1.7	1.33	0.78	-1.72↓	-0.16↓	OK	ACE + Captopril
+2C6N	ZN	0.27	8.27	3.67	N/A	N/A	OK	ACE + Lisinopril
+1UZE	ZN	2.2	1.35	0.85	-1.89↓	+0.29↑	OK	ACE + Enalaprilat
+3L2U	MG	2.0	8.29	2.13	+0.06	-4.78↓	OK	HIV-IN + Elvitegravir analog
+3S3M	MG	3.0	5.41	4.17	-0.31↓	+0.00	OK	HIV-IN + Raltegravir analog
+2W0D	ZN	1.0	3.06	3.06	N/A	N/A	OK	MMP-9 + CGS27023A hydroxamate
+2G1M	FE	50	0.57	0.57	N/A	N/A	OK	PHD2 + 4HG inhibitor (Fe)

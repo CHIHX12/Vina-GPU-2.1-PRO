@@ -1,0 +1,54 @@
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1UZE_EAL.pdb
+REMARK  7 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C5_4  and  C9_8
+REMARK    2  A    between atoms: C1_10  and  C2_11
+REMARK    3  A    between atoms: C2_11  and  N1_13
+REMARK    4  A    between atoms: N1_13  and  C4_15
+REMARK    5  A    between atoms: C3_14  and  C4_15
+REMARK    6  A    between atoms: C4_15  and  C14_18
+REMARK    7  A    between atoms: C15_19  and  C16_20
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  N1  EAL A3002      41.771  34.472  47.118  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   2
+ATOM      2  C2  EAL A3002      42.492  34.196  45.813  0.00  0.00    +0.000 C 
+ATOM      3  C10 EAL A3002      43.074  32.775  45.712  0.00  0.00    +0.000 C 
+BRANCH   2  10
+ATOM      4  N2  EAL A3002      41.757  34.874  43.435  0.00  0.00    +0.000 N 
+ATOM      5  C5  EAL A3002      40.684  35.023  42.363  0.00  0.00    +0.000 C 
+ATOM      6  C6  EAL A3002      41.509  35.588  41.179  0.00  0.00    +0.000 C 
+ATOM      7  C7  EAL A3002      42.821  35.728  41.557  0.00  0.00    +0.000 C 
+ATOM      8  C8  EAL A3002      43.094  35.308  42.933  0.00  0.00    +0.000 C 
+ATOM      9  O1  EAL A3002      40.192  34.094  44.927  0.00  0.00    +0.000 OA
+ATOM     10  C1  EAL A3002      41.415  34.391  44.676  0.00  0.00    +0.000 C 
+BRANCH   5  13
+ATOM     11  O4  EAL A3002      38.804  33.684  41.705  0.00  0.00    +0.000 OA
+ATOM     12  O5  EAL A3002      40.674  32.586  42.127  0.00  0.00    +0.000 OA
+ATOM     13  C9  EAL A3002      40.041  33.603  42.040  0.00  0.00    +0.000 C 
+ENDBRANCH   5  13
+ENDBRANCH   2  10
+ENDBRANCH   1   2
+BRANCH   1  14
+ATOM     14  C4  EAL A3002      41.198  35.509  47.485  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C3  EAL A3002      42.207  36.664  47.530  0.00  0.00    +0.000 C 
+ATOM     16  O2  EAL A3002      43.285  36.522  48.186  0.00  0.00    +0.000 OA
+ATOM     17  O3  EAL A3002      41.988  37.694  46.909  0.00  0.00    +0.000 OA
+ENDBRANCH  14  15
+BRANCH  14  18
+ATOM     18  C14 EAL A3002      40.506  35.772  48.779  0.00  0.00    +0.000 C 
+ATOM     19  C15 EAL A3002      39.303  36.665  49.029  0.00  0.00    +0.000 C 
+BRANCH  19  20
+ATOM     20  C16 EAL A3002      38.747  36.791  50.411  0.00  0.00    +0.000 A 
+ATOM     21  C17 EAL A3002      38.524  35.600  51.257  0.00  0.00    +0.000 A 
+ATOM     22  C18 EAL A3002      37.971  35.745  52.595  0.00  0.00    +0.000 A 
+ATOM     23  C19 EAL A3002      37.630  37.081  53.111  0.00  0.00    +0.000 A 
+ATOM     24  C20 EAL A3002      37.850  38.274  52.274  0.00  0.00    +0.000 A 
+ATOM     25  C21 EAL A3002      38.407  38.130  50.926  0.00  0.00    +0.000 A 
+ENDBRANCH  19  20
+ENDBRANCH  14  18
+ENDBRANCH   1  14
+TORSDOF 7

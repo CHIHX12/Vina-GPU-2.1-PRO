@@ -1,0 +1,513 @@
+MODEL 1
+REMARK VINA RESULT:      -6.7      0.000      0.000
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1GKC_NFH.pdb
+REMARK  8 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_1  and  CA_8
+REMARK    2  A    between atoms: N_2  and  CN_13
+REMARK    3  A    between atoms: C1_4  and  CA1_15
+REMARK    4  A    between atoms: N1_5  and  CA1_15
+REMARK    5  A    between atoms: CA_8  and  CB_9
+REMARK    6  A    between atoms: CA_8  and  CN_13
+REMARK    7  A    between atoms: CB_9  and  CG_10
+REMARK    8  A    between atoms: CA1_15  and  CB1_16
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C   NFH A1448      65.920  30.141 118.121  0.00  0.00    +0.000 C 
+ATOM      2  O   NFH A1448      66.894  29.350 118.163  0.00  0.00    +0.000 OA
+ATOM      3  N1  NFH A1448      65.869  31.282 118.841  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   4
+ATOM      4  CA  NFH A1448      64.706  29.817 117.203  0.00  0.00    +0.000 C 
+BRANCH   4   5
+ATOM      5  CB  NFH A1448      63.481  29.218 118.008  0.00  0.00    +0.000 C 
+BRANCH   5   6
+ATOM      6  CG  NFH A1448      62.042  29.363 117.454  0.00  0.00    +0.000 C 
+ATOM      7  CD1 NFH A1448      61.014  28.839 118.483  0.00  0.00    +0.000 C 
+ATOM      8  CD2 NFH A1448      61.718  30.837 117.292  0.00  0.00    +0.000 C 
+ENDBRANCH   5   6
+ENDBRANCH   4   5
+BRANCH   4   9
+ATOM      9  CN  NFH A1448      65.247  28.766 116.163  0.00  0.00    +0.000 C 
+BRANCH   9  10
+ATOM     10  N   NFH A1448      65.101  29.194 114.774  0.00  0.00    +0.000 N 
+ATOM     11  CM  NFH A1448      65.453  28.454 113.721  0.00  0.00    +0.000 C 
+ATOM     12  OM  NFH A1448      65.321  28.792 112.593  0.00  0.00    +0.000 OA
+ATOM     13  ON  NFH A1448      64.586  30.351 114.572  0.00  0.00    +0.000 OA
+ENDBRANCH   9  10
+ENDBRANCH   4   9
+ENDBRANCH   1   4
+BRANCH   3  14
+ATOM     14  CA1 NFH A1448      66.964  31.742 119.777  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C1  NFH A1448      66.240  32.260 121.101  0.00  0.00    +0.000 C 
+ATOM     16  O1  NFH A1448      65.466  33.241 121.076  0.00  0.00    +0.000 OA
+ATOM     17  N2  NFH A1448      66.534  31.546 122.222  0.00  0.00    +0.000 NA
+ATOM     18  CN2 NFH A1448      65.982  31.833 123.567  0.00  0.00    +0.000 C 
+ENDBRANCH  14  15
+BRANCH  14  19
+ATOM     19  CB1 NFH A1448      67.947  32.817 119.082  0.00  0.00    +0.000 C 
+ATOM     20  CG1 NFH A1448      68.854  33.565 120.133  0.00  0.00    +0.000 C 
+ATOM     21  CG2 NFH A1448      68.873  32.132 118.042  0.00  0.00    +0.000 C 
+ATOM     22  CG3 NFH A1448      67.188  33.952 118.290  0.00  0.00    +0.000 C 
+ENDBRANCH  14  19
+ENDBRANCH   3  14
+TORSDOF 8
+ENDMDL
+MODEL 2
+REMARK VINA RESULT:      -6.6      0.351      1.249
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1GKC_NFH.pdb
+REMARK  8 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_1  and  CA_8
+REMARK    2  A    between atoms: N_2  and  CN_13
+REMARK    3  A    between atoms: C1_4  and  CA1_15
+REMARK    4  A    between atoms: N1_5  and  CA1_15
+REMARK    5  A    between atoms: CA_8  and  CB_9
+REMARK    6  A    between atoms: CA_8  and  CN_13
+REMARK    7  A    between atoms: CB_9  and  CG_10
+REMARK    8  A    between atoms: CA1_15  and  CB1_16
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C   NFH A1448      66.070  30.155 118.014  0.00  0.00    +0.000 C 
+ATOM      2  O   NFH A1448      67.024  29.347 118.125  0.00  0.00    +0.000 OA
+ATOM      3  N1  NFH A1448      65.988  31.298 118.728  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   4
+ATOM      4  CA  NFH A1448      64.916  29.850 117.014  0.00  0.00    +0.000 C 
+BRANCH   4   5
+ATOM      5  CB  NFH A1448      63.698  29.110 117.703  0.00  0.00    +0.000 C 
+BRANCH   5   6
+ATOM      6  CG  NFH A1448      62.444  29.912 118.132  0.00  0.00    +0.000 C 
+ATOM      7  CD1 NFH A1448      62.080  30.960 117.056  0.00  0.00    +0.000 C 
+ATOM      8  CD2 NFH A1448      61.250  28.975 118.187  0.00  0.00    +0.000 C 
+ENDBRANCH   5   6
+ENDBRANCH   4   5
+BRANCH   4   9
+ATOM      9  CN  NFH A1448      65.563  28.934 115.909  0.00  0.00    +0.000 C 
+BRANCH   9  10
+ATOM     10  N   NFH A1448      65.324  29.406 114.548  0.00  0.00    +0.000 N 
+ATOM     11  CM  NFH A1448      65.708  28.754 113.450  0.00  0.00    +0.000 C 
+ATOM     12  OM  NFH A1448      65.501  29.127 112.345  0.00  0.00    +0.000 OA
+ATOM     13  ON  NFH A1448      64.690  30.514 114.420  0.00  0.00    +0.000 OA
+ENDBRANCH   9  10
+ENDBRANCH   4   9
+ENDBRANCH   1   4
+BRANCH   3  14
+ATOM     14  CA1 NFH A1448      67.023  31.741 119.738  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C1  NFH A1448      66.218  32.261 121.013  0.00  0.00    +0.000 C 
+ATOM     16  O1  NFH A1448      65.473  33.263 120.947  0.00  0.00    +0.000 OA
+ATOM     17  N2  NFH A1448      66.411  31.525 122.143  0.00  0.00    +0.000 NA
+ATOM     18  CN2 NFH A1448      65.770  31.810 123.448  0.00  0.00    +0.000 C 
+ENDBRANCH  14  15
+BRANCH  14  19
+ATOM     19  CB1 NFH A1448      68.062  32.808 119.116  0.00  0.00    +0.000 C 
+ATOM     20  CG1 NFH A1448      67.344  33.892 118.225  0.00  0.00    +0.000 C 
+ATOM     21  CG2 NFH A1448      68.843  33.542 120.239  0.00  0.00    +0.000 C 
+ATOM     22  CG3 NFH A1448      69.163  32.156 118.191  0.00  0.00    +0.000 C 
+ENDBRANCH  14  19
+ENDBRANCH   3  14
+TORSDOF 8
+ENDMDL
+MODEL 3
+REMARK VINA RESULT:      -6.5      0.730      1.164
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1GKC_NFH.pdb
+REMARK  8 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_1  and  CA_8
+REMARK    2  A    between atoms: N_2  and  CN_13
+REMARK    3  A    between atoms: C1_4  and  CA1_15
+REMARK    4  A    between atoms: N1_5  and  CA1_15
+REMARK    5  A    between atoms: CA_8  and  CB_9
+REMARK    6  A    between atoms: CA_8  and  CN_13
+REMARK    7  A    between atoms: CB_9  and  CG_10
+REMARK    8  A    between atoms: CA1_15  and  CB1_16
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C   NFH A1448      65.250  30.416 118.158  0.00  0.00    +0.000 C 
+ATOM      2  O   NFH A1448      65.991  29.403 118.185  0.00  0.00    +0.000 OA
+ATOM      3  N1  NFH A1448      65.506  31.534 118.871  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   4
+ATOM      4  CA  NFH A1448      63.973  30.410 117.268  0.00  0.00    +0.000 C 
+BRANCH   4   5
+ATOM      5  CB  NFH A1448      62.641  30.332 118.121  0.00  0.00    +0.000 C 
+BRANCH   5   6
+ATOM      6  CG  NFH A1448      61.372  29.676 117.522  0.00  0.00    +0.000 C 
+ATOM      7  CD1 NFH A1448      61.282  28.192 117.945  0.00  0.00    +0.000 C 
+ATOM      8  CD2 NFH A1448      60.143  30.332 118.125  0.00  0.00    +0.000 C 
+ENDBRANCH   5   6
+ENDBRANCH   4   5
+BRANCH   4   9
+ATOM      9  CN  NFH A1448      64.116  29.138 116.353  0.00  0.00    +0.000 C 
+BRANCH   9  10
+ATOM     10  N   NFH A1448      64.560  29.443 114.996  0.00  0.00    +0.000 N 
+ATOM     11  CM  NFH A1448      65.089  28.547 114.160  0.00  0.00    +0.000 C 
+ATOM     12  OM  NFH A1448      65.435  28.789 113.054  0.00  0.00    +0.000 OA
+ATOM     13  ON  NFH A1448      64.412  30.652 114.594  0.00  0.00    +0.000 OA
+ENDBRANCH   9  10
+ENDBRANCH   4   9
+ENDBRANCH   1   4
+BRANCH   3  14
+ATOM     14  CA1 NFH A1448      66.703  31.701 119.781  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C1  NFH A1448      66.145  32.266 121.164  0.00  0.00    +0.000 C 
+ATOM     16  O1  NFH A1448      65.464  33.313 121.211  0.00  0.00    +0.000 OA
+ATOM     17  N2  NFH A1448      66.467  31.513 122.253  0.00  0.00    +0.000 NA
+ATOM     18  CN2 NFH A1448      66.060  31.832 123.641  0.00  0.00    +0.000 C 
+ENDBRANCH  14  15
+BRANCH  14  19
+ATOM     19  CB1 NFH A1448      67.861  32.600 119.103  0.00  0.00    +0.000 C 
+ATOM     20  CG1 NFH A1448      67.280  33.872 118.375  0.00  0.00    +0.000 C 
+ATOM     21  CG2 NFH A1448      68.887  33.076 120.166  0.00  0.00    +0.000 C 
+ATOM     22  CG3 NFH A1448      68.705  31.832 118.013  0.00  0.00    +0.000 C 
+ENDBRANCH  14  19
+ENDBRANCH   3  14
+TORSDOF 8
+ENDMDL
+MODEL 4
+REMARK VINA RESULT:      -6.4      0.786      1.070
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1GKC_NFH.pdb
+REMARK  8 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_1  and  CA_8
+REMARK    2  A    between atoms: N_2  and  CN_13
+REMARK    3  A    between atoms: C1_4  and  CA1_15
+REMARK    4  A    between atoms: N1_5  and  CA1_15
+REMARK    5  A    between atoms: CA_8  and  CB_9
+REMARK    6  A    between atoms: CA_8  and  CN_13
+REMARK    7  A    between atoms: CB_9  and  CG_10
+REMARK    8  A    between atoms: CA1_15  and  CB1_16
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C   NFH A1448      65.783  29.748 117.486  0.00  0.00    +0.000 C 
+ATOM      2  O   NFH A1448      66.616  28.823 117.646  0.00  0.00    +0.000 OA
+ATOM      3  N1  NFH A1448      65.856  30.925 118.143  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   4
+ATOM      4  CA  NFH A1448      64.604  29.556 116.488  0.00  0.00    +0.000 C 
+BRANCH   4   5
+ATOM      5  CB  NFH A1448      63.333  28.903 117.170  0.00  0.00    +0.000 C 
+BRANCH   5   6
+ATOM      6  CG  NFH A1448      62.459  29.734 118.143  0.00  0.00    +0.000 C 
+ATOM      7  CD1 NFH A1448      61.670  30.814 117.368  0.00  0.00    +0.000 C 
+ATOM      8  CD2 NFH A1448      61.400  28.834 118.752  0.00  0.00    +0.000 C 
+ENDBRANCH   5   6
+ENDBRANCH   4   5
+BRANCH   4   9
+ATOM      9  CN  NFH A1448      65.169  28.613 115.362  0.00  0.00    +0.000 C 
+BRANCH   9  10
+ATOM     10  N   NFH A1448      65.361  29.286 114.080  0.00  0.00    +0.000 N 
+ATOM     11  CM  NFH A1448      65.723  28.667 112.954  0.00  0.00    +0.000 C 
+ATOM     12  OM  NFH A1448      65.863  29.209 111.911  0.00  0.00    +0.000 OA
+ATOM     13  ON  NFH A1448      65.150  30.551 114.050  0.00  0.00    +0.000 OA
+ENDBRANCH   9  10
+ENDBRANCH   4   9
+ENDBRANCH   1   4
+BRANCH   3  14
+ATOM     14  CA1 NFH A1448      66.937  31.270 119.143  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C1  NFH A1448      66.195  31.847 120.432  0.00  0.00    +0.000 C 
+ATOM     16  O1  NFH A1448      65.464  32.859 120.362  0.00  0.00    +0.000 OA
+ATOM     17  N2  NFH A1448      66.423  31.145 121.576  0.00  0.00    +0.000 NA
+ATOM     18  CN2 NFH A1448      65.842  31.485 122.896  0.00  0.00    +0.000 C 
+ENDBRANCH  14  15
+BRANCH  14  19
+ATOM     19  CB1 NFH A1448      68.056  32.250 118.514  0.00  0.00    +0.000 C 
+ATOM     20  CG1 NFH A1448      68.883  33.002 119.626  0.00  0.00    +0.000 C 
+ATOM     21  CG2 NFH A1448      69.049  31.459 117.621  0.00  0.00    +0.000 C 
+ATOM     22  CG3 NFH A1448      67.461  33.381 117.587  0.00  0.00    +0.000 C 
+ENDBRANCH  14  19
+ENDBRANCH   3  14
+TORSDOF 8
+ENDMDL
+MODEL 5
+REMARK VINA RESULT:      -6.4      2.132      3.578
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1GKC_NFH.pdb
+REMARK  8 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_1  and  CA_8
+REMARK    2  A    between atoms: N_2  and  CN_13
+REMARK    3  A    between atoms: C1_4  and  CA1_15
+REMARK    4  A    between atoms: N1_5  and  CA1_15
+REMARK    5  A    between atoms: CA_8  and  CB_9
+REMARK    6  A    between atoms: CA_8  and  CN_13
+REMARK    7  A    between atoms: CB_9  and  CG_10
+REMARK    8  A    between atoms: CA1_15  and  CB1_16
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C   NFH A1448      65.495  29.839 117.608  0.00  0.00    +0.000 C 
+ATOM      2  O   NFH A1448      66.198  28.826 117.842  0.00  0.00    +0.000 OA
+ATOM      3  N1  NFH A1448      65.727  31.042 118.175  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   4
+ATOM      4  CA  NFH A1448      64.298  29.731 116.619  0.00  0.00    +0.000 C 
+BRANCH   4   5
+ATOM      5  CB  NFH A1448      64.702  30.108 115.135  0.00  0.00    +0.000 C 
+BRANCH   5   6
+ATOM      6  CG  NFH A1448      66.185  30.039 114.692  0.00  0.00    +0.000 C 
+ATOM      7  CD1 NFH A1448      66.306  29.326 113.326  0.00  0.00    +0.000 C 
+ATOM      8  CD2 NFH A1448      66.696  31.447 114.448  0.00  0.00    +0.000 C 
+ENDBRANCH   5   6
+ENDBRANCH   4   5
+BRANCH   4   9
+ATOM      9  CN  NFH A1448      63.221  30.739 117.168  0.00  0.00    +0.000 C 
+BRANCH   9  10
+ATOM     10  N   NFH A1448      61.913  30.129 117.392  0.00  0.00    +0.000 N 
+ATOM     11  CM  NFH A1448      61.731  28.924 117.935  0.00  0.00    +0.000 C 
+ATOM     12  OM  NFH A1448      60.670  28.434 118.131  0.00  0.00    +0.000 OA
+ATOM     13  ON  NFH A1448      60.884  30.816 117.052  0.00  0.00    +0.000 OA
+ENDBRANCH   9  10
+ENDBRANCH   4   9
+ENDBRANCH   1   4
+BRANCH   3  14
+ATOM     14  CA1 NFH A1448      66.848  31.314 119.154  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C1  NFH A1448      66.165  31.883 120.478  0.00  0.00    +0.000 C 
+ATOM     16  O1  NFH A1448      65.465  32.918 120.455  0.00  0.00    +0.000 OA
+ATOM     17  N2  NFH A1448      66.406  31.147 121.599  0.00  0.00    +0.000 NA
+ATOM     18  CN2 NFH A1448      65.878  31.473 122.944  0.00  0.00    +0.000 C 
+ENDBRANCH  14  15
+BRANCH  14  19
+ATOM     19  CB1 NFH A1448      67.989  32.266 118.522  0.00  0.00    +0.000 C 
+ATOM     20  CG1 NFH A1448      68.966  31.475 117.569  0.00  0.00    +0.000 C 
+ATOM     21  CG2 NFH A1448      67.356  33.428 117.712  0.00  0.00    +0.000 C 
+ATOM     22  CG3 NFH A1448      68.910  32.954 119.602  0.00  0.00    +0.000 C 
+ENDBRANCH  14  19
+ENDBRANCH   3  14
+TORSDOF 8
+ENDMDL
+MODEL 6
+REMARK VINA RESULT:      -6.4      3.080      6.957
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1GKC_NFH.pdb
+REMARK  8 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_1  and  CA_8
+REMARK    2  A    between atoms: N_2  and  CN_13
+REMARK    3  A    between atoms: C1_4  and  CA1_15
+REMARK    4  A    between atoms: N1_5  and  CA1_15
+REMARK    5  A    between atoms: CA_8  and  CB_9
+REMARK    6  A    between atoms: CA_8  and  CN_13
+REMARK    7  A    between atoms: CB_9  and  CG_10
+REMARK    8  A    between atoms: CA1_15  and  CB1_16
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C   NFH A1448      65.135  30.280 114.919  0.00  0.00    +0.000 C 
+ATOM      2  O   NFH A1448      64.360  31.095 114.364  0.00  0.00    +0.000 OA
+ATOM      3  N1  NFH A1448      66.175  29.702 114.279  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   4
+ATOM      4  CA  NFH A1448      64.913  29.902 116.412  0.00  0.00    +0.000 C 
+BRANCH   4   5
+ATOM      5  CB  NFH A1448      66.193  29.237 117.065  0.00  0.00    +0.000 C 
+BRANCH   5   6
+ATOM      6  CG  NFH A1448      66.950  29.962 118.206  0.00  0.00    +0.000 C 
+ATOM      7  CD1 NFH A1448      67.929  31.006 117.624  0.00  0.00    +0.000 C 
+ATOM      8  CD2 NFH A1448      65.958  30.766 119.027  0.00  0.00    +0.000 C 
+ENDBRANCH   5   6
+ENDBRANCH   4   5
+BRANCH   4   9
+ATOM      9  CN  NFH A1448      63.710  28.887 116.404  0.00  0.00    +0.000 C 
+BRANCH   9  10
+ATOM     10  N   NFH A1448      62.517  29.394 117.077  0.00  0.00    +0.000 N 
+ATOM     11  CM  NFH A1448      62.114  30.666 117.033  0.00  0.00    +0.000 C 
+ATOM     12  OM  NFH A1448      61.138  31.075 117.565  0.00  0.00    +0.000 OA
+ATOM     13  ON  NFH A1448      61.816  28.546 117.736  0.00  0.00    +0.000 OA
+ENDBRANCH   9  10
+ENDBRANCH   4   9
+ENDBRANCH   1   4
+BRANCH   3  14
+ATOM     14  CA1 NFH A1448      66.528  29.962 112.831  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C1  NFH A1448      66.105  28.655 112.020  0.00  0.00    +0.000 C 
+ATOM     16  O1  NFH A1448      65.730  27.618 112.609  0.00  0.00    +0.000 OA
+ATOM     17  N2  NFH A1448      66.182  28.782 110.666  0.00  0.00    +0.000 NA
+ATOM     18  CN2 NFH A1448      65.837  27.709 109.704  0.00  0.00    +0.000 C 
+ENDBRANCH  14  15
+BRANCH  14  19
+ATOM     19  CB1 NFH A1448      68.072  30.397 112.651  0.00  0.00    +0.000 C 
+ATOM     20  CG1 NFH A1448      68.631  31.156 113.914  0.00  0.00    +0.000 C 
+ATOM     21  CG2 NFH A1448      68.971  29.158 112.392  0.00  0.00    +0.000 C 
+ATOM     22  CG3 NFH A1448      68.320  31.363 111.428  0.00  0.00    +0.000 C 
+ENDBRANCH  14  19
+ENDBRANCH   3  14
+TORSDOF 8
+ENDMDL
+MODEL 7
+REMARK VINA RESULT:      -6.4      0.769      1.057
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1GKC_NFH.pdb
+REMARK  8 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_1  and  CA_8
+REMARK    2  A    between atoms: N_2  and  CN_13
+REMARK    3  A    between atoms: C1_4  and  CA1_15
+REMARK    4  A    between atoms: N1_5  and  CA1_15
+REMARK    5  A    between atoms: CA_8  and  CB_9
+REMARK    6  A    between atoms: CA_8  and  CN_13
+REMARK    7  A    between atoms: CB_9  and  CG_10
+REMARK    8  A    between atoms: CA1_15  and  CB1_16
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C   NFH A1448      65.686  30.114 118.243  0.00  0.00    +0.000 C 
+ATOM      2  O   NFH A1448      66.584  29.243 118.341  0.00  0.00    +0.000 OA
+ATOM      3  N1  NFH A1448      65.742  31.302 118.882  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   4
+ATOM      4  CA  NFH A1448      64.442  29.839 117.349  0.00  0.00    +0.000 C 
+BRANCH   4   5
+ATOM      5  CB  NFH A1448      63.342  28.976 118.092  0.00  0.00    +0.000 C 
+BRANCH   5   6
+ATOM      6  CG  NFH A1448      61.943  29.577 118.376  0.00  0.00    +0.000 C 
+ATOM      7  CD1 NFH A1448      61.628  30.707 117.370  0.00  0.00    +0.000 C 
+ATOM      8  CD2 NFH A1448      60.885  28.518 118.121  0.00  0.00    +0.000 C 
+ENDBRANCH   5   6
+ENDBRANCH   4   5
+BRANCH   4   9
+ATOM      9  CN  NFH A1448      64.999  29.061 116.099  0.00  0.00    +0.000 C 
+BRANCH   9  10
+ATOM     10  N   NFH A1448      65.342  29.932 114.978  0.00  0.00    +0.000 N 
+ATOM     11  CM  NFH A1448      66.541  29.964 114.393  0.00  0.00    +0.000 C 
+ATOM     12  OM  NFH A1448      66.817  30.658 113.473  0.00  0.00    +0.000 OA
+ATOM     13  ON  NFH A1448      64.415  30.698 114.531  0.00  0.00    +0.000 OA
+ENDBRANCH   9  10
+ENDBRANCH   4   9
+ENDBRANCH   1   4
+BRANCH   3  14
+ATOM     14  CA1 NFH A1448      66.879  31.724 119.785  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C1  NFH A1448      66.214  32.259 121.133  0.00  0.00    +0.000 C 
+ATOM     16  O1  NFH A1448      65.463  33.258 121.135  0.00  0.00    +0.000 OA
+ATOM     17  N2  NFH A1448      66.529  31.536 122.243  0.00  0.00    +0.000 NA
+ATOM     18  CN2 NFH A1448      66.030  31.835 123.607  0.00  0.00    +0.000 C 
+ENDBRANCH  14  15
+BRANCH  14  19
+ATOM     19  CB1 NFH A1448      67.872  32.773 119.063  0.00  0.00    +0.000 C 
+ATOM     20  CG1 NFH A1448      68.849  33.472 120.084  0.00  0.00    +0.000 C 
+ATOM     21  CG2 NFH A1448      68.728  32.068 117.976  0.00  0.00    +0.000 C 
+ATOM     22  CG3 NFH A1448      67.123  33.945 118.317  0.00  0.00    +0.000 C 
+ENDBRANCH  14  19
+ENDBRANCH   3  14
+TORSDOF 8
+ENDMDL
+MODEL 8
+REMARK VINA RESULT:      -6.4      3.056      7.075
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1GKC_NFH.pdb
+REMARK  8 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_1  and  CA_8
+REMARK    2  A    between atoms: N_2  and  CN_13
+REMARK    3  A    between atoms: C1_4  and  CA1_15
+REMARK    4  A    between atoms: N1_5  and  CA1_15
+REMARK    5  A    between atoms: CA_8  and  CB_9
+REMARK    6  A    between atoms: CA_8  and  CN_13
+REMARK    7  A    between atoms: CB_9  and  CG_10
+REMARK    8  A    between atoms: CA1_15  and  CB1_16
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C   NFH A1448      65.082  30.257 114.890  0.00  0.00    +0.000 C 
+ATOM      2  O   NFH A1448      64.305  31.091 114.365  0.00  0.00    +0.000 OA
+ATOM      3  N1  NFH A1448      66.088  29.662 114.214  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   4
+ATOM      4  CA  NFH A1448      64.902  29.876 116.389  0.00  0.00    +0.000 C 
+BRANCH   4   5
+ATOM      5  CB  NFH A1448      66.210  29.238 117.013  0.00  0.00    +0.000 C 
+BRANCH   5   6
+ATOM      6  CG  NFH A1448      66.956  29.962 118.161  0.00  0.00    +0.000 C 
+ATOM      7  CD1 NFH A1448      67.908  31.038 117.592  0.00  0.00    +0.000 C 
+ATOM      8  CD2 NFH A1448      65.951  30.730 119.000  0.00  0.00    +0.000 C 
+ENDBRANCH   5   6
+ENDBRANCH   4   5
+BRANCH   4   9
+ATOM      9  CN  NFH A1448      63.721  28.836 116.408  0.00  0.00    +0.000 C 
+BRANCH   9  10
+ATOM     10  N   NFH A1448      62.529  29.323 117.098  0.00  0.00    +0.000 N 
+ATOM     11  CM  NFH A1448      61.688  28.544 117.782  0.00  0.00    +0.000 C 
+ATOM     12  OM  NFH A1448      60.729  28.939 118.355  0.00  0.00    +0.000 OA
+ATOM     13  ON  NFH A1448      62.298  30.583 117.043  0.00  0.00    +0.000 OA
+ENDBRANCH   9  10
+ENDBRANCH   4   9
+ENDBRANCH   1   4
+BRANCH   3  14
+ATOM     14  CA1 NFH A1448      66.398  29.922 112.757  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C1  NFH A1448      65.970  28.608 111.960  0.00  0.00    +0.000 C 
+ATOM     16  O1  NFH A1448      65.484  27.620 112.551  0.00  0.00    +0.000 OA
+ATOM     17  N2  NFH A1448      66.172  28.672 110.615  0.00  0.00    +0.000 NA
+ATOM     18  CN2 NFH A1448      65.849  27.580 109.667  0.00  0.00    +0.000 C 
+ENDBRANCH  14  15
+BRANCH  14  19
+ATOM     19  CB1 NFH A1448      67.931  30.376 112.533  0.00  0.00    +0.000 C 
+ATOM     20  CG1 NFH A1448      68.104  31.286 111.257  0.00  0.00    +0.000 C 
+ATOM     21  CG2 NFH A1448      68.464  31.159 113.763  0.00  0.00    +0.000 C 
+ATOM     22  CG3 NFH A1448      68.928  29.169 112.334  0.00  0.00    +0.000 C 
+ENDBRANCH  14  19
+ENDBRANCH   3  14
+TORSDOF 8
+ENDMDL
+MODEL 9
+REMARK VINA RESULT:      -6.3      1.357      1.825
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1GKC_NFH.pdb
+REMARK  8 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_1  and  CA_8
+REMARK    2  A    between atoms: N_2  and  CN_13
+REMARK    3  A    between atoms: C1_4  and  CA1_15
+REMARK    4  A    between atoms: N1_5  and  CA1_15
+REMARK    5  A    between atoms: CA_8  and  CB_9
+REMARK    6  A    between atoms: CA_8  and  CN_13
+REMARK    7  A    between atoms: CB_9  and  CG_10
+REMARK    8  A    between atoms: CA1_15  and  CB1_16
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C   NFH A1448      65.997  30.003 117.641  0.00  0.00    +0.000 C 
+ATOM      2  O   NFH A1448      66.714  29.183 118.265  0.00  0.00    +0.000 OA
+ATOM      3  N1  NFH A1448      66.331  31.302 117.484  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   4
+ATOM      4  CA  NFH A1448      64.658  29.526 117.007  0.00  0.00    +0.000 C 
+BRANCH   4   5
+ATOM      5  CB  NFH A1448      63.656  28.935 118.082  0.00  0.00    +0.000 C 
+BRANCH   5   6
+ATOM      6  CG  NFH A1448      62.303  29.639 118.353  0.00  0.00    +0.000 C 
+ATOM      7  CD1 NFH A1448      62.018  30.696 117.262  0.00  0.00    +0.000 C 
+ATOM      8  CD2 NFH A1448      61.181  28.625 118.221  0.00  0.00    +0.000 C 
+ENDBRANCH   5   6
+ENDBRANCH   4   5
+BRANCH   4   9
+ATOM      9  CN  NFH A1448      65.068  28.416 115.969  0.00  0.00    +0.000 C 
+BRANCH   9  10
+ATOM     10  N   NFH A1448      65.000  28.864 114.581  0.00  0.00    +0.000 N 
+ATOM     11  CM  NFH A1448      65.210  28.073 113.526  0.00  0.00    +0.000 C 
+ATOM     12  OM  NFH A1448      65.140  28.431 112.399  0.00  0.00    +0.000 OA
+ATOM     13  ON  NFH A1448      64.706  30.096 114.381  0.00  0.00    +0.000 OA
+ENDBRANCH   9  10
+ENDBRANCH   4   9
+ENDBRANCH   1   4
+BRANCH   3  14
+ATOM     14  CA1 NFH A1448      67.595  31.922 118.035  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C1  NFH A1448      67.175  32.710 119.357  0.00  0.00    +0.000 C 
+ATOM     16  O1  NFH A1448      65.992  33.067 119.552  0.00  0.00    +0.000 OA
+ATOM     17  N2  NFH A1448      68.197  32.940 120.227  0.00  0.00    +0.000 NA
+ATOM     18  CN2 NFH A1448      68.052  33.648 121.521  0.00  0.00    +0.000 C 
+ENDBRANCH  14  15
+BRANCH  14  19
+ATOM     19  CB1 NFH A1448      68.364  32.818 116.933  0.00  0.00    +0.000 C 
+ATOM     20  CG1 NFH A1448      69.931  32.692 117.048  0.00  0.00    +0.000 C 
+ATOM     21  CG2 NFH A1448      67.948  32.406 115.495  0.00  0.00    +0.000 C 
+ATOM     22  CG3 NFH A1448      68.051  34.361 117.039  0.00  0.00    +0.000 C 
+ENDBRANCH  14  19
+ENDBRANCH   3  14
+TORSDOF 8
+ENDMDL

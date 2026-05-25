@@ -1,0 +1,450 @@
+MODEL 1
+REMARK VINA RESULT:      -8.2      0.000      0.000
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/3S3M_DLU.pdb
+REMARK  3 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAN_14  and  NAP_16
+REMARK    2  A    between atoms: CAN_14  and  CAV_22
+REMARK    3  A    between atoms: CAR_18  and  CAX_24
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAA DLU A 398     -34.246  25.094 -16.018  0.00  0.00    +0.000 C 
+ATOM      2  OAC DLU A 398     -31.543  28.057 -16.375  0.00  0.00    +0.000 OA
+ATOM      3  OAD DLU A 398     -31.581  32.602 -18.589  0.00  0.00    +0.000 OA
+ATOM      4  OAE DLU A 398     -30.759  30.362 -17.286  0.00  0.00    +0.000 OA
+ATOM      5  CAK DLU A 398     -34.667  30.924 -18.515  0.00  0.00    +0.000 A 
+ATOM      6  CAL DLU A 398     -35.757  27.400 -14.362  0.00  0.00    +0.000 C 
+ATOM      7  CAM DLU A 398     -34.404  26.702 -14.074  0.00  0.00    +0.000 C 
+ATOM      8  CAO DLU A 398     -35.418  28.753 -17.698  0.00  0.00    +0.000 C 
+ATOM      9  OAQ DLU A 398     -35.720  28.460 -15.352  0.00  0.00    +0.000 OA
+ATOM     10  CAS DLU A 398     -32.701  28.331 -16.726  0.00  0.00    +0.000 C 
+ATOM     11  CAW DLU A 398     -32.047  30.524 -17.678  0.00  0.00    +0.000 A 
+ATOM     12  CAX DLU A 398     -33.726  31.896 -18.759  0.00  0.00    +0.000 A 
+ATOM     13  CAY DLU A 398     -32.996  29.516 -17.432  0.00  0.00    +0.000 A 
+ATOM     14  CAZ DLU A 398     -32.406  31.709 -18.353  0.00  0.00    +0.000 A 
+ATOM     15  CBA DLU A 398     -33.653  26.366 -15.381  0.00  0.00    +0.000 C 
+ATOM     16  CBB DLU A 398     -35.216  27.843 -16.561  0.00  0.00    +0.000 C 
+ATOM     17  NBC DLU A 398     -33.800  27.537 -16.249  0.00  0.00    +0.000 N 
+ATOM     18  NBD DLU A 398     -34.327  29.744 -17.862  0.00  0.00    +0.000 N 
+ENDROOT
+BRANCH  12  21
+ATOM     19  OAB DLU A 398     -34.175  33.137 -20.700  0.00  0.00    +0.000 OA
+ATOM     20  NAP DLU A 398     -34.736  34.149 -18.779  0.00  0.00    +0.000 NA
+ATOM     21  CAR DLU A 398     -34.214  33.140 -19.478  0.00  0.00    +0.000 C 
+BRANCH  20  22
+ATOM     22  CAN DLU A 398     -35.189  35.303 -19.546  0.00  0.00    +0.000 C 
+BRANCH  22  30
+ATOM     23  FAF DLU A 398     -32.201  39.929 -18.410  0.00  0.00    +0.000 F 
+ATOM     24  FAG DLU A 398     -36.292  38.011 -19.532  0.00  0.00    +0.000 F 
+ATOM     25  CAH DLU A 398     -32.283  37.550 -18.669  0.00  0.00    +0.000 A 
+ATOM     26  CAI DLU A 398     -33.055  36.408 -18.944  0.00  0.00    +0.000 A 
+ATOM     27  CAJ DLU A 398     -34.231  38.968 -18.986  0.00  0.00    +0.000 A 
+ATOM     28  CAT DLU A 398     -32.890  38.813 -18.693  0.00  0.00    +0.000 A 
+ATOM     29  CAU DLU A 398     -34.982  37.843 -19.260  0.00  0.00    +0.000 A 
+ATOM     30  CAV DLU A 398     -34.403  36.555 -19.261  0.00  0.00    +0.000 A 
+ENDBRANCH  22  30
+ENDBRANCH  20  22
+ENDBRANCH  12  21
+TORSDOF 3
+ENDMDL
+MODEL 2
+REMARK VINA RESULT:      -8.0      0.876      1.249
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/3S3M_DLU.pdb
+REMARK  3 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAN_14  and  NAP_16
+REMARK    2  A    between atoms: CAN_14  and  CAV_22
+REMARK    3  A    between atoms: CAR_18  and  CAX_24
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAA DLU A 398     -34.150  25.133 -16.009  0.00  0.00    +0.000 C 
+ATOM      2  OAC DLU A 398     -31.483  28.128 -16.364  0.00  0.00    +0.000 OA
+ATOM      3  OAD DLU A 398     -31.573  32.672 -18.580  0.00  0.00    +0.000 OA
+ATOM      4  OAE DLU A 398     -30.725  30.442 -17.275  0.00  0.00    +0.000 OA
+ATOM      5  CAK DLU A 398     -34.639  30.957 -18.508  0.00  0.00    +0.000 A 
+ATOM      6  CAL DLU A 398     -35.690  27.421 -14.355  0.00  0.00    +0.000 C 
+ATOM      7  CAM DLU A 398     -34.329  26.739 -14.065  0.00  0.00    +0.000 C 
+ATOM      8  CAO DLU A 398     -35.364  28.777 -17.691  0.00  0.00    +0.000 C 
+ATOM      9  OAQ DLU A 398     -35.665  28.481 -15.344  0.00  0.00    +0.000 OA
+ATOM     10  CAS DLU A 398     -32.644  28.388 -16.716  0.00  0.00    +0.000 C 
+ATOM     11  CAW DLU A 398     -32.015  30.589 -17.668  0.00  0.00    +0.000 A 
+ATOM     12  CAX DLU A 398     -33.709  31.940 -18.751  0.00  0.00    +0.000 A 
+ATOM     13  CAY DLU A 398     -32.952  29.569 -17.422  0.00  0.00    +0.000 A 
+ATOM     14  CAZ DLU A 398     -32.388  31.769 -18.343  0.00  0.00    +0.000 A 
+ATOM     15  CBA DLU A 398     -33.573  26.413 -15.371  0.00  0.00    +0.000 C 
+ATOM     16  CBB DLU A 398     -35.152  27.870 -16.553  0.00  0.00    +0.000 C 
+ATOM     17  NBC DLU A 398     -33.733  27.581 -16.239  0.00  0.00    +0.000 N 
+ATOM     18  NBD DLU A 398     -34.285  29.781 -17.853  0.00  0.00    +0.000 N 
+ENDROOT
+BRANCH  12  21
+ATOM     19  OAB DLU A 398     -34.358  33.105 -20.683  0.00  0.00    +0.000 OA
+ATOM     20  NAP DLU A 398     -34.550  34.261 -18.771  0.00  0.00    +0.000 NA
+ATOM     21  CAR DLU A 398     -34.211  33.177 -19.471  0.00  0.00    +0.000 C 
+BRANCH  20  22
+ATOM     22  CAN DLU A 398     -35.031  35.404 -19.536  0.00  0.00    +0.000 C 
+BRANCH  22  30
+ATOM     23  FAF DLU A 398     -32.254  40.195 -18.558  0.00  0.00    +0.000 F 
+ATOM     24  FAG DLU A 398     -32.115  35.636 -19.492  0.00  0.00    +0.000 F 
+ATOM     25  CAH DLU A 398     -34.339  39.040 -18.786  0.00  0.00    +0.000 A 
+ATOM     26  CAI DLU A 398     -35.009  37.832 -19.046  0.00  0.00    +0.000 A 
+ATOM     27  CAJ DLU A 398     -32.193  37.920 -19.006  0.00  0.00    +0.000 A 
+ATOM     28  CAT DLU A 398     -32.938  39.061 -18.773  0.00  0.00    +0.000 A 
+ATOM     29  CAU DLU A 398     -32.858  36.736 -19.255  0.00  0.00    +0.000 A 
+ATOM     30  CAV DLU A 398     -34.268  36.673 -19.260  0.00  0.00    +0.000 A 
+ENDBRANCH  22  30
+ENDBRANCH  20  22
+ENDBRANCH  12  21
+TORSDOF 3
+ENDMDL
+MODEL 3
+REMARK VINA RESULT:      -7.9      4.162      9.091
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/3S3M_DLU.pdb
+REMARK  3 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAN_14  and  NAP_16
+REMARK    2  A    between atoms: CAN_14  and  CAV_22
+REMARK    3  A    between atoms: CAR_18  and  CAX_24
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAA DLU A 398     -38.277  37.441 -19.930  0.00  0.00    +0.000 C 
+ATOM      2  OAC DLU A 398     -34.314  36.849 -19.540  0.00  0.00    +0.000 OA
+ATOM      3  OAD DLU A 398     -31.442  32.800 -18.581  0.00  0.00    +0.000 OA
+ATOM      4  OAE DLU A 398     -32.247  35.359 -19.023  0.00  0.00    +0.000 OA
+ATOM      5  CAK DLU A 398     -34.851  32.148 -19.125  0.00  0.00    +0.000 A 
+ATOM      6  CAL DLU A 398     -37.774  35.505 -22.448  0.00  0.00    +0.000 C 
+ATOM      7  CAM DLU A 398     -37.215  36.922 -22.165  0.00  0.00    +0.000 C 
+ATOM      8  CAO DLU A 398     -36.809  33.530 -19.577  0.00  0.00    +0.000 C 
+ATOM      9  OAQ DLU A 398     -37.097  34.414 -21.772  0.00  0.00    +0.000 OA
+ATOM     10  CAS DLU A 398     -35.013  35.826 -19.608  0.00  0.00    +0.000 C 
+ATOM     11  CAW DLU A 398     -33.120  34.322 -19.063  0.00  0.00    +0.000 A 
+ATOM     12  CAX DLU A 398     -33.518  31.941 -18.864  0.00  0.00    +0.000 A 
+ATOM     13  CAY DLU A 398     -34.483  34.552 -19.320  0.00  0.00    +0.000 A 
+ATOM     14  CAZ DLU A 398     -32.637  33.019 -18.822  0.00  0.00    +0.000 A 
+ATOM     15  CBA DLU A 398     -36.953  37.133 -20.658  0.00  0.00    +0.000 C 
+ATOM     16  CBB DLU A 398     -37.200  34.712 -20.359  0.00  0.00    +0.000 C 
+ATOM     17  NBC DLU A 398     -36.332  35.899 -20.174  0.00  0.00    +0.000 N 
+ATOM     18  NBD DLU A 398     -35.347  33.428 -19.353  0.00  0.00    +0.000 N 
+ENDROOT
+BRANCH  12  21
+ATOM     19  OAB DLU A 398     -32.598  29.900 -19.573  0.00  0.00    +0.000 OA
+ATOM     20  NAP DLU A 398     -33.194  29.969 -17.412  0.00  0.00    +0.000 NA
+ATOM     21  CAR DLU A 398     -33.094  30.502 -18.631  0.00  0.00    +0.000 C 
+BRANCH  20  22
+ATOM     22  CAN DLU A 398     -32.757  28.586 -17.272  0.00  0.00    +0.000 C 
+BRANCH  22  30
+ATOM     23  FAF DLU A 398     -35.466  25.864 -13.163  0.00  0.00    +0.000 F 
+ATOM     24  FAG DLU A 398     -32.597  25.700 -16.826  0.00  0.00    +0.000 F 
+ATOM     25  CAH DLU A 398     -34.967  27.922 -14.282  0.00  0.00    +0.000 A 
+ATOM     26  CAI DLU A 398     -34.270  28.580 -15.310  0.00  0.00    +0.000 A 
+ATOM     27  CAJ DLU A 398     -34.052  25.788 -14.999  0.00  0.00    +0.000 A 
+ATOM     28  CAT DLU A 398     -34.842  26.533 -14.146  0.00  0.00    +0.000 A 
+ATOM     29  CAU DLU A 398     -33.373  26.440 -16.009  0.00  0.00    +0.000 A 
+ATOM     30  CAV DLU A 398     -33.487  27.836 -16.189  0.00  0.00    +0.000 A 
+ENDBRANCH  22  30
+ENDBRANCH  20  22
+ENDBRANCH  12  21
+TORSDOF 3
+ENDMDL
+MODEL 4
+REMARK VINA RESULT:      -7.7      1.538      1.884
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/3S3M_DLU.pdb
+REMARK  3 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAN_14  and  NAP_16
+REMARK    2  A    between atoms: CAN_14  and  CAV_22
+REMARK    3  A    between atoms: CAR_18  and  CAX_24
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAA DLU A 398     -33.517  25.702 -16.617  0.00  0.00    +0.000 C 
+ATOM      2  OAC DLU A 398     -31.683  29.257 -17.071  0.00  0.00    +0.000 OA
+ATOM      3  OAD DLU A 398     -32.927  33.587 -19.366  0.00  0.00    +0.000 OA
+ATOM      4  OAE DLU A 398     -31.536  31.666 -18.037  0.00  0.00    +0.000 OA
+ATOM      5  CAK DLU A 398     -35.470  31.166 -19.211  0.00  0.00    +0.000 A 
+ATOM      6  CAL DLU A 398     -35.558  27.570 -14.978  0.00  0.00    +0.000 C 
+ATOM      7  CAM DLU A 398     -34.066  27.255 -14.700  0.00  0.00    +0.000 C 
+ATOM      8  CAO DLU A 398     -35.619  28.893 -18.343  0.00  0.00    +0.000 C 
+ATOM      9  OAQ DLU A 398     -35.809  28.582 -15.987  0.00  0.00    +0.000 OA
+ATOM     10  CAS DLU A 398     -32.876  29.213 -17.408  0.00  0.00    +0.000 C 
+ATOM     11  CAW DLU A 398     -32.826  31.480 -18.410  0.00  0.00    +0.000 A 
+ATOM     12  CAX DLU A 398     -34.816  32.344 -19.488  0.00  0.00    +0.000 A 
+ATOM     13  CAY DLU A 398     -33.477  30.265 -18.130  0.00  0.00    +0.000 A 
+ATOM     14  CAZ DLU A 398     -33.489  32.516 -19.100  0.00  0.00    +0.000 A 
+ATOM     15  CBA DLU A 398     -33.269  27.098 -16.013  0.00  0.00    +0.000 C 
+ATOM     16  CBB DLU A 398     -35.175  28.092 -17.193  0.00  0.00    +0.000 C 
+ATOM     17  NBC DLU A 398     -33.725  28.171 -16.899  0.00  0.00    +0.000 N 
+ATOM     18  NBD DLU A 398     -34.826  30.130 -18.542  0.00  0.00    +0.000 N 
+ENDROOT
+BRANCH  12  21
+ATOM     19  OAB DLU A 398     -35.762  33.267 -21.428  0.00  0.00    +0.000 OA
+ATOM     20  NAP DLU A 398     -36.204  34.386 -19.535  0.00  0.00    +0.000 NA
+ATOM     21  CAR DLU A 398     -35.619  33.402 -20.221  0.00  0.00    +0.000 C 
+BRANCH  20  22
+ATOM     22  CAN DLU A 398     -36.964  35.356 -20.313  0.00  0.00    +0.000 C 
+BRANCH  22  30
+ATOM     23  FAF DLU A 398     -35.760  40.658 -18.877  0.00  0.00    +0.000 F 
+ATOM     24  FAG DLU A 398     -38.949  37.492 -20.092  0.00  0.00    +0.000 F 
+ATOM     25  CAH DLU A 398     -35.007  38.426 -19.306  0.00  0.00    +0.000 A 
+ATOM     26  CAI DLU A 398     -35.337  37.104 -19.655  0.00  0.00    +0.000 A 
+ATOM     27  CAJ DLU A 398     -37.340  39.079 -19.500  0.00  0.00    +0.000 A 
+ATOM     28  CAT DLU A 398     -36.021  39.391 -19.233  0.00  0.00    +0.000 A 
+ATOM     29  CAU DLU A 398     -37.656  37.781 -19.847  0.00  0.00    +0.000 A 
+ATOM     30  CAV DLU A 398     -36.660  36.785 -19.947  0.00  0.00    +0.000 A 
+ENDBRANCH  22  30
+ENDBRANCH  20  22
+ENDBRANCH  12  21
+TORSDOF 3
+ENDMDL
+MODEL 5
+REMARK VINA RESULT:      -7.6      4.101      9.336
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/3S3M_DLU.pdb
+REMARK  3 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAN_14  and  NAP_16
+REMARK    2  A    between atoms: CAN_14  and  CAV_22
+REMARK    3  A    between atoms: CAR_18  and  CAX_24
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAA DLU A 398     -32.833  38.392 -20.923  0.00  0.00    +0.000 C 
+ATOM      2  OAC DLU A 398     -35.791  35.833 -19.966  0.00  0.00    +0.000 OA
+ATOM      3  OAD DLU A 398     -35.951  30.905 -18.850  0.00  0.00    +0.000 OA
+ATOM      4  OAE DLU A 398     -36.693  33.458 -19.414  0.00  0.00    +0.000 OA
+ATOM      5  CAK DLU A 398     -32.735  32.289 -19.148  0.00  0.00    +0.000 A 
+ATOM      6  CAL DLU A 398     -31.949  37.650 -17.922  0.00  0.00    +0.000 C 
+ATOM      7  CAM DLU A 398     -33.230  38.360 -18.427  0.00  0.00    +0.000 C 
+ATOM      8  CAO DLU A 398     -31.867  34.501 -19.697  0.00  0.00    +0.000 C 
+ATOM      9  OAQ DLU A 398     -31.948  36.203 -18.030  0.00  0.00    +0.000 OA
+ATOM     10  CAS DLU A 398     -34.634  35.411 -19.811  0.00  0.00    +0.000 C 
+ATOM     11  CAW DLU A 398     -35.388  33.099 -19.331  0.00  0.00    +0.000 A 
+ATOM     12  CAX DLU A 398     -33.737  31.370 -18.943  0.00  0.00    +0.000 A 
+ATOM     13  CAY DLU A 398     -34.376  34.049 -19.555  0.00  0.00    +0.000 A 
+ATOM     14  CAZ DLU A 398     -35.072  31.757 -19.037  0.00  0.00    +0.000 A 
+ATOM     15  CBA DLU A 398     -33.689  37.795 -19.788  0.00  0.00    +0.000 C 
+ATOM     16  CBB DLU A 398     -32.147  35.921 -19.436  0.00  0.00    +0.000 C 
+ATOM     17  NBC DLU A 398     -33.544  36.340 -19.696  0.00  0.00    +0.000 N 
+ATOM     18  NBD DLU A 398     -33.030  33.615 -19.451  0.00  0.00    +0.000 N 
+ENDROOT
+BRANCH  12  21
+ATOM     19  OAB DLU A 398     -33.214  29.163 -19.546  0.00  0.00    +0.000 OA
+ATOM     20  NAP DLU A 398     -32.936  29.641 -17.373  0.00  0.00    +0.000 NA
+ATOM     21  CAR DLU A 398     -33.295  29.955 -18.619  0.00  0.00    +0.000 C 
+BRANCH  20  22
+ATOM     22  CAN DLU A 398     -32.516  28.264 -17.147  0.00  0.00    +0.000 C 
+BRANCH  22  30
+ATOM     23  FAF DLU A 398     -35.537  25.693 -13.162  0.00  0.00    +0.000 F 
+ATOM     24  FAG DLU A 398     -32.566  25.369 -16.731  0.00  0.00    +0.000 F 
+ATOM     25  CAH DLU A 398     -34.864  27.722 -14.239  0.00  0.00    +0.000 A 
+ATOM     26  CAI DLU A 398     -34.089  28.342 -15.235  0.00  0.00    +0.000 A 
+ATOM     27  CAJ DLU A 398     -34.071  25.539 -14.952  0.00  0.00    +0.000 A 
+ATOM     28  CAT DLU A 398     -34.837  26.327 -14.115  0.00  0.00    +0.000 A 
+ATOM     29  CAU DLU A 398     -33.317  26.153 -15.932  0.00  0.00    +0.000 A 
+ATOM     30  CAV DLU A 398     -33.330  27.555 -16.098  0.00  0.00    +0.000 A 
+ENDBRANCH  22  30
+ENDBRANCH  20  22
+ENDBRANCH  12  21
+TORSDOF 3
+ENDMDL
+MODEL 6
+REMARK VINA RESULT:      -7.6      1.764      2.349
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/3S3M_DLU.pdb
+REMARK  3 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAN_14  and  NAP_16
+REMARK    2  A    between atoms: CAN_14  and  CAV_22
+REMARK    3  A    between atoms: CAR_18  and  CAX_24
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAA DLU A 398     -33.399  25.814 -16.573  0.00  0.00    +0.000 C 
+ATOM      2  OAC DLU A 398     -31.749  29.455 -17.045  0.00  0.00    +0.000 OA
+ATOM      3  OAD DLU A 398     -33.195  33.693 -19.393  0.00  0.00    +0.000 OA
+ATOM      4  OAE DLU A 398     -31.718  31.860 -18.032  0.00  0.00    +0.000 OA
+ATOM      5  CAK DLU A 398     -35.609  31.144 -19.238  0.00  0.00    +0.000 A 
+ATOM      6  CAL DLU A 398     -35.550  27.588 -14.971  0.00  0.00    +0.000 C 
+ATOM      7  CAM DLU A 398     -34.047  27.353 -14.676  0.00  0.00    +0.000 C 
+ATOM      8  CAO DLU A 398     -35.648  28.874 -18.349  0.00  0.00    +0.000 C 
+ATOM      9  OAQ DLU A 398     -35.844  28.576 -15.992  0.00  0.00    +0.000 OA
+ATOM     10  CAS DLU A 398     -32.935  29.346 -17.392  0.00  0.00    +0.000 C 
+ATOM     11  CAW DLU A 398     -32.993  31.603 -18.416  0.00  0.00    +0.000 A 
+ATOM     12  CAX DLU A 398     -35.015  32.352 -19.520  0.00  0.00    +0.000 A 
+ATOM     13  CAY DLU A 398     -33.582  30.358 -18.130  0.00  0.00    +0.000 A 
+ATOM     14  CAZ DLU A 398     -33.703  32.597 -19.122  0.00  0.00    +0.000 A 
+ATOM     15  CBA DLU A 398     -33.230  27.226 -15.980  0.00  0.00    +0.000 C 
+ATOM     16  CBB DLU A 398     -35.174  28.108 -17.187  0.00  0.00    +0.000 C 
+ATOM     17  NBC DLU A 398     -33.733  28.266 -16.881  0.00  0.00    +0.000 N 
+ATOM     18  NBD DLU A 398     -34.919  30.149 -18.553  0.00  0.00    +0.000 N 
+ENDROOT
+BRANCH  12  21
+ATOM     19  OAB DLU A 398     -35.908  33.267 -21.489  0.00  0.00    +0.000 OA
+ATOM     20  NAP DLU A 398     -36.592  34.251 -19.594  0.00  0.00    +0.000 NA
+ATOM     21  CAR DLU A 398     -35.865  33.360 -20.271  0.00  0.00    +0.000 C 
+BRANCH  20  22
+ATOM     22  CAN DLU A 398     -37.387  35.178 -20.389  0.00  0.00    +0.000 C 
+BRANCH  22  30
+ATOM     23  FAF DLU A 398     -36.531  40.603 -19.184  0.00  0.00    +0.000 F 
+ATOM     24  FAG DLU A 398     -34.747  36.398 -20.080  0.00  0.00    +0.000 F 
+ATOM     25  CAH DLU A 398     -38.061  38.808 -19.595  0.00  0.00    +0.000 A 
+ATOM     26  CAI DLU A 398     -38.248  37.450 -19.910  0.00  0.00    +0.000 A 
+ATOM     27  CAJ DLU A 398     -35.651  38.501 -19.614  0.00  0.00    +0.000 A 
+ATOM     28  CAT DLU A 398     -36.760  39.309 -19.455  0.00  0.00    +0.000 A 
+ATOM     29  CAU DLU A 398     -35.841  37.168 -19.917  0.00  0.00    +0.000 A 
+ATOM     30  CAV DLU A 398     -37.137  36.623 -20.050  0.00  0.00    +0.000 A 
+ENDBRANCH  22  30
+ENDBRANCH  20  22
+ENDBRANCH  12  21
+TORSDOF 3
+ENDMDL
+MODEL 7
+REMARK VINA RESULT:      -7.5      4.022      9.426
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/3S3M_DLU.pdb
+REMARK  3 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAN_14  and  NAP_16
+REMARK    2  A    between atoms: CAN_14  and  CAV_22
+REMARK    3  A    between atoms: CAR_18  and  CAX_24
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAA DLU A 398     -34.734  38.756 -21.351  0.00  0.00    +0.000 C 
+ATOM      2  OAC DLU A 398     -37.216  35.822 -20.152  0.00  0.00    +0.000 OA
+ATOM      3  OAD DLU A 398     -36.579  30.953 -18.946  0.00  0.00    +0.000 OA
+ATOM      4  OAE DLU A 398     -37.723  33.356 -19.501  0.00  0.00    +0.000 OA
+ATOM      5  CAK DLU A 398     -33.627  32.782 -19.486  0.00  0.00    +0.000 A 
+ATOM      6  CAL DLU A 398     -33.557  38.230 -18.405  0.00  0.00    +0.000 C 
+ATOM      7  CAM DLU A 398     -34.959  38.733 -18.833  0.00  0.00    +0.000 C 
+ATOM      8  CAO DLU A 398     -33.130  35.080 -20.129  0.00  0.00    +0.000 C 
+ATOM      9  OAQ DLU A 398     -33.350  36.796 -18.489  0.00  0.00    +0.000 OA
+ATOM     10  CAS DLU A 398     -36.002  35.576 -20.070  0.00  0.00    +0.000 C 
+ATOM     11  CAW DLU A 398     -36.376  33.193 -19.501  0.00  0.00    +0.000 A 
+ATOM     12  CAX DLU A 398     -34.468  31.733 -19.198  0.00  0.00    +0.000 A 
+ATOM     13  CAY DLU A 398     -35.531  34.273 -19.810  0.00  0.00    +0.000 A 
+ATOM     14  CAZ DLU A 398     -35.848  31.918 -19.207  0.00  0.00    +0.000 A 
+ATOM     15  CBA DLU A 398     -35.417  38.071 -20.151  0.00  0.00    +0.000 C 
+ATOM     16  CBB DLU A 398     -33.598  36.451 -19.874  0.00  0.00    +0.000 C 
+ATOM     17  NBC DLU A 398     -35.055  36.656 -20.045  0.00  0.00    +0.000 N 
+ATOM     18  NBD DLU A 398     -34.132  34.042 -19.790  0.00  0.00    +0.000 N 
+ENDROOT
+BRANCH  12  21
+ATOM     19  OAB DLU A 398     -33.297  29.792 -19.810  0.00  0.00    +0.000 OA
+ATOM     20  NAP DLU A 398     -33.717  29.991 -17.616  0.00  0.00    +0.000 NA
+ATOM     21  CAR DLU A 398     -33.803  30.406 -18.881  0.00  0.00    +0.000 C 
+BRANCH  20  22
+ATOM     22  CAN DLU A 398     -33.056  28.711 -17.396  0.00  0.00    +0.000 C 
+BRANCH  22  30
+ATOM     23  FAF DLU A 398     -35.287  25.816 -13.124  0.00  0.00    +0.000 F 
+ATOM     24  FAG DLU A 398     -32.577  25.867 -16.908  0.00  0.00    +0.000 F 
+ATOM     25  CAH DLU A 398     -35.054  27.889 -14.299  0.00  0.00    +0.000 A 
+ATOM     26  CAI DLU A 398     -34.474  28.593 -15.368  0.00  0.00    +0.000 A 
+ATOM     27  CAJ DLU A 398     -33.953  25.846 -15.020  0.00  0.00    +0.000 A 
+ATOM     28  CAT DLU A 398     -34.779  26.523 -14.144  0.00  0.00    +0.000 A 
+ATOM     29  CAU DLU A 398     -33.390  26.542 -16.070  0.00  0.00    +0.000 A 
+ATOM     30  CAV DLU A 398     -33.657  27.914 -16.269  0.00  0.00    +0.000 A 
+ENDBRANCH  22  30
+ENDBRANCH  20  22
+ENDBRANCH  12  21
+TORSDOF 3
+ENDMDL
+MODEL 8
+REMARK VINA RESULT:      -7.5      3.911      9.329
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/3S3M_DLU.pdb
+REMARK  3 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAN_14  and  NAP_16
+REMARK    2  A    between atoms: CAN_14  and  CAV_22
+REMARK    3  A    between atoms: CAR_18  and  CAX_24
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAA DLU A 398     -36.559  39.680 -19.337  0.00  0.00    +0.000 C 
+ATOM      2  OAC DLU A 398     -32.915  38.073 -18.749  0.00  0.00    +0.000 OA
+ATOM      3  OAD DLU A 398     -31.160  33.338 -18.496  0.00  0.00    +0.000 OA
+ATOM      4  OAE DLU A 398     -31.317  36.051 -18.408  0.00  0.00    +0.000 OA
+ATOM      5  CAK DLU A 398     -34.521  33.661 -19.471  0.00  0.00    +0.000 A 
+ATOM      6  CAL DLU A 398     -36.148  38.231 -22.178  0.00  0.00    +0.000 C 
+ATOM      7  CAM DLU A 398     -35.337  39.381 -21.530  0.00  0.00    +0.000 C 
+ATOM      8  CAO DLU A 398     -36.046  35.541 -19.763  0.00  0.00    +0.000 C 
+ATOM      9  OAQ DLU A 398     -35.826  36.894 -21.714  0.00  0.00    +0.000 OA
+ATOM     10  CAS DLU A 398     -33.804  37.288 -19.111  0.00  0.00    +0.000 C 
+ATOM     11  CAW DLU A 398     -32.381  35.288 -18.761  0.00  0.00    +0.000 A 
+ATOM     12  CAX DLU A 398     -33.314  33.087 -19.149  0.00  0.00    +0.000 A 
+ATOM     13  CAY DLU A 398     -33.612  35.891 -19.077  0.00  0.00    +0.000 A 
+ATOM     14  CAZ DLU A 398     -32.233  33.886 -18.784  0.00  0.00    +0.000 A 
+ATOM     15  CBA DLU A 398     -35.247  39.213 -19.998  0.00  0.00    +0.000 C 
+ATOM     16  CBB DLU A 398     -36.056  36.916 -20.284  0.00  0.00    +0.000 C 
+ATOM     17  NBC DLU A 398     -34.984  37.792 -19.757  0.00  0.00    +0.000 N 
+ATOM     18  NBD DLU A 398     -34.687  35.043 -19.442  0.00  0.00    +0.000 N 
+ENDROOT
+BRANCH  12  21
+ATOM     19  OAB DLU A 398     -33.044  31.063 -20.309  0.00  0.00    +0.000 OA
+ATOM     20  NAP DLU A 398     -33.340  30.853 -18.096  0.00  0.00    +0.000 NA
+ATOM     21  CAR DLU A 398     -33.251  31.572 -19.216  0.00  0.00    +0.000 C 
+BRANCH  20  22
+ATOM     22  CAN DLU A 398     -33.262  29.406 -18.246  0.00  0.00    +0.000 C 
+BRANCH  22  30
+ATOM     23  FAF DLU A 398     -34.744  26.685 -13.553  0.00  0.00    +0.000 F 
+ATOM     24  FAG DLU A 398     -32.466  26.664 -17.613  0.00  0.00    +0.000 F 
+ATOM     25  CAH DLU A 398     -34.835  28.668 -14.892  0.00  0.00    +0.000 A 
+ATOM     26  CAI DLU A 398     -34.440  29.330 -16.068  0.00  0.00    +0.000 A 
+ATOM     27  CAJ DLU A 398     -33.627  26.676 -15.585  0.00  0.00    +0.000 A 
+ATOM     28  CAT DLU A 398     -34.417  27.349 -14.673  0.00  0.00    +0.000 A 
+ATOM     29  CAU DLU A 398     -33.247  27.331 -16.739  0.00  0.00    +0.000 A 
+ATOM     30  CAV DLU A 398     -33.662  28.654 -17.004  0.00  0.00    +0.000 A 
+ENDBRANCH  22  30
+ENDBRANCH  20  22
+ENDBRANCH  12  21
+TORSDOF 3
+ENDMDL
+MODEL 9
+REMARK VINA RESULT:      -7.4      1.740      3.038
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/3S3M_DLU.pdb
+REMARK  3 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: CAN_14  and  NAP_16
+REMARK    2  A    between atoms: CAN_14  and  CAV_22
+REMARK    3  A    between atoms: CAR_18  and  CAX_24
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  CAA DLU A 398     -34.043  25.522 -14.791  0.00  0.00    +0.000 C 
+ATOM      2  OAC DLU A 398     -36.198  28.076 -17.036  0.00  0.00    +0.000 OA
+ATOM      3  OAD DLU A 398     -35.140  32.393 -19.445  0.00  0.00    +0.000 OA
+ATOM      4  OAE DLU A 398     -36.481  30.275 -18.393  0.00  0.00    +0.000 OA
+ATOM      5  CAK DLU A 398     -32.380  30.703 -18.076  0.00  0.00    +0.000 A 
+ATOM      6  CAL DLU A 398     -32.528  25.170 -17.606  0.00  0.00    +0.000 C 
+ATOM      7  CAM DLU A 398     -33.995  24.847 -17.227  0.00  0.00    +0.000 C 
+ATOM      8  CAO DLU A 398     -32.096  28.662 -16.773  0.00  0.00    +0.000 C 
+ATOM      9  OAQ DLU A 398     -32.244  26.563 -17.894  0.00  0.00    +0.000 OA
+ATOM     10  CAS DLU A 398     -34.970  28.253 -17.037  0.00  0.00    +0.000 C 
+ATOM     11  CAW DLU A 398     -35.135  30.393 -18.277  0.00  0.00    +0.000 A 
+ATOM     12  CAX DLU A 398     -33.119  31.654 -18.739  0.00  0.00    +0.000 A 
+ATOM     13  CAY DLU A 398     -34.395  29.417 -17.586  0.00  0.00    +0.000 A 
+ATOM     14  CAZ DLU A 398     -34.502  31.518 -18.844  0.00  0.00    +0.000 A 
+ATOM     15  CBA DLU A 398     -34.550  25.864 -16.206  0.00  0.00    +0.000 C 
+ATOM     16  CBB DLU A 398     -32.616  27.289 -16.697  0.00  0.00    +0.000 C 
+ATOM     17  NBC DLU A 398     -34.093  27.182 -16.651  0.00  0.00    +0.000 N 
+ATOM     18  NBD DLU A 398     -32.991  29.593 -17.501  0.00  0.00    +0.000 N 
+ENDROOT
+BRANCH  12  21
+ATOM     19  OAB DLU A 398     -31.997  32.736 -20.495  0.00  0.00    +0.000 OA
+ATOM     20  NAP DLU A 398     -32.138  33.915 -18.592  0.00  0.00    +0.000 NA
+ATOM     21  CAR DLU A 398     -32.345  32.819 -19.325  0.00  0.00    +0.000 C 
+BRANCH  20  22
+ATOM     22  CAN DLU A 398     -31.393  34.992 -19.232  0.00  0.00    +0.000 C 
+BRANCH  22  30
+ATOM     23  FAF DLU A 398     -34.397  39.675 -20.049  0.00  0.00    +0.000 F 
+ATOM     24  FAG DLU A 398     -31.453  37.253 -17.378  0.00  0.00    +0.000 F 
+ATOM     25  CAH DLU A 398     -33.723  37.508 -20.814  0.00  0.00    +0.000 A 
+ATOM     26  CAI DLU A 398     -32.953  36.353 -20.592  0.00  0.00    +0.000 A 
+ATOM     27  CAJ DLU A 398     -32.944  38.455 -18.716  0.00  0.00    +0.000 A 
+ATOM     28  CAT DLU A 398     -33.701  38.542 -19.868  0.00  0.00    +0.000 A 
+ATOM     29  CAU DLU A 398     -32.194  37.316 -18.502  0.00  0.00    +0.000 A 
+ATOM     30  CAV DLU A 398     -32.203  36.247 -19.424  0.00  0.00    +0.000 A 
+ENDBRANCH  22  30
+ENDBRANCH  20  22
+ENDBRANCH  12  21
+TORSDOF 3
+ENDMDL
