@@ -27,8 +27,8 @@ from typing import Dict, List, Optional, Tuple
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 SCRIPT_DIR    = Path(__file__).parent
-LIGANDSCOPE   = Path('/home/cycheng/LigandScope/data')
-SIF_PATH      = SCRIPT_DIR / 'autodock-vina-gpu-2.1.sif'
+LS_VAL_DIR    = SCRIPT_DIR / 'ligandscope_validation'
+SIF_PATH      = SCRIPT_DIR / 'autodock-vina-gpu.sif'
 OUT_DIR       = SCRIPT_DIR / 'ligandscope_results'
 
 SYSTEMS: Dict[str, List[str]] = {
@@ -275,8 +275,8 @@ def main() -> None:
         print(f"  {pdb}  [{cls}]")
         print(f"{'='*60}")
 
-        receptor = LIGANDSCOPE / cls / pdb / 'receptor' / f'{pdb}_pocket.pdbqt'
-        ligand   = LIGANDSCOPE / cls / pdb / 'ligand'   / f'{pdb}_ligand.pdbqt'
+        receptor = LS_VAL_DIR / 'pdbqt_receptor' / f'{pdb}_pocket.pdbqt'
+        ligand   = LS_VAL_DIR / 'pdbqt_ligand'   / f'{pdb}_ligand.pdbqt'
 
         if not receptor.exists():
             print(f"  ERROR: receptor not found: {receptor}")
