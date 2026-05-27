@@ -1,21 +1,21 @@
 PDB_ID	Lig	Metal	Vina_R1_dist	ET_R1_dist	VR_at_ET1	ET_pass	Vina_pass	Best_dist	Description
-1A42	BZU	ZN	0.363	0.735	5	PASS	PASS	0.363	CAII + Acetazolamide analog
-1BNN	AL1	ZN	2.163	1.766	5	PASS	FAIL	0.21	CAII + aminobenzenesulfonamide
-1G52	F2B	ZN	2.584	2.793	6	FAIL	FAIL	0.17	CAII + F-benzenesulfonamide [centroid-close VR=3 is flipped: O13/O14→Zn, not crystal NP2→Zn; PDBQT missing H on NP2; 9.6 kcal gap irrecoverable]
+1A42	BZU	ZN	0.363	0.735	5	PASS	PASS	0.237	CAII + Acetazolamide analog
+1BNN	AL1	ZN	2.163	1.766	5	PASS	FAIL	0.214	CAII + aminobenzenesulfonamide
+1G52	F2B	ZN	2.584	2.793	6	FAIL	FAIL	0.172	CAII + F-benzenesulfonamide [centroid-close VR=3 flipped: O13/O14→Zn not crystal NP2→Zn; PDBQT missing H on NP2; irrecoverable structural fail]
 1GKC	NFH	ZN	0.296	0.371	3	PASS	PASS	0.296	MMP-2 + phosphonate inhibitor
-1JAQ	01S	ZN	2.328	1.557	8	PASS	FAIL	1.557	MMP-8 + tripeptide hydroxamate
+1JAQ	01S	ZN	2.328	1.557	8	PASS	FAIL	0.553	MMP-8 + tripeptide hydroxamate
 1MMQ	RRS	ZN	0.185	0.185	1	PASS	PASS	0.185	MMP-1 + peptide hydroxamate
 1O86	LPR	ZN	0.183	0.183	1	PASS	PASS	0.183	ACE + Captopril
-1OQ5	CEL	ZN	0.864	0.864	1	PASS	PASS	0.864	CAII + Acetazolamide
-1UZE	EAL	ZN	0.274	0.274	1	PASS	PASS	0.274	ACE + Enalaprilat
+1OQ5	CEL	ZN	0.864	0.864	1	PASS	PASS	0.163	CAII + CEL inhibitor
+1UZE	EAL	ZN	0.274	0.274	1	PASS	PASS	0.239	ACE + Enalaprilat
 1YDB	AZM	ZN	0.287	0.507	8	PASS	PASS	0.287	CAII + fluorinated sulfonamide
-1ZNC	SO4	ZN	1.918	1.506	8	PASS	PASS	1.506	CAII-IV + sulfate (direct Zn)
-2C6N	LPR	ZN	0.701	0.701	1	PASS	PASS	0.701	ACE + Lisinopril
+1ZNC	SO4	ZN	1.918	1.506	8	PASS	PASS	1.452	CAII-IV + sulfate (direct Zn)
+2C6N	LPR	ZN	0.701	0.701	1	PASS	PASS	0.192	ACE + Lisinopril
 2CBD	SO3	ZN	0.765	0.688	5	PASS	PASS	0.688	CAII + sulfite (direct Zn)
 2G1M	4HG	FE	1.832	1.496	2	PASS	PASS	1.496	PHD2 + 4HG inhibitor (Fe)
-2OVX	4MR	ZN	0.498	0.498	1	PASS	PASS	0.498	MMP-9 + hydroxamate
-2W0D	CGS	ZN	0.538	0.538	1	PASS	PASS	0.538	MMP-9 + CGS27023A hydroxamate
-3HS4	AZM	ZN	1.216	0.836	2	PASS	PASS	0.836	CAII + coumarin inhibitor
+2OVX	4MR	ZN	0.498	0.498	1	PASS	PASS	0.425	MMP-9 + hydroxamate
+2W0D	CGS	ZN	0.538	0.538	1	PASS	PASS	0.166	MMP-9 + CGS27023A hydroxamate
+3HS4	AZM	ZN	1.216	0.836	2	PASS	PASS	0.747	CAII + coumarin inhibitor
 3L2U	ELV	MG	0.482	0.482	1	PASS	PASS	0.482	HIV-IN + Elvitegravir
-3P5A	IT2	ZN	0.669	0.495	6	PASS	PASS	0.495	CAII + dithiocarbamate (S→Zn)
-3S3M	DLU	MG	5.321	5.321	1	FAIL	FAIL	1.995	HIV-IN + Raltegravir [sd512 VR=10 at 1.995Å centroid but single Mg only; crystal needs dual Mg bridging (OAE/OAC→MG1, OAE/OAD→MG2); centroid metric misleading for elongated bridging ligand; 3.2 kcal gap irrecoverable]
+3P5A	IT2	ZN	0.669	0.495	6	PASS	PASS	0.387	CAII + dithiocarbamate (S→Zn)
+3S3M	DLU	MG	5.321	5.321	1	FAIL	FAIL	3.785	HIV-IN + Raltegravir [dual-Mg bridge needed; centroid metric misleading for elongated bridging ligand; irrecoverable structural fail]
