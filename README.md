@@ -15,7 +15,7 @@ with two key additions: **metal coordination scoring** for metalloenzyme targets
 |---------|----------|-----|
 | Metal coordination scoring (Zn, Mg, Fe, Mn, Ca) | ✗ | ✅ |
 | Multi-GPU work-stealing dispatch | ✗ | ✅ |
-| Metalloenzyme self-docking (Best RMSD < 2 Å) | 61 % (11/18) | **100 % (20/20)** |
+| Metalloenzyme self-docking (Best RMSD < 2 Å) | 61 % (11/18) | **95 % (19/20)** sd=32; 100 % with sd=512 |
 | Throughput (1 GPU, sd=32) | 0.50 mol/s | **1.3 mol/s** |
 | Throughput (2 GPU, sd=32) | — | **2.5 mol/s** |
 
@@ -141,38 +141,47 @@ Standard pose-recovery benchmark across diverse protein classes.
 | Metric | Baseline (standard Vina) | **PRO** |
 |--------|--------------------------|---------|
 | Best RMSD < 2 Å | 11/18 = 61 % | **20/20 = 100 %** ✓ |
-| Mg / Fe targets | 0/3 (0 %) | **3/3 (100 %)** |
-| Average Best RMSD | ~2.5 Å | **~1.0 Å** |
+| Mg / Fe targets ETr=1 PASS | 0/3 (0 %) | **2/3 (67 %)** |
+| LigandScope ETr=1 re-ranking PASS | — | **18/20 (90 %)** |
+| Average Best RMSD | ~2.5 Å | **< 1.0 Å** (18/20) |
 
-> **Stochastic note:** targets 3S3M (Mg) and 2G1M (Fe) pass ~50 % of runs each.
-> 20/20 is confirmed achievable (verified over 9 runs); median is 19/20.
+> **Failure analysis:** 1G52 — near-crystal pose has flipped sulfonyl (O→Zn not N→Zn), true crystal mode not sampled.
+> 3S3M — Raltegravir bridges two Mg²⁺; no pose achieves both centroid < 2 Å and dual-Mg coordination simultaneously.
 
-#### Results table (sd=32)
+#### Results table (sd=32, LigandScope ETr=1 re-ranking)
 
-| PDB | Metal | Ki (nM) | Best Å | Enzyme |
-|-----|-------|---------|--------|--------|
-| 1OQ5 | Zn |    9 | **0.86** | CAII |
-| 1BNN | Zn |  380 | **1.46** | CAII |
-| 3P5A | Zn |  200 | **1.03** | CAII |
-| 1A42 | Zn |   15 | **1.05** | CAII |
-| 1YDB | Zn |    2 | **0.52** | CAII |
-| 3HS4 | Zn | 8300 | **1.19** | CAII |
-| 2CBD | Zn |  900 | **0.87** | CAII |
-| 1G52 | Zn |  100 | **0.98** | CAII |
-| 1ZNC | Zn |  200 | **1.52** | CAII |
-| 1GKC | Zn |   27 | **1.19** | MMP-2 |
-| 1MMQ | Zn |  670 | **0.93** | MMP-1 |
-| 1JAQ | Zn |   10 | **1.74** | MMP-8 |
-| 2OVX | Zn |   26 | **0.98** | MMP-9 |
-| 1O86 | Zn |  1.7 | **0.66** | ACE |
-| 2C6N | Zn | 0.27 | **1.18** | ACE |
-| 1UZE | Zn |  2.2 | **0.69** | ACE |
-| 3L2U | Mg |  2.0 | **1.03** | HIV-IN |
-| 3S3M | Mg |  3.0 | **0.50**† | HIV-IN |
-| 2W0D | Zn |  1.0 | **0.93** | MMP-9 |
-| 2G1M | Fe |   50 | **1.64**† | PHD2 |
+| PDB | Metal | Ki (nM) | Vina R1 Å | ETr=1 Å | Best Å | Enzyme |
+|-----|-------|---------|-----------|---------|--------|--------|
+| 1OQ5 | Zn |    9 | 0.86 | **0.86** | 0.86 | CAII |
+| 1BNN | Zn |  380 | 2.16 | **1.77** | 0.21 | CAII |
+| 3P5A | Zn |  200 | 0.67 | **0.50** | 0.50 | CAII |
+| 1A42 | Zn |   15 | 0.36 | **0.74** | 0.36 | CAII |
+| 1YDB | Zn |    2 | 0.29 | **0.51** | 0.29 | CAII |
+| 3HS4 | Zn | 8300 | 1.22 | **0.84** | 0.84 | CAII |
+| 2CBD | Zn |  900 | 0.77 | **0.69** | 0.69 | CAII |
+| 1G52‡ | Zn |  100 | 2.58 | 2.79 | 0.17 | CAII |
+| 1ZNC | Zn |  200 | 1.92 | **1.51** | 1.51 | CAII |
+| 1GKC | Zn |   27 | 0.30 | **0.37** | 0.30 | MMP-2 |
+| 1MMQ | Zn |  670 | 0.19 | **0.19** | 0.19 | MMP-1 |
+| 1JAQ | Zn |   10 | 2.33 | **1.56** | 1.56 | MMP-8 |
+| 2OVX | Zn |   26 | 0.50 | **0.50** | 0.50 | MMP-9 |
+| 1O86 | Zn |  1.7 | 0.18 | **0.18** | 0.18 | ACE |
+| 2C6N | Zn | 0.27 | 0.70 | **0.70** | 0.70 | ACE |
+| 1UZE | Zn |  2.2 | 0.27 | **0.27** | 0.27 | ACE |
+| 3L2U | Mg |  2.0 | 0.48 | **0.48** | 0.48 | HIV-IN |
+| 3S3M†| Mg |  3.0 | 5.32 | 5.32 | 1.995 | HIV-IN |
+| 2W0D | Zn |  1.0 | 0.54 | **0.54** | 0.54 | MMP-9 |
+| 2G1M | Fe |   50 | 1.83 | **1.50** | 1.50 | PHD2 |
 
-Bold = Best RMSD < 2 Å. †Stochastic target; best observed shown.
+**Bold ETr=1** = LigandScope re-ranking PASS (< 2 Å).  
+†3S3M: dual Mg²⁺ bridging pharmacophore; best=1.995Å found only at sd=512 (single-Mg coord, centroid metric misleading for elongated bridging ligand).  
+‡1G52: best=0.17Å pose has flipped sulfonyl (O→Zn not crystal N→Zn); true crystal mode not sampled.
+
+| Metric | sd=32 |
+|--------|-------|
+| LigandScope ETr=1 PASS | **18/20 (90%)** |
+| Vina rank-1 baseline PASS | 16/20 (80%) |
+| Best dist < 2 Å (all poses) | 19/20 (95%) |
 
 To reproduce: `cd metal_validation && bash reproduce.sh --depth 32`
 
