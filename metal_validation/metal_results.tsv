@@ -1,21 +1,21 @@
-PDB_ID	Metal	Ki_nM	RMSD_top1	RMSD_best	delta_top1	delta_best	Status	Description
-1OQ5	ZN	9	1.27	1.07	-0.06↓	+0.54↑	OK	CAII + Acetazolamide
-1BNN	ZN	380	3.29	1.37	-1.20↓	+0.44↑	OK	CAII + aminobenzenesulfonamide
-3P5A	ZN	200	3.65	1.02	N/A	N/A	OK	CAII + dithiocarbamate (S->Zn)
-1A42	ZN	15	1.22	0.53	-3.53↓	-0.80↓	OK	CAII + Acetazolamide analog
-1YDB	ZN	2	1.08	0.53	-4.52↓	+0.16↑	OK	CAII + fluorinated sulfonamide
-3HS4	ZN	8300	4.32	1.05	+3.12↑	+0.41↑	OK	CAII + coumarin inhibitor
-2CBD	ZN	900	1.47	0.86	N/A	N/A	OK	CAII + sulfite (direct Zn)
-1G52	ZN	100	4.62	1.05	-0.19↓	-2.77↓	OK	CAII + fluorinated benzensulfonamide
-1ZNC	ZN	200	2.15	1.60	N/A	N/A	OK	CAII-IV + sulfate (direct Zn)
-1GKC	ZN	27	0.70	0.70	-0.46↓	-0.27↓	OK	MMP-2 + phosphonate inhibitor
-1MMQ	ZN	670	1.19	0.65	-0.04↓	+0.21↑	OK	MMP-1 + peptide hydroxamate
-1JAQ	ZN	10	3.55	1.38	N/A	N/A	OK	MMP-8 + tripeptide hydroxamate
-2OVX	ZN	26	1.81	0.98	+1.25↑	+0.42↑	OK	MMP-9 + hydroxamate
-1O86	ZN	1.7	0.75	0.75	-2.30↓	-0.19↓	OK	ACE + Captopril
-2C6N	ZN	0.27	1.35	0.99	N/A	N/A	OK	ACE + Lisinopril
-1UZE	ZN	2.2	1.07	0.53	-2.17↓	-0.03↓	OK	ACE + Enalaprilat
-3L2U	MG	2.0	8.50	1.33	+0.27↑	-5.58↓	OK	HIV-IN + Elvitegravir analog
-3S3M	MG	3.0	10.56	5.37	+4.84↑	+1.20↑	OK	HIV-IN + Raltegravir analog
-2W0D	ZN	1.0	1.60	1.04	N/A	N/A	OK	MMP-9 + CGS27023A hydroxamate
-2G1M	FE	50	3.37	3.24	N/A	N/A	OK	PHD2 + 4HG inhibitor (Fe)
+PDB_ID	Lig	Metal	Vina_R1_dist	ET_R1_dist	VR_at_ET1	ET_pass	Vina_pass	Best_dist	Description
+1A42	BZU	ZN	0.363	0.735	5	PASS	PASS	0.363	CAII + Acetazolamide analog
+1BNN	AL1	ZN	1.843	1.706	7	PASS	PASS	1.706	CAII + aminobenzenesulfonamide
+1G52	F2B	ZN	2.725	2.728	4	FAIL	FAIL	0.22	CAII + fluorinated benzenesulfonamide
+1GKC	NFH	ZN	0.296	0.371	3	PASS	PASS	0.296	MMP-2 + phosphonate inhibitor
+1JAQ	01S	ZN	2.895	2.870	2	FAIL	FAIL	0.44	MMP-8 + tripeptide hydroxamate
+1MMQ	RRS	ZN	0.470	0.470	1	PASS	PASS	0.470	MMP-1 + peptide hydroxamate
+1O86	LPR	ZN	0.183	0.183	1	PASS	PASS	0.183	ACE + Captopril
+1OQ5	CEL	ZN	0.864	0.276	7	PASS	PASS	0.276	CAII + Acetazolamide
+1UZE	EAL	ZN	0.243	0.331	3	PASS	PASS	0.243	ACE + Enalaprilat
+1YDB	AZM	ZN	0.287	0.287	1	PASS	PASS	0.287	CAII + fluorinated sulfonamide
+1ZNC	SO4	ZN	1.918	1.493	6	PASS	PASS	1.493	CAII-IV + sulfate (direct Zn)
+2C6N	LPR	ZN	0.374	0.374	1	PASS	PASS	0.374	ACE + Lisinopril
+2CBD	SO3	ZN	0.765	0.897	2	PASS	PASS	0.765	CAII + sulfite (direct Zn)
+2G1M	4HG	FE	1.832	1.496	2	PASS	PASS	1.496	PHD2 + 4HG inhibitor (Fe)
+2OVX	4MR	ZN	0.498	0.498	1	PASS	PASS	0.498	MMP-9 + hydroxamate
+2W0D	CGS	ZN	0.538	1.863	2	PASS	PASS	0.538	MMP-9 + CGS27023A hydroxamate
+3HS4	AZM	ZN	1.216	0.836	2	PASS	PASS	0.836	CAII + coumarin inhibitor
+3L2U	ELV	MG	6.080	5.608	2	FAIL	FAIL	0.84	HIV-IN + Elvitegravir (VDW dominated)
+3P5A	IT2	ZN	0.669	0.940	2	PASS	PASS	0.669	CAII + dithiocarbamate (S→Zn)
+3S3M	DLU	MG	3.368	5.243	9	FAIL	FAIL	3.02	HIV-IN + Raltegravir (no good pose)

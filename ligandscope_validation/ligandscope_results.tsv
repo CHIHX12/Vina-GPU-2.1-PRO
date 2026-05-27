@@ -1,2 +1,12 @@
 PDB	Class	CrystalAtoms	GPU_poses	GPU_top1_RMSD	GPU_best_RMSD	GPU_top1_ok	GPU_best_ok
-2ZV2	Kinases	24	9	0.18	0.18	True	True
+4AG8	Kinases	28	9	0.497	0.497	True	True
+5L2S	Kinases	37	9	1.399	1.279	True	True
+1ERR	Nuclear_receptors	34	9	1.115	1.115	True	True
+1T7R	Nuclear_receptors	21	2	0.339	0.339	True	True
+4R06	Nuclear_receptors	34	9	0.881	0.749	True	True
+4F8H	Ion_channels	16	9	0.448	0.448	True	True
+5EK0	Ion_channels	39	9	0.984	0.984	True	True
+6D6T	Ion_channels	22	9	1.111	1.111	True	True
+4YAY	G_protein-coupled_receptors	33	9	0.302	0.302	True	True
+5MZJ	G_protein-coupled_receptors	13	9	0.446	0.446	True	True
+6IIU	G_protein-coupled_receptors	29	9	0.57	0.57	True	True
