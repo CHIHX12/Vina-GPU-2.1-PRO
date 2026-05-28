@@ -1,6 +1,6 @@
 PDB_ID	Lig	Metal	Vina_R1_dist	ET_R1_dist	VR_at_ET1	ET_pass	Vina_pass	Best_dist	Description
 1A42	BZU	ZN	0.363	0.735	5	PASS	PASS	0.237	CAII + Acetazolamide analog
-1BNN	AL1	ZN	2.163	1.766	5	PASS	FAIL	0.214	CAII + aminobenzenesulfonamide
+1BNN	AL1	ZN	2.163	0.348	2	PASS	FAIL	0.214	CAII + aminobenzenesulfonamide [ETr=P2(0.348Å); H-polar+AD4-desolv fix improved from P5(1.766Å)]
 1G52	F2B	ZN	2.584	2.793	6	FAIL	FAIL	0.172	CAII + F-benzenesulfonamide [centroid-close VR=3 flipped: O13/O14→Zn not crystal NP2→Zn; PDBQT missing H on NP2; irrecoverable structural fail]
 1GKC	NFH	ZN	0.296	0.371	3	PASS	PASS	0.296	MMP-2 + phosphonate inhibitor
 1JAQ	01S	ZN	2.328	1.557	8	PASS	FAIL	0.553	MMP-8 + tripeptide hydroxamate
