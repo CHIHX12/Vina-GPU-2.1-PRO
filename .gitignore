@@ -31,3 +31,4 @@ ligandscope_results/
 ligandscope_validation/results/
 ligandscope_validation/*.cfg
 ligandscope_validation/*.log
+.omo/
