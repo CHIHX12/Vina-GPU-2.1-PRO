@@ -140,7 +140,9 @@ void kernel1(
 
 						if (is_S) {
 							// S-coordination (CSD medians, Å)
-							if      (ad == 15) { r_ideal=2.30f; sigma=0.35f; weight=3.5f; } // Zn-S
+							// AutoDock4Zn: Bhagavantha Rao et al. J.Chem.Inf.Model. 2019
+							if      (ad == 15 && mis->use_ad4zn) { r_ideal=2.33f; sigma=0.28f; weight=5.0f; } // Zn-S (AD4Zn)
+							else if (ad == 15) { r_ideal=2.30f; sigma=0.35f; weight=3.5f; } // Zn-S
 							else if (ad == 20) { r_ideal=2.45f; sigma=0.40f; weight=3.0f; } // Mo-S
 							else if (ad == 21) { r_ideal=2.50f; sigma=0.40f; weight=3.0f; } // W-S
 							else if (ad == 22) { r_ideal=2.30f; sigma=0.35f; weight=4.0f; } // Cu-S
@@ -156,6 +158,7 @@ void kernel1(
 							// N/O coordination (CSD medians, Å)
 							if      (ad == 13) { r_ideal=2.05f; sigma=0.35f; weight= 6.0f; } // Mg
 							else if (ad == 14) { r_ideal=2.20f; sigma=0.40f; weight= 7.0f; } // Mn
+							else if (ad == 15 && mis->use_ad4zn) { r_ideal=2.05f; sigma=0.30f; weight= 5.5f; } // Zn N/O (AD4Zn)
 							else if (ad == 15) { r_ideal=2.10f; sigma=0.35f; weight= 4.0f; } // Zn
 							else if (ad == 16) { r_ideal=2.40f; sigma=0.40f; weight= 5.0f; } // Ca
 							else if (ad == 17) { r_ideal=2.05f; sigma=0.40f; weight= 8.0f; } // Fe

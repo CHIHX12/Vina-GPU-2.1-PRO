@@ -368,13 +368,17 @@ void dual_procedure(
 	const scoring_function& sf = wt;
 
 	auto write_output = [&](model& m, output_container& out_cont,
-	                        non_cache& nc, const std::string& out_name) {
+	                        non_cache& nc, const std::string& out_name, bool gpu_mode) {
 		if (out_cont.empty()) {
 			std::cerr << "No poses found for " << out_name << '\n';
 			return;
 		}
-		VINA_FOR_IN(i, out_cont)
-			refine_structure(m, prec, nc, out_cont[i], authentic_v, 50);
+#ifndef NO_REFINEMENT
+		if (!gpu_mode) {
+			VINA_FOR_IN(i, out_cont)
+				refine_structure(m, prec, nc, out_cont[i], authentic_v, 50);
+		}
+#endif
 		out_cont.sort();
 		const fl best_intra = m.eval_intramolecular(prec, authentic_v, out_cont[0].c);
 		VINA_FOR_IN(i, out_cont)
@@ -410,8 +414,9 @@ void dual_procedure(
 		std::cout << "Wrote " << how_many << " pose(s) to " << out_name << '\n';
 	};
 
-	write_output(ma, out_a, nc_a, out_a_name);
-	write_output(mb, out_b, nc_b, out_b_name);
+	const bool gpu_mode = (thread > 0);
+	write_output(ma, out_a, nc_a, out_a_name, gpu_mode);
+	write_output(mb, out_b, nc_b, out_b_name, gpu_mode);
 }
 
 void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, // m is non-const (FIXME?)

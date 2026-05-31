@@ -923,21 +923,54 @@ void main_procedure_cl_dual(
 	const bool use_ad4zn)
 {
 	auto _fn_t0 = std::chrono::steady_clock::now();
-	printf("DIAG GPU%d: main_procedure_cl_dual started\n", gpu_id); fflush(stdout);
 
 	cl_int err;
+
+	// Lazy singleton: create OCL context+queue once per GPU ID and reuse.
+	// Eliminates ~220ms driver-init overhead on every dual-ligand call.
+	struct OclCtx {
+		cl_platform_id* platforms = nullptr;
+		cl_device_id*   devices   = nullptr;
+		cl_context      context   = nullptr;
+		cl_command_queue queue    = nullptr;
+		cl_program       progs[2] = { nullptr, nullptr };
+		int              gpu_id   = -1;
+		std::string      bin_path;
+	};
+	static std::mutex        g_ocl_mutex;
+	static OclCtx            g_ocl;
+
 	cl_platform_id* platforms;
-	cl_device_id* devices;
-	cl_context context;
+	cl_device_id*   devices;
+	cl_context      context;
 	cl_command_queue queue;
 	cl_int gpu_platform_id = 0;
-	SetupPlatform(&platforms, &gpu_platform_id);
-	SetupDevice(platforms, &devices, gpu_platform_id);
-	printf("Using GPU device index: %d\n", gpu_id);
-	SetupContext(platforms, devices + gpu_id, &context, 1, gpu_platform_id);
-	SetupQueue(&queue, context, devices, gpu_id);
-
 	cl_program programs[2];
+
+	{
+		std::lock_guard<std::mutex> _lock(g_ocl_mutex);
+		bool need_init  = (g_ocl.context == nullptr || g_ocl.gpu_id != gpu_id);
+		bool need_progs = need_init || g_ocl.bin_path != opencl_binary_path || g_ocl.progs[0] == nullptr;
+
+		if (need_init) {
+			auto _ti = std::chrono::steady_clock::now();
+			SetupPlatform(&g_ocl.platforms, &gpu_platform_id);
+			SetupDevice(g_ocl.platforms, &g_ocl.devices, gpu_platform_id);
+			SetupContext(g_ocl.platforms, g_ocl.devices + gpu_id, &g_ocl.context, 1, gpu_platform_id);
+			SetupQueue(&g_ocl.queue, g_ocl.context, g_ocl.devices, gpu_id);
+			g_ocl.gpu_id = gpu_id;
+			auto _tj = std::chrono::steady_clock::now();
+			printf("DIAG GPU%d: OCL_init=%.0fms (first call)\n", gpu_id,
+			       std::chrono::duration<double,std::milli>(_tj-_ti).count()); fflush(stdout);
+		} else {
+			printf("DIAG GPU%d: OCL_init=0ms (cached)\n", gpu_id); fflush(stdout);
+		}
+		platforms = g_ocl.platforms;
+		devices   = g_ocl.devices;
+		context   = g_ocl.context;
+		queue     = g_ocl.queue;
+	}
+
 	printf("\nUsing random seed: %d", seed);
 
 #ifdef BUILD_KERNEL_FROM_SOURCE
@@ -1000,12 +1033,29 @@ void main_procedure_cl_dual(
 	}
 }
 #endif
-	programs[0] = SetupBuildProgramWithBinary(context, devices + gpu_id,
-	    (opencl_binary_path + std::string("/Kernel1_Opt.bin")).c_str());
-	programs[1] = SetupBuildProgramWithBinary(context, devices + gpu_id,
-	    (opencl_binary_path + std::string("/Kernel2_Opt.bin")).c_str());
+	{
+		std::lock_guard<std::mutex> _lock(g_ocl_mutex);
+		bool need_progs = (g_ocl.progs[0] == nullptr || g_ocl.bin_path != opencl_binary_path);
+		if (need_progs) {
+			auto _t = std::chrono::steady_clock::now();
+			g_ocl.progs[0] = SetupBuildProgramWithBinary(context, devices + gpu_id,
+			    (opencl_binary_path + std::string("/Kernel1_Opt.bin")).c_str());
+			auto _t1 = std::chrono::steady_clock::now();
+			g_ocl.progs[1] = SetupBuildProgramWithBinary(context, devices + gpu_id,
+			    (opencl_binary_path + std::string("/Kernel2_Opt.bin")).c_str());
+			auto _t2 = std::chrono::steady_clock::now();
+			g_ocl.bin_path = opencl_binary_path;
+			printf("DIAG GPU%d: LoadBin1=%.0fms  LoadBin2=%.0fms (first load)\n", gpu_id,
+			       std::chrono::duration<double,std::milli>(_t1-_t).count(),
+			       std::chrono::duration<double,std::milli>(_t2-_t1).count()); fflush(stdout);
+		} else {
+			printf("DIAG GPU%d: LoadBin=0ms (cached)\n", gpu_id); fflush(stdout);
+		}
+		programs[0] = g_ocl.progs[0];
+		programs[1] = g_ocl.progs[1];
+	}
 
-	err = clUnloadPlatformCompiler(platforms[gpu_platform_id]); checkErr(err);
+	// clUnloadPlatformCompiler only needed after source compilation (not binary load)
 	cl_kernel kernels[2];
 	char kernel_name[][50] = { "kernel1", "kernel2" };
 	SetupKernel(kernels, programs, 2, kernel_name);
@@ -1137,6 +1187,7 @@ void main_procedure_cl_dual(
 	for (int i = 0; i < (int)mis_ptr->needed_size; i++) needed_ptr[i] = needed[i];
 
 	// Upload shared (protein-side) buffers
+	auto _tbuf0 = std::chrono::steady_clock::now();
 	cl_mem pre_gpu, pa_gpu, gb_gpu, ar_gpu, grids_gpu, needed_gpu, mis_gpu;
 	CreateDeviceBuffer(&pre_gpu,    CL_MEM_READ_ONLY,  pre_size,                           context);
 	CreateDeviceBuffer(&pa_gpu,     CL_MEM_READ_ONLY,  pa_size,                            context);
@@ -1146,14 +1197,37 @@ void main_procedure_cl_dual(
 	CreateDeviceBuffer(&needed_gpu, CL_MEM_READ_WRITE, mis_ptr->needed_size * sizeof(float), context);
 	CreateDeviceBuffer(&mis_gpu,    CL_MEM_READ_ONLY,  mis_size,                           context);
 
-	err = clEnqueueWriteBuffer(queue, pre_gpu,    false, 0, pre_size,                           pre_ptr,    0, NULL, NULL); checkErr(err);
-	err = clEnqueueWriteBuffer(queue, pa_gpu,     false, 0, pa_size,                            pa_ptr,     0, NULL, NULL); checkErr(err);
-	err = clEnqueueWriteBuffer(queue, gb_gpu,     false, 0, gb_size,                            gb_ptr,     0, NULL, NULL); checkErr(err);
-	err = clEnqueueWriteBuffer(queue, ar_gpu,     false, 0, ar_size,                            ar_ptr,     0, NULL, NULL); checkErr(err);
-	err = clEnqueueWriteBuffer(queue, grids_gpu,  false, 0, grids_size,                         grids_ptr,  0, NULL, NULL); checkErr(err);
+	err = clEnqueueWriteBuffer(queue, pre_gpu,    false, 0, pre_size,  pre_ptr,    0, NULL, NULL); checkErr(err);
+	err = clEnqueueWriteBuffer(queue, pa_gpu,     false, 0, pa_size,  pa_ptr,     0, NULL, NULL); checkErr(err);
+	err = clEnqueueWriteBuffer(queue, gb_gpu,     false, 0, gb_size,  gb_ptr,     0, NULL, NULL); checkErr(err);
+	err = clEnqueueWriteBuffer(queue, ar_gpu,     false, 0, ar_size,  ar_ptr,     0, NULL, NULL); checkErr(err);
+
+	// grids_gpu: upload ONLY the metadata fields (atu, slope, m_i/j/k, m_init, m_factor…)
+	// for each grid_cl. Skip m_data (136MB of zeros) — kernel1 writes it entirely anyway.
+	// Saves ~200ms of PCIe DMA + clFinish.
+	{
+		// Header: atu + slope (8 bytes)
+		const size_t hdr_sz    = offsetof(grids_cl, grids);     // = 8 bytes
+		// Per-grid metadata up to (but not including) m_data
+		const size_t meta_sz   = offsetof(grid_cl, m_data);     // = 60 bytes
+		const size_t grid_full = sizeof(grid_cl);
+		const char*  src       = reinterpret_cast<const char*>(grids_ptr);
+
+		err = clEnqueueWriteBuffer(queue, grids_gpu, false, 0, hdr_sz, src, 0, NULL, NULL); checkErr(err);
+		for (int i = 0; i < GRIDS_SIZE; i++) {
+			size_t off = hdr_sz + (size_t)i * grid_full;
+			err = clEnqueueWriteBuffer(queue, grids_gpu, false, off, meta_sz, src + off, 0, NULL, NULL); checkErr(err);
+		}
+	}
+
 	err = clEnqueueWriteBuffer(queue, needed_gpu, false, 0, mis_ptr->needed_size * sizeof(float), needed_ptr, 0, NULL, NULL); checkErr(err);
-	err = clEnqueueWriteBuffer(queue, mis_gpu,    false, 0, mis_size,                           mis_ptr,    0, NULL, NULL); checkErr(err);
+	err = clEnqueueWriteBuffer(queue, mis_gpu,    false, 0, mis_size, mis_ptr,    0, NULL, NULL); checkErr(err);
 	clFinish(queue);
+	{
+		auto _tbuf1 = std::chrono::steady_clock::now();
+		printf("DIAG GPU%d: protein_buf_alloc+upload=%.0fms  (grids skip m_data)\n", gpu_id,
+		       std::chrono::duration<double,std::milli>(_tbuf1-_tbuf0).count()); fflush(stdout);
+	}
 
 	SetKernelArg(kernels[0], 0, sizeof(cl_mem), &pre_gpu);
 	SetKernelArg(kernels[0], 1, sizeof(cl_mem), &pa_gpu);
@@ -1263,6 +1337,7 @@ void main_procedure_cl_dual(
 	};
 
 	rng generator(static_cast<rng::result_type>(seed));
+	auto _tlig0 = std::chrono::steady_clock::now();
 
 	// Ligand A
 	conf_size sa = ma.get_size(); output_type tmp_a(sa, 0);
@@ -1370,6 +1445,11 @@ void main_procedure_cl_dual(
 	err = clEnqueueWriteBuffer(queue, search_depth_gpu,false, 0, int_sz, &sd_val,    0, NULL, NULL); checkErr(err);
 	err = clEnqueueWriteBuffer(queue, bfgs_steps_gpu,  false, 0, int_sz, &bfgs_val,  0, NULL, NULL); checkErr(err);
 	clFinish(queue);
+	{
+		auto _tlig1 = std::chrono::steady_clock::now();
+		printf("DIAG GPU%d: lig_prep+upload=%.0fms\n", gpu_id,
+		       std::chrono::duration<double,std::milli>(_tlig1-_tlig0).count()); fflush(stdout);
+	}
 
 	free(ric_a); free(ric_b); free(mg_a); free(mg_b); free(rmaps_a); free(rmaps_b);
 
@@ -1407,8 +1487,11 @@ void main_procedure_cl_dual(
 	SetKernelArg(k2d, 17, sizeof(int),    &rilc_bfgs);
 	SetKernelArg(k2d, 18, sizeof(int),    &batch_n_dual);
 
-	const size_t k2d_global[2] = { 512, 32 };
-	const size_t k2d_local[2]  = { 16, 2 };
+	// RTX 6000 Ada: 142 SMs × 128 threads/group = 18176 total work items.
+	// 128 threads/group = 4 warps — fills each SM with one group.
+	// 18176 / 128 = 142 groups exactly.
+	const size_t k2d_global[2] = { 18176, 1 };
+	const size_t k2d_local[2]  = { 128, 1 };
 
 	{
 		auto _k2_t0 = std::chrono::steady_clock::now();
@@ -1429,12 +1512,29 @@ void main_procedure_cl_dual(
 	err = clEnqueueReadBuffer(queue, coords_b_gpu,  false, 0, coords_sz, coords_b,  0, NULL, NULL); checkErr(err);
 	clFinish(queue);
 
-	// Convert and accumulate into output containers
+	// Convert GPU results → Vina format, then fast top-K by energy (skip O(thread×K×atoms) RMSD loop)
+	auto t_cv0 = std::chrono::steady_clock::now();
 	std::vector<output_type> vina_a = cl_to_vina(results_a, coords_a, thread, torsion_a);
 	std::vector<output_type> vina_b = cl_to_vina(results_b, coords_b, thread, torsion_b);
+	auto t_cv1 = std::chrono::steady_clock::now();
 
-	for (int i = 0; i < thread; i++) add_to_output_container(out_a, vina_a[i], par.mc.min_rmsd, par.mc.num_saved_mins);
-	for (int i = 0; i < thread; i++) add_to_output_container(out_b, vina_b[i], par.mc.min_rmsd, par.mc.num_saved_mins);
+	// Sort by energy, keep top num_saved_mins poses (fast O(N log N) instead of O(N*K*atoms))
+	auto fast_topk = [&](std::vector<output_type>& v, output_container& out, int K) {
+		std::sort(v.begin(), v.end(), [](const output_type& a, const output_type& b){ return a.e < b.e; });
+		int cnt = 0;
+		for (auto& pose : v) {
+			if (cnt >= K) break;
+			if (!not_max(pose.e)) continue;
+			out.push_back(new output_type(pose)); // ptr_vector requires heap allocation
+			++cnt;
+		}
+	};
+	fast_topk(vina_a, out_a, par.mc.num_saved_mins);
+	fast_topk(vina_b, out_b, par.mc.num_saved_mins);
+	auto t_cv2 = std::chrono::steady_clock::now();
+	printf("DIAG GPU%d: cl_to_vina=%.1fms  topK=%.1fms\n", gpu_id,
+	       std::chrono::duration<double,std::milli>(t_cv1-t_cv0).count(),
+	       std::chrono::duration<double,std::milli>(t_cv2-t_cv1).count()); fflush(stdout);
 
 	// Cleanup
 	free(results_a); free(results_b); free(coords_a); free(coords_b);

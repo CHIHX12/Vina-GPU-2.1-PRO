@@ -196,6 +196,7 @@ typedef struct {
 	int ar_mj;
 	int ar_mk;
 	int grids_front;
+	int use_ad4zn;   // 1 = use AutoDock4Zn Zn coordination parameters; 0 = default
 
 
 
