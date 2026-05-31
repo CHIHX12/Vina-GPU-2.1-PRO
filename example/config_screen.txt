@@ -1,0 +1,56 @@
+# Vina-GPU 2.1 — High-Throughput Screening Mode
+#
+# Purpose:   Stage-1 virtual screening of large compound libraries (10M+)
+# Throughput: ~27 mol/s  (2× RTX 6000 Ada, thread=8000, SD=1, --cpu 4)
+# --cpu 4 is optimal here: parse time (14 ms/lig) is ~38% of GPU time
+# (37 ms/lig at SD=1), so 4 parse threads hide the bottleneck completely.
+# Beyond --cpu 4 the returns drop below 5%.
+#
+# Typical workflow
+# ────────────────
+#   Stage 0  RDKit property filter         1B  →  10M   ligands
+#   Stage 1  THIS FILE           (SD=1)    10M  →  100K  hits
+#   Stage 2  config_balanced.txt (SD=8)  100K  →   1K   hits
+#   Stage 3  config_accurate.txt (SD=32)   1K  →  final ranked list
+#
+# 10M ligand estimate (2× RTX 6000 Ada, --cpu 4):
+#   27 mol/s  →  ~4.3 days
+#
+# Usage (bare binary)
+# ────────────────────
+#   ./AutoDock-Vina-GPU-2-1 --config config_screen.txt --gpu_id 0,1
+#
+# Usage (Singularity)
+# ────────────────────
+#   singularity run --nv -B /path/to/work:/work autodock-vina-gpu-2.1.sif \
+#       --config /work/config_screen.txt --gpu_id 0,1
+
+# ── Input ─────────────────────────────────────────────────────────────────────
+receptor           = /work/receptor.pdbqt
+ligand_directory   = /work/library_10M
+output_directory   = /work/output_screen
+
+# ── OpenCL kernel cache ───────────────────────────────────────────────────────
+opencl_binary_path = /work/ocl_cache
+
+# ── Binding site (Angstroms) ──────────────────────────────────────────────────
+# Replace with your pocket centre and half-size dimensions.
+center_x = 10.0
+center_y = 20.0
+center_z =  5.0
+size_x   = 25
+size_y   = 25
+size_z   = 25
+
+# ── GPU compute ───────────────────────────────────────────────────────────────
+thread       = 8000   # GPU work-items; 8000 for RTX / A-series
+search_depth = 1      # 1 MC step → maximum throughput for coarse screening
+
+# ── CPU parse threads ─────────────────────────────────────────────────────────
+# At SD=1, GPU takes only ~37 ms/ligand; sequential parse (14 ms/lig) costs 38%.
+# --cpu 4 reduces that to ~3.5 ms/lig, fully hidden → +39% throughput vs --cpu 1.
+# Beyond --cpu 4 the benefit drops below 5%.
+cpu = 4
+
+# ── Output verbosity ─────────────────────────────────────────────────────────
+# verbosity = 1   # 0=silent, 1=normal, 2=verbose

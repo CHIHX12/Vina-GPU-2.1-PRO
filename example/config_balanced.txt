@@ -1,0 +1,50 @@
+# Vina-GPU 2.1 — Balanced Mode
+#
+# Purpose:   Stage-2 re-scoring of screening hits; good accuracy at moderate speed
+# Throughput: ~1.0 mol/s  (2× RTX 6000 Ada, thread=8000, SD=8)
+# --cpu 2 is reasonable here; parse overhead is ~14% of GPU time at SD=8.
+# The diminishing returns make --cpu 4 acceptable but not strongly needed.
+#
+# Typical workflow
+# ────────────────
+#   Stage 0  RDKit property filter         1B  →  10M   ligands
+#   Stage 1  config_screen.txt  (SD=1)    10M  →  100K  hits
+#   Stage 2  THIS FILE           (SD=8)  100K  →   1K   hits
+#   Stage 3  config_accurate.txt (SD=32)   1K  →  final ranked list
+#
+# Usage (bare binary)
+# ────────────────────
+#   ./AutoDock-Vina-GPU-2-1 --config config_balanced.txt --gpu_id 0,1
+#
+# Usage (Singularity)
+# ────────────────────
+#   singularity run --nv -B /path/to/work:/work autodock-vina-gpu-2.1.sif \
+#       --config /work/config_balanced.txt --gpu_id 0,1
+
+# ── Input ─────────────────────────────────────────────────────────────────────
+receptor           = /work/receptor.pdbqt
+ligand_directory   = /work/top100k_ligands
+output_directory   = /work/output_balanced
+
+# ── OpenCL kernel cache ───────────────────────────────────────────────────────
+opencl_binary_path = /work/ocl_cache
+
+# ── Binding site (Angstroms) ──────────────────────────────────────────────────
+center_x = 10.0
+center_y = 20.0
+center_z =  5.0
+size_x   = 25
+size_y   = 25
+size_z   = 25
+
+# ── GPU compute ───────────────────────────────────────────────────────────────
+thread       = 8000   # GPU work-items; 8000 for RTX / A-series
+search_depth = 8      # 8 MC steps → balanced accuracy / throughput
+
+# ── CPU parse threads ─────────────────────────────────────────────────────────
+# At SD=8, GPU takes ~100 ms/ligand; parse is ~14% → --cpu 2 halves that cost.
+# --cpu 4 is fine too if you want to be conservative.
+cpu = 2
+
+# ── Output verbosity ─────────────────────────────────────────────────────────
+# verbosity = 1   # 0=silent, 1=normal, 2=verbose

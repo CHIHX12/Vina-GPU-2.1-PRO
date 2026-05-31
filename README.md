@@ -16,8 +16,10 @@ with two key additions: **metal coordination scoring** for metalloenzyme targets
 | Metal coordination scoring (Zn, Mg, Fe, Mn, Ca) | ✗ | ✅ |
 | Multi-GPU work-stealing dispatch | ✗ | ✅ |
 | Metalloenzyme self-docking (Best RMSD < 2 Å) | 61 % (11/18) | **95 % (19/20)** sd=32; 100 % with sd=512 |
-| Throughput (1 GPU, sd=32) | 0.50 mol/s | **1.3 mol/s** |
-| Throughput (2 GPU, sd=32) | — | **2.5 mol/s** |
+| Throughput (1 GPU, sd=32, thread=8000) | 0.50 mol/s | **1.34 mol/s** |
+| Throughput (2 GPU, sd=32, thread=8000) | — | **2.59 mol/s** |
+| Throughput (2 GPU, sd=1,  thread=8000) | — | **27 mol/s** (with `--cpu 4`) |
+| Parallel ligand parsing (`--cpu N`) | ✗ | ✅ +39 % at sd=1 |
 
 ---
 
@@ -87,13 +89,17 @@ When no co-crystal structure is available, specify the binding site manually:
 
 #### search_depth guide
 
-| sd | Throughput | Best RMSD < 2 Å | 20/20 rate | Use for |
-|:--:|:----------:|:---------------:|:----------:|---------|
-| 4  | **7.5 mol/s** | median 18/20 | 20 % | **Virtual screening** |
-| 8  | 4.3 mol/s  | ~19/20          | —   | Balanced |
-| 32 | 1.3 mol/s  | confirmed 20/20 | ~25 % | Validation / publication |
+All numbers measured on 2× RTX 6000 Ada, `thread=8000`.
 
-*2× GPU (work-stealing): sd=32 → **2.5 mol/s**, 100 ligands in 40 s.*
+| sd | 1 GPU | 2 GPU | Accuracy | Best `--cpu` | Use for |
+|:--:|------:|------:|:--------:|:------------:|---------|
+|  1 | ~10 mol/s | ~27 mol/s | coarse | **4** | Stage-1 library screening |
+|  8 |  ~0.5 mol/s | ~1.0 mol/s | good | **2** | Stage-2 hit re-scoring |
+| 32 | **1.34 mol/s** | **2.59 mol/s** | publication | **1** | Final re-dock / validation |
+
+> At `sd=32` the GPU takes ~387 ms/ligand; parsing overhead (~14 ms/lig) is only 3.6% —
+> `--cpu 1` is the optimal choice and extra threads give no measurable benefit.  
+> At `sd=1` parsing is 38% of wall time — `--cpu 4` recovers that cost entirely.
 
 #### Advanced — raw Singularity
 
@@ -108,6 +114,83 @@ singularity run --nv \
 
 ---
 
+## Virtual Screening Pipeline (1 B ligands → final hits)
+
+A recommended three-stage funnel that balances throughput against accuracy.
+Ready-made config files for each stage are in `example/`.
+
+```
+1,000,000,000 compounds
+        │
+        ▼ Stage 0 — CPU pre-filter (RDKit)
+        │   MW ≤ 500, rotbonds ≤ 10, Lipinski/PAINS filter
+        │   ~hours on CPU alone
+        ▼
+   10,000,000 compounds
+        │
+        ▼ Stage 1 — Fast GPU screen   (example/config_screen.txt)
+        │   thread=8000  sd=1  --cpu 4  --gpu_id 0,1
+        │   27 mol/s (2 GPU) → ~4.3 days
+        │   Keep top 1 % by Vina score
+        ▼
+      100,000 compounds
+        │
+        ▼ Stage 2 — Balanced re-score  (example/config_balanced.txt)
+        │   thread=8000  sd=8  --cpu 2  --gpu_id 0,1
+        │   ~1 mol/s (2 GPU) → ~28 hours
+        │   Keep top 1 % by Vina score
+        ▼
+        1,000 compounds
+        │
+        ▼ Stage 3 — Accurate re-dock   (example/config_accurate.txt)
+        │   thread=8000  sd=32  --cpu 1  --gpu_id 0,1
+        │   2.59 mol/s (2 GPU) → ~6.5 minutes
+        ▼
+     Final ranked list  (pose files + Vina scores)
+```
+
+### Per-stage capacity (sd=32, thread=8000, cpu=8)
+
+If you prefer a **uniform accurate setting** throughout (`sd=32, cpu=8, thread=8000`):
+
+| GPUs | Throughput | Per day | 1 K ligands | 10 K ligands |
+|:----:|:----------:|--------:|:-----------:|:------------:|
+| 1 | 1.34 mol/s | ~116 K | 12 min | 2.1 h |
+| 2 | 2.59 mol/s | ~224 K |  6 min | 1.1 h |
+| 4 | ~5.2 mol/s | ~448 K |  3 min | 32 min |
+
+### Multi-GPU distribution
+
+Pass a comma-separated list or `all` — the engine distributes ligands
+across GPUs automatically using a work-stealing atomic counter:
+
+```bash
+# Two specific GPUs
+./AutoDock-Vina-GPU-2-1 --config config_accurate.txt --gpu_id 0,1
+
+# All available GPUs
+./AutoDock-Vina-GPU-2-1 --config config_accurate.txt --gpu_id all
+```
+
+Each GPU receives an independent OCL context and a unique random seed
+(`seed + gpu_index × 10000`), so results are reproducible and poses from
+all GPUs are merged and re-ranked before output.
+
+To split a large library manually across machines or containers, divide
+the ligand directory into N subdirectories and run one job per GPU server:
+
+```bash
+# Machine A — first half
+./AutoDock-Vina-GPU-2-1 --config cfg.txt --ligand_directory ./ligs_part1 --gpu_id 0
+
+# Machine B — second half
+./AutoDock-Vina-GPU-2-1 --config cfg.txt --ligand_directory ./ligs_part2 --gpu_id 0
+```
+
+Then merge and sort the output `.pdbqt` files by the first-line REMARK score.
+
+---
+
 ## Compile from Source (Linux)
 
 For compile-from-source instructions, see the
@@ -116,9 +199,9 @@ All PRO changes are in `src/AutoDock-Vina-GPU-2.1/` — the modified files are:
 
 | File | Change |
 |------|--------|
-| `src/AutoDock-Vina-GPU-2.1/OpenCL/src/kernels/kernel1.cl` | Metal coordination Gaussian scoring |
-| `src/AutoDock-Vina-GPU-2.1/main/main.cpp` | Work-stealing atomic counter, `search_depth` default |
-| `src/AutoDock-Vina-GPU-2.1/lib/main_procedure_cl.cpp` | Single queue per GPU, work-stealing dispatch |
+| `src/AutoDock-Vina-GPU-2.1/OpenCL/src/kernels/kernel1.cl` | Metal coordination Gaussian scoring (Zn/Mg/Fe/Mo …) |
+| `src/AutoDock-Vina-GPU-2.1/main/main.cpp` | Parallel ligand parsing (`--cpu N`), multi-GPU dual-ligand dispatch |
+| `src/AutoDock-Vina-GPU-2.1/lib/main_procedure_cl.cpp` | Per-GPU OCL context map, work-stealing dispatch |
 | `src/AutoDock-Vina-GPU-2.1/OpenCL/inc/wrapcl.h / wrapcl.cpp` | Multi-GPU queue management |
 
 ---
