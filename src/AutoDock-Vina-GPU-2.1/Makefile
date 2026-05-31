@@ -1,6 +1,6 @@
 # Need to be modified according to different users
-WORK_DIR=/path/to/AutoDock-Vina-GPU-2.1
-BOOST_LIB_PATH=/path/to/boost_1_84_0
+WORK_DIR=/home/cycheng/Vina-GPU-2.1/src/AutoDock-Vina-GPU-2.1
+BOOST_LIB_PATH=/usr
 OPENCL_LIB_PATH=/usr/local/cuda
 # Fix: changed from -DOPENCL_2_0 to -DOPENCL_3_0 (recommended in README; consistent with QuickVina variants)
 OPENCL_VERSION=-DOPENCL_3_0
@@ -8,15 +8,15 @@ GPU_PLATFORM=-DNVIDIA_PLATFORM
 DOCKING_BOX_SIZE=-DSMALL_BOX
 
 # Should not be modified
-BOOST_INC_PATH=-I$(BOOST_LIB_PATH) -I$(BOOST_LIB_PATH)/boost
+BOOST_INC_PATH=-I$(BOOST_LIB_PATH)/include
 VINA_GPU_INC_PATH=-I$(WORK_DIR)/lib -I$(WORK_DIR)/OpenCL/inc
 OPENCL_INC_PATH=-I$(OPENCL_LIB_PATH)/include
-LIB1=-lboost_program_options -lboost_system -lboost_filesystem -lOpenCL
+LIB1=-lboost_program_options -lboost_system -lboost_filesystem -lboost_thread -lOpenCL
 LIB2=-lstdc++ -lstdc++fs
 LIB3=-lm -lpthread
-LIB_PATH=-L$(BOOST_LIB_PATH)/stage/lib -L$(OPENCL_LIB_PATH)/lib64
+LIB_PATH=-L$(BOOST_LIB_PATH)/lib64 -L$(OPENCL_LIB_PATH)/lib64
 # Fix: removed garbled leftover text (merged comment from old boost_1_77_0 line and stale MACRO definition)
-SRC=./lib/*.cpp ./OpenCL/src/wrapcl.cpp $(BOOST_LIB_PATH)/libs/thread/src/pthread/thread.cpp $(BOOST_LIB_PATH)/libs/thread/src/pthread/once.cpp
+SRC=./lib/*.cpp ./OpenCL/src/wrapcl.cpp
 MACRO=$(OPENCL_VERSION) $(GPU_PLATFORM) $(DOCKING_BOX_SIZE) -DBOOST_TIMER_ENABLE_DEPRECATED -DNO_REFINEMENT #-DDISPLAY_SUCCESS -DDISPLAY_ADDITION_INFO
 all:out
 out:./main/main.cpp

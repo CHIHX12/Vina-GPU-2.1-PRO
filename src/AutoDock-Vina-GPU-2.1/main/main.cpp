@@ -48,6 +48,7 @@
 #include "tee.h"
 #include "coords.h" // add_to_output_container
 #include "main_procedure_cl.h"
+#include "dual_mc.h"
 #include <experimental/filesystem>
 
 // Forward declaration — implemented in wrapcl.cpp
@@ -286,6 +287,133 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 	}
 }
 
+// Dual-ligand co-docking procedure (CPU-only MC).
+// Docks ligand_a and ligand_b simultaneously with combined score
+// E(prot-A) + E(prot-B) + E(A-B).
+// When thread > 0, dispatches to GPU via main_procedure_cl_dual (kernel2_dual).
+// Otherwise falls back to CPU dual_mc_search.
+void dual_procedure(
+	model& ma, model& mb,
+	const std::string& out_a_name, const std::string& out_b_name,
+	const grid_dims& gd, int exhaustiveness,
+	const flv& weights,
+	int seed, int verbosity, sz num_modes, fl energy_range,
+	tee& log,
+	int thread = 0,
+	const std::string& opencl_binary_path = ".",
+	const std::string& gpu_id_str = "0",
+	int rilc_bfgs = 1,
+	int search_depth_arg = 20,
+	bool ad4zn = false)
+{
+	doing(verbosity, "Setting up the dual-ligand scoring function", log);
+
+	everything t;
+	VINA_CHECK(weights.size() == 6);
+	weighted_terms wt(&t, weights);
+	precalculate prec(wt);
+	done(verbosity, log);
+
+	const fl slope = 1e6;
+	non_cache nc_a(ma, gd, &prec, slope);
+	non_cache nc_b(mb, gd, &prec, slope);
+
+	vec corner1(gd[0].begin, gd[1].begin, gd[2].begin);
+	vec corner2(gd[0].end,   gd[1].end,   gd[2].end);
+
+	output_container out_a, out_b;
+
+	if (thread > 0) {
+		// GPU path: use kernel2_dual
+		std::cout << "Running GPU dual-ligand co-docking (thread=" << thread << ")...\n";
+
+		int gpu_id = 0;
+		try { gpu_id = std::stoi(gpu_id_str); } catch (...) {}
+
+		// Build a parallel_mc to carry thread / search_depth / bfgs parameters
+		parallel_mc par;
+		par.mc.thread         = thread;
+		par.mc.search_depth   = { search_depth_arg };
+		par.mc.ssd_par.bfgs_steps = { int((25 + ma.num_movable_atoms() + mb.num_movable_atoms()) / 3) };
+		par.mc.mutation_amplitude = 2.0f;
+		par.mc.hunt_cap           = vec(10, 10, 10);
+		par.mc.min_rmsd           = 1.0f;
+		par.mc.num_saved_mins     = 20;
+
+		// cache drives kernel1 (protein affinity grid) — kernel1 fills c.grids internally
+		cache c("scoring_function_version001", gd, slope, atom_type::XS);
+
+		main_procedure_cl_dual(c, ma, mb, prec, par,
+		                       corner1, corner2, seed,
+		                       out_a, out_b,
+		                       opencl_binary_path, rilc_bfgs, gpu_id, ad4zn);
+	} else {
+		// CPU path: dual_mc_search
+		rng generator(static_cast<rng::result_type>(seed));
+		const sz num_steps = std::max<sz>(2000,
+		    (sz)(20 * (ma.num_movable_atoms() + mb.num_movable_atoms())));
+
+		std::cout << "Running CPU dual-ligand co-docking ("
+		          << exhaustiveness << " runs, " << num_steps << " steps each)...\n";
+
+		dual_mc_search(ma, mb, prec, nc_a, nc_b,
+		               corner1, corner2,
+		               num_steps, (sz)exhaustiveness,
+		               1.2, 2.0, 1.0, 20,
+		               out_a, out_b, generator);
+	}
+
+	// Refine and write ligand A output
+	const vec authentic_v(1000, 1000, 1000);
+	const scoring_function& sf = wt;
+
+	auto write_output = [&](model& m, output_container& out_cont,
+	                        non_cache& nc, const std::string& out_name) {
+		if (out_cont.empty()) {
+			std::cerr << "No poses found for " << out_name << '\n';
+			return;
+		}
+		VINA_FOR_IN(i, out_cont)
+			refine_structure(m, prec, nc, out_cont[i], authentic_v, 50);
+		out_cont.sort();
+		const fl best_intra = m.eval_intramolecular(prec, authentic_v, out_cont[0].c);
+		VINA_FOR_IN(i, out_cont)
+			if (not_max(out_cont[i].e))
+				out_cont[i].e = m.eval_adjusted(sf, prec, nc,
+				                                authentic_v, out_cont[i].c, best_intra);
+		out_cont.sort();
+		out_cont = remove_redundant(out_cont, 1.0);
+
+		sz how_many = 0;
+		std::vector<std::string> remarks;
+		log << "Poses for " << out_name << ":\n";
+		log << "mode |   affinity | dist from best mode\n";
+		log << "     | (kcal/mol) | rmsd l.b.| rmsd u.b.\n";
+		log << "-----+------------+----------+----------\n";
+		model best = m;
+		best.set(out_cont.front().c);
+		VINA_FOR_IN(i, out_cont) {
+			if (how_many >= num_modes || !not_max(out_cont[i].e) ||
+			    out_cont[i].e > out_cont[0].e + energy_range) break;
+			++how_many;
+			m.set(out_cont[i].c);
+			const fl lb = m.rmsd_lower_bound(best);
+			const fl ub = m.rmsd_upper_bound(best);
+			log << std::setw(4) << i + 1
+			    << "    " << std::setw(9) << std::setprecision(1) << out_cont[i].e
+			    << "  " << std::setw(9) << std::setprecision(3) << lb
+			    << "  " << std::setw(9) << std::setprecision(3) << ub;
+			log.endl();
+			remarks.push_back(vina_remark(out_cont[i].e, lb, ub));
+		}
+		write_all_output(m, out_cont, how_many, out_name, remarks);
+		std::cout << "Wrote " << how_many << " pose(s) to " << out_name << '\n';
+	};
+
+	write_output(ma, out_a, nc_a, out_a_name);
+	write_output(mb, out_b, nc_b, out_b_name);
+}
+
 void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, // m is non-const (FIXME?)
 	const std::vector<std::string>& out_names,
 	bool score_only, bool local_only, bool randomize_only, bool no_cache,
@@ -293,7 +421,8 @@ void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, /
 	const flv& weights,
 	int cpu, int seed, int verbosity, sz num_modes, fl energy_range,
 	tee& log, int search_depth, int thread, std::string opencl_binary_path, std::vector<std::vector<std::string>> ligand_names, int rilc_bfgs,
-	const std::string& gpu_id_str, const std::string& cpu_str, const int batch_size) {
+	const std::string& gpu_id_str, const std::string& cpu_str, const int batch_size,
+	bool ad4zn) {
 
 	doing(verbosity, "Setting up the scoring function", log);
 
@@ -409,7 +538,7 @@ void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, /
 		// Single-GPU path — direct call, no thread overhead
 		main_procedure_cl(c, ms, prec, par, corner1, corner2, seed, out_conts,
 		                  opencl_binary_path, ligand_names, rilc_bfgs,
-		                  gpu_ids[0], threads_per_gpu, next_lig);
+		                  gpu_ids[0], threads_per_gpu, next_lig, ad4zn);
 	} else {
 		// Multi-GPU path: all GPUs share the same ligand pool via next_lig.
 		// The faster GPU naturally processes more ligands — no idle time at the tail.
@@ -424,10 +553,10 @@ void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, /
 			gpu_futures.push_back(std::async(std::launch::async,
 			    [&c, &ms, &prec, &par, &corner1, &corner2, seed, &out_conts,
 			     opencl_binary_path, &ligand_names, rilc_bfgs,
-			     gpu_device, threads_per_gpu, &next_lig]() {
+			     gpu_device, threads_per_gpu, &next_lig, ad4zn]() {
 			        main_procedure_cl(c, ms, prec, par, corner1, corner2, seed,
 			                         out_conts, opencl_binary_path, ligand_names, rilc_bfgs,
-			                         gpu_device, threads_per_gpu, next_lig);
+			                         gpu_device, threads_per_gpu, next_lig, ad4zn);
 			    }));
 		}
 
@@ -627,6 +756,8 @@ Thank you!\n";
 
 	try {
 		std::string rigid_name, ligand_name, flex_name, config_name, out_name, log_name;
+		std::string ligand2_name, out2_name;
+		bool ad4zn_mode = false;
 		fl center_x = -8.654, center_y = 2.229, center_z = 19.715, size_x = 24.0, size_y = 26.25, size_z = 22.5;
 		int cpu = 1, seed, exhaustiveness = 1, verbosity = 2, num_modes = 9;
 		fl energy_range = 2.0;
@@ -670,6 +801,9 @@ Thank you!\n";
 			    "CPU threads for parallel ligand prep: integer or 'all'")
 			("batch_size", value<int>(&batch_size)->default_value(batch_size),
 			    "number of ligands dispatched simultaneously to each GPU (default 32)")
+			("ligand2", value<std::string>(&ligand2_name), "second ligand for co-docking (PDBQT); activates CPU dual-ligand mode")
+			("out2", value<std::string>(&out2_name), "output poses for second ligand (PDBQT; required when --ligand2 is given)")
+			("ad4zn", bool_switch(&ad4zn_mode), "use AutoDock4Zn calibrated Zn coordination parameters (GPU mode)")
 			;
 		//options_description search_area("Search area (required, except with --score_only)");
 		options_description search_area("Search space (required)");
@@ -704,7 +838,7 @@ Thank you!\n";
 		misc.add_options()
 			//("cpu", value<int>(&cpu), "the number of CPUs to use (the default is to try to detect the number of CPUs or, failing that, use 1)")
 			("seed", value<int>(&seed), "explicit random seed")
-			//("exhaustiveness", value<int>(&exhaustiveness)->default_value(1), "exhaustiveness of the global search (roughly proportional to time): 1+")
+			("exhaustiveness", value<int>(&exhaustiveness)->default_value(1), "number of MC runs for dual-ligand CPU mode (default 1)")
 			("num_modes", value<int>(&num_modes)->default_value(9), "maximum number of binding modes to generate")
 			("energy_range", value<fl>(&energy_range)->default_value(3.0), "maximum energy difference between the best binding mode and the worst one displayed (kcal/mol)")
 			;
@@ -777,11 +911,14 @@ Thank you!\n";
 			std::cerr << "Missing ligand.\n" << "\nCorrect usage:\n" << desc_simple << '\n';
 			return 1;
 		}*/
-		if (vm.count("thread") <= 0) {
-			std::cerr << "Missing thread, the recommend thread value is 8000";
-			return 1;
-		}else if (thread < 1000) {
-			throw usage_error("thread must be at least 1000");
+		if (vm.count("ligand2") == 0) {
+			// thread is only needed for GPU mode; skip check in CPU dual-ligand mode
+			if (vm.count("thread") <= 0) {
+				std::cerr << "Missing thread, the recommend thread value is 8000";
+				return 1;
+			} else if (thread < 1000) {
+				throw usage_error("thread must be at least 1000");
+			}
 		}
 
 		if (vm.count("ligand") > 0 && vm.count("ligand_directory") == 1) {
@@ -841,7 +978,8 @@ Thank you!\n";
 		}
 
 		if (vm.count("ligand") > 0 && vm.count("ligand_directory") <= 0) {
-			std::cout << "Using single ligand docking mode\n\n";
+			if (vm.count("ligand2") == 0)
+				std::cout << "Using single ligand docking mode\n\n";
 			if (output_produced) { // FIXME
 				if (!vm.count("out")) {
 					out_name = default_output(ligand_name);
@@ -895,63 +1033,86 @@ Thank you!\n";
 
 		
 
-		std::vector<std::vector<std::string>> ligand_names;
-		std::vector<std::string> out_names;
-		
-		if (vm.count("ligand_directory") == 1) {
-			std::string out_dir;
-			if (vm.count("output_directory") == 1)
-				out_dir = output_directory;
-			else
-				out_dir = ligand_directory + "_out";
+		// ---- Dual-ligand co-docking path ----
+		if (vm.count("ligand2") > 0) {
+			// ---- Dual-ligand co-docking path (CPU MC) ----
+			if (out2_name.empty())
+				out2_name = default_output(ligand2_name);
+			if (out_name.empty())
+				out_name = default_output(ligand_name);
+			std::cout << "Dual-ligand co-docking mode\n";
+			std::cout << "  Ligand A: " << ligand_name  << "  -> " << out_name  << '\n';
+			std::cout << "  Ligand B: " << ligand2_name << "  -> " << out2_name << '\n';
+			doing(verbosity, "Parsing ligands", log);
+			model ma = parse_bundle(rigid_name_opt, flex_name_opt, {ligand_name});
+			model mb = parse_bundle(rigid_name_opt, flex_name_opt, {ligand2_name});
+			done(verbosity, log);
+			dual_procedure(ma, mb, out_name, out2_name,
+			               gd, exhaustiveness, weights,
+			               seed, verbosity, max_modes_sz, energy_range, log,
+			               thread, opencl_binary_path, gpu_id_str,
+			               rilc_bfgs, search_depth, ad4zn_mode);
+		} else {
+			// ---- Single-ligand / virtual-screening path (GPU) ----
+			std::vector<std::vector<std::string>> ligand_names;
+			std::vector<std::string> out_names;
 
-			std::experimental::filesystem::create_directory(out_dir);
-			for (const auto& entry : std::experimental::filesystem::directory_iterator(ligand_directory)) {
-				std::vector<std::string> tmp = { entry.path().string() };
+			if (vm.count("ligand_directory") == 1) {
+				std::string out_dir;
+				if (vm.count("output_directory") == 1)
+					out_dir = output_directory;
+				else
+					out_dir = ligand_directory + "_out";
+
+				std::experimental::filesystem::create_directory(out_dir);
+				for (const auto& entry : std::experimental::filesystem::directory_iterator(ligand_directory)) {
+					std::vector<std::string> tmp = { entry.path().string() };
+					ligand_names.push_back(tmp);
+					std::string delimiter1 = ".pdbqt";
+					std::string delimiter2 = ligand_directory;
+					std::string tmp2 = entry.path().string();
+					std::string tmp3 = tmp2.substr(0, tmp2.find(delimiter1)) + "_out.pdbqt";
+					std::string tmp4 = out_dir + tmp3.substr(ligand_directory.length(), tmp3.length());
+					out_names.push_back(tmp4);
+				}
+				std::cout << "Output will be in the directory " << out_dir << std::endl;
+			}
+			else {
+				std::vector<std::string> tmp = { ligand_name };
 				ligand_names.push_back(tmp);
-				std::string delimiter1 = ".pdbqt";
-				std::string delimiter2 = ligand_directory;
-				std::string tmp2 = entry.path().string();
-				std::string tmp3 = tmp2.substr(0, tmp2.find(delimiter1)) + "_out.pdbqt";
-				std::string tmp4 = out_dir + tmp3.substr(ligand_directory.length(), tmp3.length());
-				out_names.push_back(tmp4);
+				std::vector<std::string> tmp2 = { out_name };
+				out_names.push_back(out_name);
 			}
-			std::cout << "Output will be in the directory " << out_dir << std::endl;
-		}
-		else {
-			std::vector<std::string> tmp = { ligand_name };
-			ligand_names.push_back(tmp);
-			std::vector<std::string> tmp2 = { out_name };
-			out_names.push_back(out_name);
-		}
 
-		doing(verbosity, "Reading input", log);
-		std::vector<model> ms;
-		std::vector<std::string> out_names_valid;
-		for (int i = 0; i < ligand_names.size(); i++) {
-			try {
-				ms.push_back(parse_bundle(rigid_name_opt, flex_name_opt, ligand_names[i]));
-				out_names_valid.push_back(out_names[i]);
+			doing(verbosity, "Reading input", log);
+			std::vector<model> ms;
+			std::vector<std::string> out_names_valid;
+			for (int i = 0; i < (int)ligand_names.size(); i++) {
+				try {
+					ms.push_back(parse_bundle(rigid_name_opt, flex_name_opt, ligand_names[i]));
+					out_names_valid.push_back(out_names[i]);
+				}
+				catch (parse_error& e) {
+					std::cerr << "\nParse error on line " << e.line << " in file \"" << e.file.string() << "\": " << e.reason << '\n';
+					continue;
+				}
 			}
-			catch (parse_error& e) {
-				std::cerr << "\nParse error on line " << e.line << " in file \"" << e.file.string() << "\": " << e.reason << '\n';
-				continue;
+
+			boost::optional<model> ref;
+			done(verbosity, log);
+			if (ms.size() == 0) {
+				std::cerr << "No valid ligands in the input directory\n";
+				return 1;
 			}
-		}
 
-		boost::optional<model> ref;
-		done(verbosity, log);
-		if (ms.size() == 0) {
-			std::cerr << "No valid ligands in the input directory\n";
-			return 1;
-		}
-
-		main_procedure(ms, ref,
-			out_names_valid,
-			score_only, local_only, randomize_only, false, // no_cache == false
-			gd, exhaustiveness,
-			weights,
-			cpu, seed, verbosity, max_modes_sz, energy_range, log, search_depth, thread, opencl_binary_path, ligand_names, rilc_bfgs, gpu_id_str, cpu_str, batch_size);
+			main_procedure(ms, ref,
+				out_names_valid,
+				score_only, local_only, randomize_only, false, // no_cache == false
+				gd, exhaustiveness,
+				weights,
+				cpu, seed, verbosity, max_modes_sz, energy_range, log, search_depth, thread, opencl_binary_path, ligand_names, rilc_bfgs, gpu_id_str, cpu_str, batch_size,
+				ad4zn_mode);
+		} // end single-ligand path
 	}
 	catch (file_error& e) {
 		std::cerr << "\n\nError: could not open \"" << e.name.string() << "\" for " << (e.in ? "reading" : "writing") << ".\n";
