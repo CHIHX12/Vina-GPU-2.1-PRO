@@ -325,10 +325,33 @@ void dual_procedure(
 
 	if (thread > 0) {
 		// GPU path: use kernel2_dual
-		std::cout << "Running GPU dual-ligand co-docking (thread=" << thread << ")...\n";
+		// Parse GPU IDs (same logic as single-ligand batch path)
+		std::vector<int> gpu_ids;
+		if (gpu_id_str == "all") {
+			int n = QueryDeviceCount();
+			if (n <= 0) n = 1;
+			for (int i = 0; i < n; i++) gpu_ids.push_back(i);
+		} else {
+			std::stringstream ss(gpu_id_str);
+			std::string token;
+			while (std::getline(ss, token, ',')) {
+				token.erase(0, token.find_first_not_of(" \t"));
+				token.erase(token.find_last_not_of(" \t") + 1);
+				if (!token.empty()) {
+					try { gpu_ids.push_back(std::stoi(token)); }
+					catch (...) { std::cerr << "Warning: invalid gpu_id '" << token << "', skipped.\n"; }
+				}
+			}
+		}
+		if (gpu_ids.empty()) gpu_ids.push_back(0);
+		const int num_gpus = static_cast<int>(gpu_ids.size());
 
-		int gpu_id = 0;
-		try { gpu_id = std::stoi(gpu_id_str); } catch (...) {}
+		std::cout << "Running GPU dual-ligand co-docking on " << num_gpus
+		          << " GPU(s) [";
+		for (int g = 0; g < num_gpus; g++) { if (g) std::cout << ','; std::cout << gpu_ids[g]; }
+		std::cout << "], thread=" << thread << " per GPU";
+		if (num_gpus > 1) std::cout << " (total " << num_gpus * thread << " trajectories)";
+		std::cout << "...\n";
 
 		// Build a parallel_mc to carry thread / search_depth / bfgs parameters
 		parallel_mc par;
@@ -343,10 +366,38 @@ void dual_procedure(
 		// cache drives kernel1 (protein affinity grid) — kernel1 fills c.grids internally
 		cache c("scoring_function_version001", gd, slope, atom_type::XS);
 
-		main_procedure_cl_dual(c, ma, mb, prec, par,
-		                       corner1, corner2, seed,
-		                       out_a, out_b,
-		                       opencl_binary_path, rilc_bfgs, gpu_id, ad4zn);
+		if (num_gpus == 1) {
+			main_procedure_cl_dual(c, ma, mb, prec, par,
+			                       corner1, corner2, seed,
+			                       out_a, out_b,
+			                       opencl_binary_path, rilc_bfgs, gpu_ids[0], ad4zn);
+		} else {
+			// Multi-GPU: each GPU runs the full trajectory set with a different random seed.
+			// Results are merged; post-processing picks the best poses from all GPUs.
+			std::vector<output_container> outs_a(num_gpus), outs_b(num_gpus);
+			std::vector<std::future<void>> futs;
+			for (int g = 0; g < num_gpus; g++) {
+				const int gdev = gpu_ids[g];
+				const int gseed = seed + g * 10000;
+				futs.push_back(std::async(std::launch::async,
+				    [&c, &ma, &mb, &prec, &par, &corner1, &corner2, &opencl_binary_path, &outs_a, &outs_b,
+				     rilc_bfgs, ad4zn, g, gdev, gseed]() {
+					main_procedure_cl_dual(c, ma, mb, prec, par,
+					                       corner1, corner2, gseed,
+					                       outs_a[g], outs_b[g],
+					                       opencl_binary_path, rilc_bfgs, gdev, ad4zn);
+				}));
+			}
+			for (auto& f : futs) f.get();
+			// Merge: collect all GPU results into out_a / out_b
+			// boost::ptr_vector takes ownership via raw pointer
+			for (int g = 0; g < num_gpus; g++) {
+				for (auto& x : outs_a[g]) out_a.push_back(new output_type(x));
+				for (auto& x : outs_b[g]) out_b.push_back(new output_type(x));
+			}
+			std::cout << "Dual-GPU merge: " << out_a.size() << " poses (lig A), "
+			          << out_b.size() << " poses (lig B) from " << num_gpus << " GPUs\n";
+		}
 	} else {
 		// CPU path: dual_mc_search
 		rng generator(static_cast<rng::result_type>(seed));

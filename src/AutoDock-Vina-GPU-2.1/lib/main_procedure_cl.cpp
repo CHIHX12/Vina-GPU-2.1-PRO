@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <iomanip>
 #include <stdio.h>
+#include <map>
 
 using namespace std;
 
@@ -937,8 +938,9 @@ void main_procedure_cl_dual(
 		int              gpu_id   = -1;
 		std::string      bin_path;
 	};
-	static std::mutex        g_ocl_mutex;
-	static OclCtx            g_ocl;
+	// Per-GPU singleton map: one OclCtx per GPU ID so multiple GPUs can run in parallel.
+	static std::mutex                  g_ocl_mutex;
+	static std::map<int, OclCtx>       g_ocl_map;
 
 	cl_platform_id* platforms;
 	cl_device_id*   devices;
@@ -949,6 +951,7 @@ void main_procedure_cl_dual(
 
 	{
 		std::lock_guard<std::mutex> _lock(g_ocl_mutex);
+		OclCtx& g_ocl = g_ocl_map[gpu_id];
 		bool need_init  = (g_ocl.context == nullptr || g_ocl.gpu_id != gpu_id);
 		bool need_progs = need_init || g_ocl.bin_path != opencl_binary_path || g_ocl.progs[0] == nullptr;
 
@@ -1035,6 +1038,7 @@ void main_procedure_cl_dual(
 #endif
 	{
 		std::lock_guard<std::mutex> _lock(g_ocl_mutex);
+		OclCtx& g_ocl = g_ocl_map[gpu_id];
 		bool need_progs = (g_ocl.progs[0] == nullptr || g_ocl.bin_path != opencl_binary_path);
 		if (need_progs) {
 			auto _t = std::chrono::steady_clock::now();
