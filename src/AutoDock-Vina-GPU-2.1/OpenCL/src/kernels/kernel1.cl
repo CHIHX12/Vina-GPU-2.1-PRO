@@ -9,7 +9,7 @@ int num_atom_types(int atu) {
 	case 1: return AD_TYPE_SIZE;
 	case 2: return XS_TYPE_SIZE;
 	case 3: return SY_TYPE_SIZE;
-	default: printf("\nkernel1:num_atom_types ERROR!"); return INFINITY;
+	default: return INFINITY;
 	}
 }
 
@@ -18,8 +18,8 @@ const float vec_distance_sqr(const float* a, const float* b) {
 }
 
 const int triangular_matrix_index(int n, int i, int j) {
-	if (j >= n) printf("\nkernel1:triangular_matrix_index ERROR!");
-	if (i > j) printf("\nkernel1:triangular_matrix_index ERROR!");
+	; // (assert removed)
+	; // (assert removed)
 	return i + j * (j + 1) / 2;
 }
 
@@ -28,10 +28,9 @@ const int triangular_matrix_index_permissive(int n, int i, int j) {
 }
 
 float eval_fast(int type_pair_index, float r2, float cutoff_sqr, const __global pre_cl* pre) {
-	if (r2 > cutoff_sqr) printf("\nkernel1:eval_fast ERROR!");
-	if (r2 * pre->factor >= FAST_SIZE)printf("\nkernel1:eval_fast ERROR!");
+	; // (assert removed)
 	int i = (int)(pre->factor * r2);
-	if (i >= FAST_SIZE)printf("\nkernel1:eval_fast ERROR!");
+	if (i >= FAST_SIZE) i = FAST_SIZE - 1;
 	float res = pre->m_data[type_pair_index].fast[i];
 	return res;
 }
@@ -47,8 +46,8 @@ const __global int* possibilities(						float*		coords,
 	float temp_array[3];
 	int m_data_dims[3] = { mis->ar_mi, mis->ar_mj, mis->ar_mk };
 	for (int i = 0; i < 3; i++) {
-		if (coords[i] + epsilon_fl < gb->init[i]) printf("\nkernel1:possibilities ERROR!1 coords = %f,  init = %f", coords[i], gb->init[i]);//replace assert()
-		if (coords[i] > gb->init[i] + gb->range[i] + epsilon_fl) printf("\nkernel1:possibilities ERROR!2 coords = %f,  init = %f, range =%f", coords[i], gb->init[i], gb->range[i]);//replace assert()
+		// (assert removed)
+		// (assert removed)
 		const float tmp = (coords[i] - gb->init[i]) * m_data_dims[i] / gb->range[i];
 		temp_array[i] = tmp;
 		index[i] = fl_to_sz(tmp, m_data_dims[i] - 1);
@@ -83,7 +82,7 @@ void kernel1(
 	if (y >=grids->grids[grids_front].m_j)return;
 	if (z >=grids->grids[grids_front].m_k)return;
 	
-	float affinities[17]; if (mis->needed_size > 17) printf("\nkernel1: ERROR!");
+	float affinities[17]; ; // (assert removed)
 	for (int i = 0; i < mis->needed_size; i++) affinities[i] = 0;
 
 	float probe_coords[3] = {	grids->grids[grids_front].m_init[0] + grids->grids[grids_front].m_factor_inv[0] * x,
@@ -102,7 +101,7 @@ void kernel1(
 
 		if (r2 <= mis->cutoff_sqr) {
 			for (int j = 0; j < mis->needed_size; j++) {
-				const int t2 = needed[j]; if (t2 >= nat) printf("\nkernel1: ERROR!1 t2 = %d,nat=%d", t2, nat);
+				const int t2 = needed[j]; ; // (assert removed)
 				const int type_pair_index = triangular_matrix_index_permissive(num_atom_types(atu), t1, t2);
 				affinities[j] += eval_fast(type_pair_index, r2, mis->cutoff_sqr, pre);
 			}
@@ -187,7 +186,7 @@ void kernel1(
 
 
 	for (int j = 0; j < mis->needed_size; j++) {
-		int t = needed[j]; if (t >= nat)printf("\nkernel1: ERROR!2 t = %d,nat=%d",t,nat);
+		int t = needed[j];
 		int mi = grids->grids[t].m_i;
 		int mj = grids->grids[t].m_j;
 

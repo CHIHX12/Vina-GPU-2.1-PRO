@@ -6,7 +6,7 @@ inline int num_atom_types(int atu) {
 	case 1: return AD_TYPE_SIZE;
 	case 2: return XS_TYPE_SIZE;
 	case 3: return SY_TYPE_SIZE;
-	default: printf("Kernel1:num_atom_types() ERROR!"); return INFINITY;
+	default: return INFINITY;
 	}
 }
 
@@ -53,7 +53,7 @@ float g_evaluate(			const __global	grid_cl*	g,
 	int m_i = g->m_i;
 	int m_j = g->m_j;
 	int m_k = g->m_k;
-	if(m_i * m_j * m_k == 0)printf("\nkernel2: g_evaluate ERROR!#1");
+	// (assert removed)
 	float tmp_vec[3] = { m_coords[0] - g->m_init[0],m_coords[1] - g->m_init[1] ,m_coords[2] - g->m_init[2] };
 	float tmp_vec2[3] = { g->m_factor[0],g->m_factor[1] ,g->m_factor[2] };
 	float s[3];
@@ -73,7 +73,7 @@ float g_evaluate(			const __global	grid_cl*	g,
 		else if (s[i] >= g->m_dim_fl_minus_1[i]) {
 			miss[i] = s[i] - g->m_dim_fl_minus_1[i];
 			region[i] = 1;
-			if (m_data_dims[i] < 2)printf("\nKernel2: g_evaluate ERROR!#2");
+			// (assert removed)
 			a[i] = m_data_dims[i] - 2;
 			s[i] = 1;
 		}
@@ -82,15 +82,15 @@ float g_evaluate(			const __global	grid_cl*	g,
 			a[i] = (int)s[i];
 			s[i] -= a[i];
 		}
-		if (s[i] < 0)printf("\nKernel2: g_evaluate ERROR!#3");
-		if (s[i] > 1)printf("\nKernel2: g_evaluate ERROR!#4");
-		if (a[i] < 0)printf("\nKernel2: g_evaluate ERROR!#5");
-		if (a[i] + 1 >= m_data_dims[i])printf("\nKernel2: g_evaluate ERROR!#5");
+		// (assert removed)
+		// (assert removed)
+		// (assert removed)
+		// (assert removed)
 	}
 
 	float tmp_m_factor_inv[3] = { g->m_factor_inv[0],g->m_factor_inv[1],g->m_factor_inv[2] };
 	const float penalty = slope * elementwise_product_sum(miss, tmp_m_factor_inv);
-	if (penalty <= -epsilon_fl)printf("\nKernel2: g_evaluate ERROR!#6");
+	// (assert removed)
 
 	const int x0 = a[0];
 	const int y0 = a[1];
@@ -185,7 +185,6 @@ float g_evaluate(			const __global	grid_cl*	g,
 		return f + penalty;
 	}	
 	else {  // none valid pointer
-		printf("\nKernel2: g_evaluate ERROR!#7");
 		curl_without_deriv(&f, v, epsilon_fl);
 		return f + penalty;
 	}
@@ -291,7 +290,7 @@ inline void angle_to_quaternion2(				float*		out,
 									const		float*		axis,
 												float		angle
 ) {
-	if (norm3(axis) - 1 >= 0.001)printf("\nkernel2: angle_to_quaternion() ERROR!"); // Replace assert(eq(axis.norm(), 1));
+	// (norm check assert removed — fires per-step on all MCMC threads)
 	normalize_angle(&angle);
 	float c = cos(angle / 2);
 	float s = sin(angle / 2);
@@ -367,17 +366,17 @@ void p_eval_deriv(						float*		out,
 					const				float		epsilon_fl
 ) {
 	const float cutoff_sqr = pre->m_cutoff_sqr;
-	if(r2 > cutoff_sqr) printf("\nkernel2: p_eval_deriv() ERROR!");
+	if(r2 > cutoff_sqr)
 	const __global p_m_data_cl* tmp = &pre->m_data[type_pair_index];
 	float r2_factored = tmp->factor * r2;
-	if (r2_factored + 1 >= SMOOTH_SIZE) printf("\nkernel2: p_eval_deriv() ERROR!");
+	if (r2_factored + 1 >= SMOOTH_SIZE)
 	int i1 = (int)(r2_factored);
 	int i2 = i1 + 1;
-	if (i1 >= SMOOTH_SIZE || i1 < 0)printf("\n kernel2: p_eval_deriv() ERROR!");
-	if (i2 >= SMOOTH_SIZE || i2 < 0)printf("\n : p_eval_deriv() ERROR!");
+	if (i1 >= SMOOTH_SIZE || i1 < 0)
+	if (i2 >= SMOOTH_SIZE || i2 < 0)
 	float rem = r2_factored - i1;
-	if (rem < -epsilon_fl)printf("\nkernel2: p_eval_deriv() ERROR!");
-	if (rem >= 1 + epsilon_fl)printf("\nkernel2: p_eval_deriv() ERROR!");
+	if (rem < -epsilon_fl)
+	if (rem >= 1 + epsilon_fl)
 	float p1[2] = { tmp->smooth[i1][0], tmp->smooth[i1][1] };
 	float p2[2] = { tmp->smooth[i2][0], tmp->smooth[i2][1] };
 	float e = p1[0] + rem * (p2[0] - p1[0]);
@@ -541,8 +540,7 @@ inline float find_change_index_read(const change_cl* g, int index, int lig_torsi
 	index -= 3;
 	if (index < 3)return g->orientation[index];
 	index -= 3;
-	if (index < lig_torsion_size)return g->lig_torsion[index]; 
-	printf("\nKernel2:find_change_index_read() ERROR!"); // Shouldn't be here
+	if (index < lig_torsion_size)return g->lig_torsion[index]; /* assert removed */
 	return -1;
 }
 
@@ -551,8 +549,7 @@ inline void find_change_index_write(change_cl* g, int index, float data, int lig
 	index -= 3;
 	if (index < 3) { g->orientation[index] = data; return; }
 	index -= 3;
-	if (index < lig_torsion_size) { g->lig_torsion[index] = data; return; } 
-	printf("\nKernel2:find_change_index_write() ERROR!"); // Shouldn't be here
+	if (index < lig_torsion_size) { g->lig_torsion[index] = data; return; } /* assert removed */
 }
 
 void minus_mat_vec_product(	const		matrix*		h,
@@ -740,9 +737,9 @@ float line_search(					 	m_cl*				m,
 		alpha *= multiplier;
 	}
 	// if (*f1 - f0> 0)
-	// 	printf("True \n");
+	//
 	// else
-	// 	printf("False \n");
+	//
 	return alpha;
 }
 

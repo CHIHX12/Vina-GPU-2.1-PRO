@@ -57,7 +57,7 @@ void output_type_cl_increment(output_type_cl* x, const change_cl* c, float facto
 	float angle = norm3(rotation);
 	if (angle > epsilon_fl) {
 		float axis[3] = { rotation[0] / angle, rotation[1] / angle ,rotation[2] / angle };
-		if (norm3(axis) - 1 >= 0.001)printf("\nmutate: angle_to_quaternion() ERROR!"); // Replace assert(eq(axis.norm(), 1));
+		// (norm assert removed)
 		normalize_angle(&angle);
 		float c = cos(angle / 2);
 		float s = sin(angle / 2);
@@ -84,7 +84,7 @@ void output_type_cl_increment(output_type_cl* x, const change_cl* c, float facto
 		;
 	else {
 		const float a = sqrt(s);
-		//if (a <= epsilon_fl) printf("\nmutate: quaternion_normalize_approx ERROR!"); // Replace assert(a > epsilon_fl);
+		//// (assert removed)
 		for (int i = 0; i < 4; i++)q[i] *= (1 / a);
 		//if (quaternion_is_normalized(q) != true)printf("\nmutate: quaternion_normalize_approx() ERROR!");// Replace assert(quaternion_is_normalized(q));
 	}

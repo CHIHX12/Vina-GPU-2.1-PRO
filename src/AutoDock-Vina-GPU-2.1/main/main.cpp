@@ -303,7 +303,7 @@ void dual_procedure(
 	const std::string& opencl_binary_path = ".",
 	const std::string& gpu_id_str = "0",
 	int rilc_bfgs = 1,
-	int search_depth_arg = 20,
+	int search_depth_arg = 32,
 	bool ad4zn = false)
 {
 	doing(verbosity, "Setting up the dual-ligand scoring function", log);
@@ -766,7 +766,7 @@ Thank you!\n";
 		fl center_x = -8.654, center_y = 2.229, center_z = 19.715, size_x = 24.0, size_y = 26.25, size_z = 22.5;
 		int cpu = 1, seed, exhaustiveness = 1, verbosity = 2, num_modes = 9;
 		fl energy_range = 2.0;
-		int search_depth = 1; // 1 = single MC+BFGS round (fast); 0 = heuristic (quality)
+		int search_depth = 32; // 32 = high-quality balanced; 1 = fast; 0 = heuristic
 		int thread = 8000;
 		std::string gpu_id_str = "0";   // e.g. "0", "0,1", "all"
 		std::string cpu_str    = "1";   // e.g. "4", "all"
@@ -796,8 +796,8 @@ Thank you!\n";
 			("ligand", value<std::string>(&ligand_name), "ligand (PDBQT)")
 			("ligand_directory", value<std::string>(&ligand_directory), "ligand directory, if virtual screening is needed")
 			("output_directory", value<std::string>(&output_directory), "output directory, if virtual screening is needed")
-			("thread", value<int>(&thread), "the number of computing lanes in Vina-GPU")
-			("search_depth", value<int>(&search_depth)->default_value(search_depth), "MC+BFGS rounds per trajectory (1=fast, 0=heuristic based on ligand size)")
+			("thread", value<int>(&thread)->default_value(thread), "the number of computing lanes in Vina-GPU (default 8000)")
+			("search_depth", value<int>(&search_depth)->default_value(search_depth), "MC+BFGS rounds per trajectory (32=high-quality default, 1=fast, 0=heuristic)")
 			("opencl_binary_path", value<std::string>(&opencl_binary_path)->default_value(opencl_binary_path), "opencl precompiled binary file path")
 			("rilc_bfgs",value<int>(&rilc_bfgs)->default_value(rilc_bfgs), "rilc_bfgs enable or not")
 			("gpu_id", value<std::string>(&gpu_id_str)->default_value(gpu_id_str),
@@ -918,10 +918,7 @@ Thank you!\n";
 		}*/
 		if (vm.count("ligand2") == 0) {
 			// thread is only needed for GPU mode; skip check in CPU dual-ligand mode
-			if (vm.count("thread") <= 0) {
-				std::cerr << "Missing thread, the recommend thread value is 8000";
-				return 1;
-			} else if (thread < 1000) {
+			if (thread < 1000) {
 				throw usage_error("thread must be at least 1000");
 			}
 		}

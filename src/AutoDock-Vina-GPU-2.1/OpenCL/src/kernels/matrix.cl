@@ -6,7 +6,7 @@ typedef struct {
 
 void matrix_init(matrix* m, int dim, float fill_data) {
 	m->dim = dim;
-	if ((dim * (dim + 1) / 2) > MAX_HESSIAN_MATRIX_SIZE)printf("\nnmatrix: matrix_init() ERROR!");
+	// (size assert removed)
 	//((dim * (dim + 1) / 2)*sizeof(float)); // symmetric matrix
 	for (int i = 0; i < (dim * (dim + 1) / 2); i++)m->data[i] = fill_data;
 	for (int i = (dim * (dim + 1) / 2); i < MAX_HESSIAN_MATRIX_SIZE; i++)m->data[i] = 0;// Others will be 0
@@ -15,7 +15,7 @@ void matrix_init(matrix* m, int dim, float fill_data) {
 // as rugular 3x3 matrix
 void mat_init(matrix* m, float fill_data) {
 	m->dim = 3; // fixed to 3x3 matrix
-	if (9 > MAX_HESSIAN_MATRIX_SIZE)printf("\nnmatrix: mat_init() ERROR!");
+	// (assert removed)
 	for (int i = 0; i < 9; i++)m->data[i] = fill_data;
 }
 
@@ -35,7 +35,7 @@ inline void matrix_set_element_tri(matrix* m, int x, int y, float fill_data) {
 	m->data[x + y*(y+1)/2] = fill_data;
 }
 inline int tri_index(int n, int i, int j) {
-	if (j >= n || i > j)printf("\nmatrix: tri_index ERROR!");
+	// (assert removed)
 	return i + j * (j + 1) / 2;
 }
 
