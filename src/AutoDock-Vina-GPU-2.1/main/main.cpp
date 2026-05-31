@@ -29,6 +29,7 @@
 #include <sstream>
 #include <thread>
 #include <atomic>
+#include <mutex>
 #include <boost/program_options.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/exception.hpp>
@@ -1138,16 +1139,54 @@ Thank you!\n";
 			}
 
 			doing(verbosity, "Reading input", log);
-			std::vector<model> ms;
-			std::vector<std::string> out_names_valid;
-			for (int i = 0; i < (int)ligand_names.size(); i++) {
-				try {
-					ms.push_back(parse_bundle(rigid_name_opt, flex_name_opt, ligand_names[i]));
-					out_names_valid.push_back(out_names[i]);
+			const int n_ligs = static_cast<int>(ligand_names.size());
+
+			// Parallel ligand parsing — cpu_str controls thread count (same as --cpu).
+			// model() is private so we use boost::optional<model> as slot storage.
+			// parse_bundle is thread-safe: pure file I/O + local model construction.
+			int n_parse_threads = 1;
+			if (cpu_str == "all") {
+				n_parse_threads = std::max(1, (int)std::thread::hardware_concurrency());
+			} else {
+				try { n_parse_threads = std::stoi(cpu_str); } catch (...) {}
+				if (n_parse_threads < 1) n_parse_threads = 1;
+			}
+			std::cout << "Parsing " << n_ligs << " ligand(s) with "
+			          << n_parse_threads << " CPU thread(s)...\n";
+
+			std::vector<boost::optional<model>> slots(n_ligs);
+			std::atomic<int>  parse_next{0};
+			std::mutex        parse_err_mutex;
+
+			auto parse_worker = [&]() {
+				for (;;) {
+					int i = parse_next.fetch_add(1, std::memory_order_relaxed);
+					if (i >= n_ligs) break;
+					try {
+						slots[i] = parse_bundle(rigid_name_opt, flex_name_opt, ligand_names[i]);
+					} catch (parse_error& e) {
+						std::lock_guard<std::mutex> lk(parse_err_mutex);
+						std::cerr << "\nParse error on line " << e.line << " in file \""
+						          << e.file.string() << "\": " << e.reason << '\n';
+					}
 				}
-				catch (parse_error& e) {
-					std::cerr << "\nParse error on line " << e.line << " in file \"" << e.file.string() << "\": " << e.reason << '\n';
-					continue;
+			};
+
+			std::vector<std::thread> parse_threads;
+			parse_threads.reserve(n_parse_threads);
+			for (int t = 0; t < n_parse_threads; t++)
+				parse_threads.emplace_back(parse_worker);
+			for (auto& t : parse_threads) t.join();
+
+			// Compact: collect successfully parsed models preserving original order
+			std::vector<model>       ms;
+			std::vector<std::string> out_names_valid;
+			ms.reserve(n_ligs);
+			out_names_valid.reserve(n_ligs);
+			for (int i = 0; i < n_ligs; i++) {
+				if (slots[i]) {
+					ms.push_back(std::move(*slots[i]));
+					out_names_valid.push_back(out_names[i]);
 				}
 			}
 
