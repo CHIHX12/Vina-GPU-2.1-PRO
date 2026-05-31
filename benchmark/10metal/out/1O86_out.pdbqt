@@ -1,0 +1,657 @@
+MODEL 1
+REMARK VINA RESULT:      -7.7      0.000      0.000
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1O86_LPR.pdb
+REMARK  11 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C3_3  and  C4_4
+REMARK    2  A    between atoms: C4_4  and  C14_5
+REMARK    3  A    between atoms: C4_4  and  N1_13
+REMARK    4  A    between atoms: C15_6  and  C16_7
+REMARK    5  A    between atoms: N1_13  and  C2_16
+REMARK    6  A    between atoms: C1_15  and  C2_16
+REMARK    7  A    between atoms: C2_16  and  C10_18
+REMARK    8  A    between atoms: C10_18  and  C11_19
+REMARK    9  A    between atoms: C11_19  and  C12_20
+REMARK   10  A    between atoms: C12_20  and  C13_21
+REMARK   11  A    between atoms: C5_25  and  C9_29
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C2  LPR A 702      42.629  34.184  45.685  0.00  0.00    +0.000 C 
+ENDROOT
+BRANCH   1   2
+ATOM      2  C1  LPR A 702      41.621  34.328  44.481  0.00  0.00    +0.000 C 
+ATOM      3  O1  LPR A 702      40.397  33.995  44.658  0.00  0.00    +0.000 OA
+ATOM      4  N2  LPR A 702      42.030  34.785  43.260  0.00  0.00    +0.000 N 
+ATOM      5  C5  LPR A 702      41.032  34.883  42.121  0.00  0.00    +0.000 C 
+ATOM      6  C6  LPR A 702      41.916  35.425  40.977  0.00  0.00    +0.000 C 
+ATOM      7  C7  LPR A 702      43.198  35.599  41.420  0.00  0.00    +0.000 C 
+ATOM      8  C8  LPR A 702      43.391  35.229  42.835  0.00  0.00    +0.000 C 
+BRANCH   5  11
+ATOM      9  O4  LPR A 702      41.393  32.593  41.538  0.00  0.00    +0.000 OA
+ATOM     10  O5  LPR A 702      39.292  33.247  41.705  0.00  0.00    +0.000 OA
+ATOM     11  C9  LPR A 702      40.464  33.459  41.768  0.00  0.00    +0.000 C 
+ENDBRANCH   5  11
+ENDBRANCH   1   2
+BRANCH   1  12
+ATOM     12  N1  LPR A 702      41.776  34.321  46.934  0.00  0.00    +0.000 NA
+BRANCH  12  13
+ATOM     13  C4  LPR A 702      41.281  35.334  47.428  0.00  0.00    +0.000 C 
+BRANCH  13  16
+ATOM     14  O2  LPR A 702      43.444  36.364  47.768  0.00  0.00    +0.000 OA
+ATOM     15  O3  LPR A 702      41.908  37.556  46.833  0.00  0.00    +0.000 OA
+ATOM     16  C3  LPR A 702      42.263  36.501  47.320  0.00  0.00    +0.000 C 
+ENDBRANCH  13  16
+BRANCH  13  17
+ATOM     17  C14 LPR A 702      40.702  35.633  48.754  0.00  0.00    +0.000 C 
+ATOM     18  C15 LPR A 702      39.283  35.419  49.259  0.00  0.00    +0.000 C 
+BRANCH  18  19
+ATOM     19  C16 LPR A 702      38.970  35.803  50.674  0.00  0.00    +0.000 A 
+ATOM     20  C17 LPR A 702      38.586  34.798  51.653  0.00  0.00    +0.000 A 
+ATOM     21  C18 LPR A 702      38.276  35.182  53.005  0.00  0.00    +0.000 A 
+ATOM     22  C19 LPR A 702      38.344  36.577  53.397  0.00  0.00    +0.000 A 
+ATOM     23  C20 LPR A 702      38.726  37.585  52.425  0.00  0.00    +0.000 A 
+ATOM     24  C21 LPR A 702      39.039  37.199  51.067  0.00  0.00    +0.000 A 
+ENDBRANCH  18  19
+ENDBRANCH  13  17
+ENDBRANCH  12  13
+ENDBRANCH   1  12
+BRANCH   1  25
+ATOM     25  C10 LPR A 702      43.377  32.855  45.574  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C11 LPR A 702      42.879  31.597  46.139  0.00  0.00    +0.000 C 
+BRANCH  26  27
+ATOM     27  C12 LPR A 702      43.469  30.270  45.476  0.00  0.00    +0.000 C 
+BRANCH  27  29
+ATOM     28  N3  LPR A 702      41.708  28.638  45.686  0.00  0.00    +0.000 NA
+ATOM     29  C13 LPR A 702      43.060  29.082  46.171  0.00  0.00    +0.000 C 
+ENDBRANCH  27  29
+ENDBRANCH  26  27
+ENDBRANCH  25  26
+ENDBRANCH   1  25
+TORSDOF 11
+ENDMDL
+MODEL 2
+REMARK VINA RESULT:      -7.7      0.715      1.389
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1O86_LPR.pdb
+REMARK  11 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C3_3  and  C4_4
+REMARK    2  A    between atoms: C4_4  and  C14_5
+REMARK    3  A    between atoms: C4_4  and  N1_13
+REMARK    4  A    between atoms: C15_6  and  C16_7
+REMARK    5  A    between atoms: N1_13  and  C2_16
+REMARK    6  A    between atoms: C1_15  and  C2_16
+REMARK    7  A    between atoms: C2_16  and  C10_18
+REMARK    8  A    between atoms: C10_18  and  C11_19
+REMARK    9  A    between atoms: C11_19  and  C12_20
+REMARK   10  A    between atoms: C12_20  and  C13_21
+REMARK   11  A    between atoms: C5_25  and  C9_29
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C2  LPR A 702      42.951  33.669  45.692  0.00  0.00    +0.000 C 
+ENDROOT
+BRANCH   1   2
+ATOM      2  C1  LPR A 702      41.837  33.826  44.586  0.00  0.00    +0.000 C 
+ATOM      3  O1  LPR A 702      40.675  33.334  44.806  0.00  0.00    +0.000 OA
+ATOM      4  N2  LPR A 702      42.093  34.460  43.403  0.00  0.00    +0.000 N 
+ATOM      5  C5  LPR A 702      41.000  34.565  42.355  0.00  0.00    +0.000 C 
+ATOM      6  C6  LPR A 702      41.723  35.329  41.226  0.00  0.00    +0.000 C 
+ATOM      7  C7  LPR A 702      43.011  35.602  41.596  0.00  0.00    +0.000 C 
+ATOM      8  C8  LPR A 702      43.359  35.104  42.941  0.00  0.00    +0.000 C 
+BRANCH   5  11
+ATOM      9  O4  LPR A 702      39.282  33.005  41.779  0.00  0.00    +0.000 OA
+ATOM     10  O5  LPR A 702      41.360  32.271  41.659  0.00  0.00    +0.000 OA
+ATOM     11  C9  LPR A 702      40.563  33.131  41.875  0.00  0.00    +0.000 C 
+ENDBRANCH   5  11
+ENDBRANCH   1   2
+BRANCH   1  12
+ATOM     12  N1  LPR A 702      42.254  33.991  47.003  0.00  0.00    +0.000 NA
+BRANCH  12  13
+ATOM     13  C4  LPR A 702      41.615  34.996  47.315  0.00  0.00    +0.000 C 
+BRANCH  13  16
+ATOM     14  O2  LPR A 702      42.645  36.737  45.987  0.00  0.00    +0.000 OA
+ATOM     15  O3  LPR A 702      43.038  36.737  48.109  0.00  0.00    +0.000 OA
+ATOM     16  C3  LPR A 702      42.485  36.242  47.146  0.00  0.00    +0.000 C 
+ENDBRANCH  13  16
+BRANCH  13  17
+ATOM     17  C14 LPR A 702      40.876  35.386  48.534  0.00  0.00    +0.000 C 
+ATOM     18  C15 LPR A 702      39.552  36.123  48.666  0.00  0.00    +0.000 C 
+BRANCH  18  19
+ATOM     19  C16 LPR A 702      39.018  36.377  50.044  0.00  0.00    +0.000 A 
+ATOM     20  C17 LPR A 702      38.999  37.721  50.602  0.00  0.00    +0.000 A 
+ATOM     21  C18 LPR A 702      38.494  37.947  51.930  0.00  0.00    +0.000 A 
+ATOM     22  C19 LPR A 702      38.004  36.834  52.721  0.00  0.00    +0.000 A 
+ATOM     23  C20 LPR A 702      38.022  35.491  52.170  0.00  0.00    +0.000 A 
+ATOM     24  C21 LPR A 702      38.527  35.263  50.835  0.00  0.00    +0.000 A 
+ENDBRANCH  18  19
+ENDBRANCH  13  17
+ENDBRANCH  12  13
+ENDBRANCH   1  12
+BRANCH   1  25
+ATOM     25  C10 LPR A 702      43.549  32.264  45.624  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C11 LPR A 702      43.406  31.379  44.463  0.00  0.00    +0.000 C 
+BRANCH  26  27
+ATOM     27  C12 LPR A 702      42.640  30.006  44.742  0.00  0.00    +0.000 C 
+BRANCH  27  29
+ATOM     28  N3  LPR A 702      41.540  28.672  46.421  0.00  0.00    +0.000 NA
+ATOM     29  C13 LPR A 702      42.647  29.648  46.133  0.00  0.00    +0.000 C 
+ENDBRANCH  27  29
+ENDBRANCH  26  27
+ENDBRANCH  25  26
+ENDBRANCH   1  25
+TORSDOF 11
+ENDMDL
+MODEL 3
+REMARK VINA RESULT:      -7.6      0.722      1.156
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1O86_LPR.pdb
+REMARK  11 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C3_3  and  C4_4
+REMARK    2  A    between atoms: C4_4  and  C14_5
+REMARK    3  A    between atoms: C4_4  and  N1_13
+REMARK    4  A    between atoms: C15_6  and  C16_7
+REMARK    5  A    between atoms: N1_13  and  C2_16
+REMARK    6  A    between atoms: C1_15  and  C2_16
+REMARK    7  A    between atoms: C2_16  and  C10_18
+REMARK    8  A    between atoms: C10_18  and  C11_19
+REMARK    9  A    between atoms: C11_19  and  C12_20
+REMARK   10  A    between atoms: C12_20  and  C13_21
+REMARK   11  A    between atoms: C5_25  and  C9_29
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C2  LPR A 702      42.746  34.467  45.497  0.00  0.00    +0.000 C 
+ENDROOT
+BRANCH   1   2
+ATOM      2  C1  LPR A 702      41.605  34.414  44.409  0.00  0.00    +0.000 C 
+ATOM      3  O1  LPR A 702      40.450  33.976  44.747  0.00  0.00    +0.000 OA
+ATOM      4  N2  LPR A 702      41.830  34.813  43.122  0.00  0.00    +0.000 N 
+ATOM      5  C5  LPR A 702      40.711  34.721  42.100  0.00  0.00    +0.000 C 
+ATOM      6  C6  LPR A 702      41.405  35.257  40.829  0.00  0.00    +0.000 C 
+ATOM      7  C7  LPR A 702      42.700  35.592  41.109  0.00  0.00    +0.000 C 
+ATOM      8  C8  LPR A 702      43.083  35.355  42.515  0.00  0.00    +0.000 C 
+BRANCH   5  11
+ATOM      9  O4  LPR A 702      41.223  32.466  41.492  0.00  0.00    +0.000 OA
+ATOM     10  O5  LPR A 702      39.146  32.870  42.118  0.00  0.00    +0.000 OA
+ATOM     11  C9  LPR A 702      40.265  33.224  41.911  0.00  0.00    +0.000 C 
+ENDBRANCH   5  11
+ENDBRANCH   1   2
+BRANCH   1  12
+ATOM     12  N1  LPR A 702      42.021  34.453  46.831  0.00  0.00    +0.000 NA
+BRANCH  12  13
+ATOM     13  C4  LPR A 702      41.377  35.351  47.374  0.00  0.00    +0.000 C 
+BRANCH  13  16
+ATOM     14  O2  LPR A 702      43.176  36.731  48.218  0.00  0.00    +0.000 OA
+ATOM     15  O3  LPR A 702      41.913  37.569  46.683  0.00  0.00    +0.000 OA
+ATOM     16  C3  LPR A 702      42.202  36.638  47.408  0.00  0.00    +0.000 C 
+ENDBRANCH  13  16
+BRANCH  13  17
+ATOM     17  C14 LPR A 702      40.707  35.464  48.686  0.00  0.00    +0.000 C 
+ATOM     18  C15 LPR A 702      39.585  36.395  49.121  0.00  0.00    +0.000 C 
+BRANCH  18  19
+ATOM     19  C16 LPR A 702      39.078  36.283  50.526  0.00  0.00    +0.000 A 
+ATOM     20  C17 LPR A 702      38.661  37.465  51.267  0.00  0.00    +0.000 A 
+ATOM     21  C18 LPR A 702      38.187  37.343  52.620  0.00  0.00    +0.000 A 
+ATOM     22  C19 LPR A 702      38.124  36.040  53.254  0.00  0.00    +0.000 A 
+ATOM     23  C20 LPR A 702      38.540  34.858  52.521  0.00  0.00    +0.000 A 
+ATOM     24  C21 LPR A 702      39.015  34.978  51.161  0.00  0.00    +0.000 A 
+ENDBRANCH  18  19
+ENDBRANCH  13  17
+ENDBRANCH  12  13
+ENDBRANCH   1  12
+BRANCH   1  25
+ATOM     25  C10 LPR A 702      43.709  33.297  45.289  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C11 LPR A 702      43.479  31.954  45.832  0.00  0.00    +0.000 C 
+BRANCH  26  27
+ATOM     27  C12 LPR A 702      42.554  31.007  44.941  0.00  0.00    +0.000 C 
+BRANCH  27  29
+ATOM     28  N3  LPR A 702      42.351  28.985  43.645  0.00  0.00    +0.000 NA
+ATOM     29  C13 LPR A 702      43.194  29.763  44.616  0.00  0.00    +0.000 C 
+ENDBRANCH  27  29
+ENDBRANCH  26  27
+ENDBRANCH  25  26
+ENDBRANCH   1  25
+TORSDOF 11
+ENDMDL
+MODEL 4
+REMARK VINA RESULT:      -7.2      0.759      1.155
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1O86_LPR.pdb
+REMARK  11 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C3_3  and  C4_4
+REMARK    2  A    between atoms: C4_4  and  C14_5
+REMARK    3  A    between atoms: C4_4  and  N1_13
+REMARK    4  A    between atoms: C15_6  and  C16_7
+REMARK    5  A    between atoms: N1_13  and  C2_16
+REMARK    6  A    between atoms: C1_15  and  C2_16
+REMARK    7  A    between atoms: C2_16  and  C10_18
+REMARK    8  A    between atoms: C10_18  and  C11_19
+REMARK    9  A    between atoms: C11_19  and  C12_20
+REMARK   10  A    between atoms: C12_20  and  C13_21
+REMARK   11  A    between atoms: C5_25  and  C9_29
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C2  LPR A 702      42.576  34.400  45.602  0.00  0.00    +0.000 C 
+ENDROOT
+BRANCH   1   2
+ATOM      2  C1  LPR A 702      41.525  34.366  44.426  0.00  0.00    +0.000 C 
+ATOM      3  O1  LPR A 702      40.361  33.883  44.652  0.00  0.00    +0.000 OA
+ATOM      4  N2  LPR A 702      41.838  34.828  43.179  0.00  0.00    +0.000 N 
+ATOM      5  C5  LPR A 702      40.805  34.752  42.069  0.00  0.00    +0.000 C 
+ATOM      6  C6  LPR A 702      41.579  35.362  40.881  0.00  0.00    +0.000 C 
+ATOM      7  C7  LPR A 702      42.838  35.718  41.276  0.00  0.00    +0.000 C 
+ATOM      8  C8  LPR A 702      43.117  35.429  42.696  0.00  0.00    +0.000 C 
+BRANCH   5  11
+ATOM      9  O4  LPR A 702      39.156  33.027  41.915  0.00  0.00    +0.000 OA
+ATOM     10  O5  LPR A 702      41.242  32.436  41.499  0.00  0.00    +0.000 OA
+ATOM     11  C9  LPR A 702      40.421  33.253  41.782  0.00  0.00    +0.000 C 
+ENDBRANCH   5  11
+ENDBRANCH   1   2
+BRANCH   1  12
+ATOM     12  N1  LPR A 702      41.749  34.551  46.867  0.00  0.00    +0.000 NA
+BRANCH  12  13
+ATOM     13  C4  LPR A 702      41.220  35.560  47.333  0.00  0.00    +0.000 C 
+BRANCH  13  16
+ATOM     14  O2  LPR A 702      41.913  37.874  47.473  0.00  0.00    +0.000 OA
+ATOM     15  O3  LPR A 702      43.433  36.362  47.712  0.00  0.00    +0.000 OA
+ATOM     16  C3  LPR A 702      42.268  36.656  47.529  0.00  0.00    +0.000 C 
+ENDBRANCH  13  16
+BRANCH  13  17
+ATOM     17  C14 LPR A 702      40.392  35.807  48.532  0.00  0.00    +0.000 C 
+ATOM     18  C15 LPR A 702      40.781  35.757  50.001  0.00  0.00    +0.000 C 
+BRANCH  18  19
+ATOM     19  C16 LPR A 702      39.730  36.071  51.023  0.00  0.00    +0.000 A 
+ATOM     20  C17 LPR A 702      38.404  35.477  50.937  0.00  0.00    +0.000 A 
+ATOM     21  C18 LPR A 702      37.401  35.797  51.918  0.00  0.00    +0.000 A 
+ATOM     22  C19 LPR A 702      37.708  36.717  52.997  0.00  0.00    +0.000 A 
+ATOM     23  C20 LPR A 702      39.028  37.312  53.088  0.00  0.00    +0.000 A 
+ATOM     24  C21 LPR A 702      40.037  36.990  52.103  0.00  0.00    +0.000 A 
+ENDBRANCH  18  19
+ENDBRANCH  13  17
+ENDBRANCH  12  13
+ENDBRANCH   1  12
+BRANCH   1  25
+ATOM     25  C10 LPR A 702      43.438  33.139  45.558  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C11 LPR A 702      43.019  31.852  46.123  0.00  0.00    +0.000 C 
+BRANCH  26  27
+ATOM     27  C12 LPR A 702      43.783  30.573  45.549  0.00  0.00    +0.000 C 
+BRANCH  27  29
+ATOM     28  N3  LPR A 702      41.963  29.581  44.320  0.00  0.00    +0.000 NA
+ATOM     29  C13 LPR A 702      43.327  30.206  44.238  0.00  0.00    +0.000 C 
+ENDBRANCH  27  29
+ENDBRANCH  26  27
+ENDBRANCH  25  26
+ENDBRANCH   1  25
+TORSDOF 11
+ENDMDL
+MODEL 5
+REMARK VINA RESULT:      -7.1      0.946      1.030
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1O86_LPR.pdb
+REMARK  11 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C3_3  and  C4_4
+REMARK    2  A    between atoms: C4_4  and  C14_5
+REMARK    3  A    between atoms: C4_4  and  N1_13
+REMARK    4  A    between atoms: C15_6  and  C16_7
+REMARK    5  A    between atoms: N1_13  and  C2_16
+REMARK    6  A    between atoms: C1_15  and  C2_16
+REMARK    7  A    between atoms: C2_16  and  C10_18
+REMARK    8  A    between atoms: C10_18  and  C11_19
+REMARK    9  A    between atoms: C11_19  and  C12_20
+REMARK   10  A    between atoms: C12_20  and  C13_21
+REMARK   11  A    between atoms: C5_25  and  C9_29
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C2  LPR A 702      42.665  33.783  45.881  0.00  0.00    +0.000 C 
+ENDROOT
+BRANCH   1   2
+ATOM      2  C1  LPR A 702      41.586  34.108  44.778  0.00  0.00    +0.000 C 
+ATOM      3  O1  LPR A 702      40.348  33.929  45.054  0.00  0.00    +0.000 OA
+ATOM      4  N2  LPR A 702      41.946  34.561  43.541  0.00  0.00    +0.000 N 
+ATOM      5  C5  LPR A 702      40.877  34.837  42.500  0.00  0.00    +0.000 C 
+ATOM      6  C6  LPR A 702      41.724  35.308  41.299  0.00  0.00    +0.000 C 
+ATOM      7  C7  LPR A 702      43.051  35.296  41.629  0.00  0.00    +0.000 C 
+ATOM      8  C8  LPR A 702      43.314  34.842  43.009  0.00  0.00    +0.000 C 
+BRANCH   5  11
+ATOM      9  O4  LPR A 702      40.878  32.556  41.782  0.00  0.00    +0.000 OA
+ATOM     10  O5  LPR A 702      38.908  33.451  42.217  0.00  0.00    +0.000 OA
+ATOM     11  C9  LPR A 702      40.097  33.514  42.154  0.00  0.00    +0.000 C 
+ENDBRANCH   5  11
+ENDBRANCH   1   2
+BRANCH   1  12
+ATOM     12  N1  LPR A 702      42.072  34.303  47.179  0.00  0.00    +0.000 NA
+BRANCH  12  13
+ATOM     13  C4  LPR A 702      41.417  35.326  47.377  0.00  0.00    +0.000 C 
+BRANCH  13  16
+ATOM     14  O2  LPR A 702      43.573  36.363  47.737  0.00  0.00    +0.000 OA
+ATOM     15  O3  LPR A 702      41.913  37.655  47.258  0.00  0.00    +0.000 OA
+ATOM     16  C3  LPR A 702      42.347  36.537  47.450  0.00  0.00    +0.000 C 
+ENDBRANCH  13  16
+BRANCH  13  17
+ATOM     17  C14 LPR A 702      40.440  35.716  48.415  0.00  0.00    +0.000 C 
+ATOM     18  C15 LPR A 702      40.538  35.597  49.928  0.00  0.00    +0.000 C 
+BRANCH  18  19
+ATOM     19  C16 LPR A 702      39.390  36.093  50.754  0.00  0.00    +0.000 A 
+ATOM     20  C17 LPR A 702      38.560  35.167  51.511  0.00  0.00    +0.000 A 
+ATOM     21  C18 LPR A 702      37.452  35.657  52.289  0.00  0.00    +0.000 A 
+ATOM     22  C19 LPR A 702      37.158  37.077  52.321  0.00  0.00    +0.000 A 
+ATOM     23  C20 LPR A 702      37.981  38.004  51.567  0.00  0.00    +0.000 A 
+ATOM     24  C21 LPR A 702      39.095  37.514  50.786  0.00  0.00    +0.000 A 
+ENDBRANCH  18  19
+ENDBRANCH  13  17
+ENDBRANCH  12  13
+ENDBRANCH   1  12
+BRANCH   1  25
+ATOM     25  C10 LPR A 702      42.965  32.284  45.880  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C11 LPR A 702      43.816  31.630  44.880  0.00  0.00    +0.000 C 
+BRANCH  26  27
+ATOM     27  C12 LPR A 702      43.472  30.099  44.588  0.00  0.00    +0.000 C 
+BRANCH  27  29
+ATOM     28  N3  LPR A 702      42.263  28.552  43.191  0.00  0.00    +0.000 NA
+ATOM     29  C13 LPR A 702      42.919  29.902  43.278  0.00  0.00    +0.000 C 
+ENDBRANCH  27  29
+ENDBRANCH  26  27
+ENDBRANCH  25  26
+ENDBRANCH   1  25
+TORSDOF 11
+ENDMDL
+MODEL 6
+REMARK VINA RESULT:      -6.9      0.695      1.262
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1O86_LPR.pdb
+REMARK  11 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C3_3  and  C4_4
+REMARK    2  A    between atoms: C4_4  and  C14_5
+REMARK    3  A    between atoms: C4_4  and  N1_13
+REMARK    4  A    between atoms: C15_6  and  C16_7
+REMARK    5  A    between atoms: N1_13  and  C2_16
+REMARK    6  A    between atoms: C1_15  and  C2_16
+REMARK    7  A    between atoms: C2_16  and  C10_18
+REMARK    8  A    between atoms: C10_18  and  C11_19
+REMARK    9  A    between atoms: C11_19  and  C12_20
+REMARK   10  A    between atoms: C12_20  and  C13_21
+REMARK   11  A    between atoms: C5_25  and  C9_29
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C2  LPR A 702      42.337  34.543  45.722  0.00  0.00    +0.000 C 
+ENDROOT
+BRANCH   1   2
+ATOM      2  C1  LPR A 702      41.372  34.425  44.480  0.00  0.00    +0.000 C 
+ATOM      3  O1  LPR A 702      40.215  33.901  44.645  0.00  0.00    +0.000 OA
+ATOM      4  N2  LPR A 702      41.751  34.856  43.241  0.00  0.00    +0.000 N 
+ATOM      5  C5  LPR A 702      40.800  34.699  42.068  0.00  0.00    +0.000 C 
+ATOM      6  C6  LPR A 702      41.629  35.301  40.912  0.00  0.00    +0.000 C 
+ATOM      7  C7  LPR A 702      42.843  35.723  41.378  0.00  0.00    +0.000 C 
+ATOM      8  C8  LPR A 702      43.035  35.494  42.823  0.00  0.00    +0.000 C 
+BRANCH   5  11
+ATOM      9  O4  LPR A 702      39.238  32.898  41.891  0.00  0.00    +0.000 OA
+ATOM     10  O5  LPR A 702      41.366  32.390  41.592  0.00  0.00    +0.000 OA
+ATOM     11  C9  LPR A 702      40.496  33.177  41.810  0.00  0.00    +0.000 C 
+ENDBRANCH   5  11
+ENDBRANCH   1   2
+BRANCH   1  12
+ATOM     12  N1  LPR A 702      41.420  34.683  46.924  0.00  0.00    +0.000 NA
+BRANCH  12  13
+ATOM     13  C4  LPR A 702      41.061  35.704  47.511  0.00  0.00    +0.000 C 
+BRANCH  13  16
+ATOM     14  O2  LPR A 702      41.913  37.968  47.545  0.00  0.00    +0.000 OA
+ATOM     15  O3  LPR A 702      43.352  36.362  47.469  0.00  0.00    +0.000 OA
+ATOM     16  C3  LPR A 702      42.194  36.729  47.516  0.00  0.00    +0.000 C 
+ENDBRANCH  13  16
+BRANCH  13  17
+ATOM     17  C14 LPR A 702      40.508  35.954  48.859  0.00  0.00    +0.000 C 
+ATOM     18  C15 LPR A 702      39.105  35.702  49.389  0.00  0.00    +0.000 C 
+BRANCH  18  19
+ATOM     19  C16 LPR A 702      38.820  36.039  50.822  0.00  0.00    +0.000 A 
+ATOM     20  C17 LPR A 702      39.806  36.734  51.637  0.00  0.00    +0.000 A 
+ATOM     21  C18 LPR A 702      39.522  37.040  53.014  0.00  0.00    +0.000 A 
+ATOM     22  C19 LPR A 702      38.251  36.655  53.597  0.00  0.00    +0.000 A 
+ATOM     23  C20 LPR A 702      37.264  35.962  52.790  0.00  0.00    +0.000 A 
+ATOM     24  C21 LPR A 702      37.547  35.655  51.405  0.00  0.00    +0.000 A 
+ENDBRANCH  18  19
+ENDBRANCH  13  17
+ENDBRANCH  12  13
+ENDBRANCH   1  12
+BRANCH   1  25
+ATOM     25  C10 LPR A 702      43.262  33.326  45.772  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C11 LPR A 702      43.144  32.182  44.862  0.00  0.00    +0.000 C 
+BRANCH  26  27
+ATOM     27  C12 LPR A 702      43.565  30.772  45.480  0.00  0.00    +0.000 C 
+BRANCH  27  29
+ATOM     28  N3  LPR A 702      42.529  28.739  44.706  0.00  0.00    +0.000 NA
+ATOM     29  C13 LPR A 702      42.442  29.896  45.662  0.00  0.00    +0.000 C 
+ENDBRANCH  27  29
+ENDBRANCH  26  27
+ENDBRANCH  25  26
+ENDBRANCH   1  25
+TORSDOF 11
+ENDMDL
+MODEL 7
+REMARK VINA RESULT:      -6.8      0.817      1.152
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1O86_LPR.pdb
+REMARK  11 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C3_3  and  C4_4
+REMARK    2  A    between atoms: C4_4  and  C14_5
+REMARK    3  A    between atoms: C4_4  and  N1_13
+REMARK    4  A    between atoms: C15_6  and  C16_7
+REMARK    5  A    between atoms: N1_13  and  C2_16
+REMARK    6  A    between atoms: C1_15  and  C2_16
+REMARK    7  A    between atoms: C2_16  and  C10_18
+REMARK    8  A    between atoms: C10_18  and  C11_19
+REMARK    9  A    between atoms: C11_19  and  C12_20
+REMARK   10  A    between atoms: C12_20  and  C13_21
+REMARK   11  A    between atoms: C5_25  and  C9_29
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C2  LPR A 702      42.724  33.965  45.767  0.00  0.00    +0.000 C 
+ENDROOT
+BRANCH   1   2
+ATOM      2  C1  LPR A 702      41.667  34.027  44.599  0.00  0.00    +0.000 C 
+ATOM      3  O1  LPR A 702      40.499  33.540  44.796  0.00  0.00    +0.000 OA
+ATOM      4  N2  LPR A 702      41.976  34.577  43.387  0.00  0.00    +0.000 N 
+ATOM      5  C5  LPR A 702      40.937  34.593  42.281  0.00  0.00    +0.000 C 
+ATOM      6  C6  LPR A 702      41.710  35.282  41.136  0.00  0.00    +0.000 C 
+ATOM      7  C7  LPR A 702      42.975  35.596  41.549  0.00  0.00    +0.000 C 
+ATOM      8  C8  LPR A 702      43.259  35.200  42.942  0.00  0.00    +0.000 C 
+BRANCH   5  11
+ATOM      9  O4  LPR A 702      39.279  32.883  42.063  0.00  0.00    +0.000 OA
+ATOM     10  O5  LPR A 702      41.341  32.336  41.494  0.00  0.00    +0.000 OA
+ATOM     11  C9  LPR A 702      40.536  33.123  41.886  0.00  0.00    +0.000 C 
+ENDBRANCH   5  11
+ENDBRANCH   1   2
+BRANCH   1  12
+ATOM     12  N1  LPR A 702      41.924  34.196  47.037  0.00  0.00    +0.000 NA
+BRANCH  12  13
+ATOM     13  C4  LPR A 702      41.405  35.234  47.448  0.00  0.00    +0.000 C 
+BRANCH  13  16
+ATOM     14  O2  LPR A 702      42.288  37.045  46.108  0.00  0.00    +0.000 OA
+ATOM     15  O3  LPR A 702      43.150  36.738  48.062  0.00  0.00    +0.000 OA
+ATOM     16  C3  LPR A 702      42.343  36.418  47.212  0.00  0.00    +0.000 C 
+ENDBRANCH  13  16
+BRANCH  13  17
+ATOM     17  C14 LPR A 702      40.842  35.635  48.755  0.00  0.00    +0.000 C 
+ATOM     18  C15 LPR A 702      40.134  36.922  49.147  0.00  0.00    +0.000 C 
+BRANCH  18  19
+ATOM     19  C16 LPR A 702      39.644  37.059  50.557  0.00  0.00    +0.000 A 
+ATOM     20  C17 LPR A 702      39.521  35.894  51.421  0.00  0.00    +0.000 A 
+ATOM     21  C18 LPR A 702      39.038  36.038  52.769  0.00  0.00    +0.000 A 
+ATOM     22  C19 LPR A 702      38.670  37.348  53.273  0.00  0.00    +0.000 A 
+ATOM     23  C20 LPR A 702      38.790  38.513  52.416  0.00  0.00    +0.000 A 
+ATOM     24  C21 LPR A 702      39.276  38.369  51.062  0.00  0.00    +0.000 A 
+ENDBRANCH  18  19
+ENDBRANCH  13  17
+ENDBRANCH  12  13
+ENDBRANCH   1  12
+BRANCH   1  25
+ATOM     25  C10 LPR A 702      43.462  32.627  45.721  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C11 LPR A 702      42.893  31.408  45.134  0.00  0.00    +0.000 C 
+BRANCH  26  27
+ATOM     27  C12 LPR A 702      42.259  30.380  46.177  0.00  0.00    +0.000 C 
+BRANCH  27  29
+ATOM     28  N3  LPR A 702      42.718  28.918  44.317  0.00  0.00    +0.000 NA
+ATOM     29  C13 LPR A 702      41.912  29.126  45.569  0.00  0.00    +0.000 C 
+ENDBRANCH  27  29
+ENDBRANCH  26  27
+ENDBRANCH  25  26
+ENDBRANCH   1  25
+TORSDOF 11
+ENDMDL
+MODEL 8
+REMARK VINA RESULT:      -6.7      1.015      1.421
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1O86_LPR.pdb
+REMARK  11 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C3_3  and  C4_4
+REMARK    2  A    between atoms: C4_4  and  C14_5
+REMARK    3  A    between atoms: C4_4  and  N1_13
+REMARK    4  A    between atoms: C15_6  and  C16_7
+REMARK    5  A    between atoms: N1_13  and  C2_16
+REMARK    6  A    between atoms: C1_15  and  C2_16
+REMARK    7  A    between atoms: C2_16  and  C10_18
+REMARK    8  A    between atoms: C10_18  and  C11_19
+REMARK    9  A    between atoms: C11_19  and  C12_20
+REMARK   10  A    between atoms: C12_20  and  C13_21
+REMARK   11  A    between atoms: C5_25  and  C9_29
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C2  LPR A 702      42.306  34.258  46.107  0.00  0.00    +0.000 C 
+ENDROOT
+BRANCH   1   2
+ATOM      2  C1  LPR A 702      41.338  34.333  44.864  0.00  0.00    +0.000 C 
+ATOM      3  O1  LPR A 702      40.136  33.910  44.991  0.00  0.00    +0.000 OA
+ATOM      4  N2  LPR A 702      41.760  34.826  43.662  0.00  0.00    +0.000 N 
+ATOM      5  C5  LPR A 702      40.803  34.856  42.484  0.00  0.00    +0.000 C 
+ATOM      6  C6  LPR A 702      41.690  35.467  41.378  0.00  0.00    +0.000 C 
+ATOM      7  C7  LPR A 702      42.937  35.733  41.871  0.00  0.00    +0.000 C 
+ATOM      8  C8  LPR A 702      43.101  35.371  43.292  0.00  0.00    +0.000 C 
+BRANCH   5  11
+ATOM      9  O4  LPR A 702      41.344  32.650  41.735  0.00  0.00    +0.000 OA
+ATOM     10  O5  LPR A 702      39.214  33.057  42.144  0.00  0.00    +0.000 OA
+ATOM     11  C9  LPR A 702      40.357  33.395  42.105  0.00  0.00    +0.000 C 
+ENDBRANCH   5  11
+ENDBRANCH   1   2
+BRANCH   1  12
+ATOM     12  N1  LPR A 702      41.420  34.513  47.314  0.00  0.00    +0.000 NA
+BRANCH  12  13
+ATOM     13  C4  LPR A 702      41.185  35.573  47.894  0.00  0.00    +0.000 C 
+BRANCH  13  16
+ATOM     14  O2  LPR A 702      41.911  37.703  47.006  0.00  0.00    +0.000 OA
+ATOM     15  O3  LPR A 702      43.428  36.370  47.765  0.00  0.00    +0.000 OA
+ATOM     16  C3  LPR A 702      42.257  36.607  47.547  0.00  0.00    +0.000 C 
+ENDBRANCH  13  16
+BRANCH  13  17
+ATOM     17  C14 LPR A 702      40.970  35.923  49.314  0.00  0.00    +0.000 C 
+ATOM     18  C15 LPR A 702      39.963  36.882  49.930  0.00  0.00    +0.000 C 
+BRANCH  18  19
+ATOM     19  C16 LPR A 702      39.953  37.035  51.421  0.00  0.00    +0.000 A 
+ATOM     20  C17 LPR A 702      41.175  37.346  52.148  0.00  0.00    +0.000 A 
+ATOM     21  C18 LPR A 702      41.153  37.478  53.581  0.00  0.00    +0.000 A 
+ATOM     22  C19 LPR A 702      39.910  37.300  54.308  0.00  0.00    +0.000 A 
+ATOM     23  C20 LPR A 702      38.688  36.990  53.589  0.00  0.00    +0.000 A 
+ATOM     24  C21 LPR A 702      38.709  36.858  52.149  0.00  0.00    +0.000 A 
+ENDBRANCH  18  19
+ENDBRANCH  13  17
+ENDBRANCH  12  13
+ENDBRANCH   1  12
+BRANCH   1  25
+ATOM     25  C10 LPR A 702      43.019  32.906  46.122  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C11 LPR A 702      42.394  31.656  45.677  0.00  0.00    +0.000 C 
+BRANCH  26  27
+ATOM     27  C12 LPR A 702      43.408  30.510  45.223  0.00  0.00    +0.000 C 
+BRANCH  27  29
+ATOM     28  N3  LPR A 702      43.181  28.258  44.395  0.00  0.00    +0.000 NA
+ATOM     29  C13 LPR A 702      42.928  29.195  45.543  0.00  0.00    +0.000 C 
+ENDBRANCH  27  29
+ENDBRANCH  26  27
+ENDBRANCH  25  26
+ENDBRANCH   1  25
+TORSDOF 11
+ENDMDL
+MODEL 9
+REMARK VINA RESULT:      -6.7      1.149      1.698
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1O86_LPR.pdb
+REMARK  11 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C3_3  and  C4_4
+REMARK    2  A    between atoms: C4_4  and  C14_5
+REMARK    3  A    between atoms: C4_4  and  N1_13
+REMARK    4  A    between atoms: C15_6  and  C16_7
+REMARK    5  A    between atoms: N1_13  and  C2_16
+REMARK    6  A    between atoms: C1_15  and  C2_16
+REMARK    7  A    between atoms: C2_16  and  C10_18
+REMARK    8  A    between atoms: C10_18  and  C11_19
+REMARK    9  A    between atoms: C11_19  and  C12_20
+REMARK   10  A    between atoms: C12_20  and  C13_21
+REMARK   11  A    between atoms: C5_25  and  C9_29
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C2  LPR A 702      42.303  34.000  45.834  0.00  0.00    +0.000 C 
+ENDROOT
+BRANCH   1   2
+ATOM      2  C1  LPR A 702      41.452  34.172  44.517  0.00  0.00    +0.000 C 
+ATOM      3  O1  LPR A 702      40.240  33.758  44.506  0.00  0.00    +0.000 OA
+ATOM      4  N2  LPR A 702      41.985  34.739  43.394  0.00  0.00    +0.000 N 
+ATOM      5  C5  LPR A 702      41.140  34.861  42.139  0.00  0.00    +0.000 C 
+ATOM      6  C6  LPR A 702      42.127  35.534  41.162  0.00  0.00    +0.000 C 
+ATOM      7  C7  LPR A 702      43.326  35.749  41.782  0.00  0.00    +0.000 C 
+ATOM      8  C8  LPR A 702      43.358  35.289  43.185  0.00  0.00    +0.000 C 
+BRANCH   5  11
+ATOM      9  O4  LPR A 702      39.451  33.218  41.734  0.00  0.00    +0.000 OA
+ATOM     10  O5  LPR A 702      41.519  32.657  41.205  0.00  0.00    +0.000 OA
+ATOM     11  C9  LPR A 702      40.719  33.435  41.623  0.00  0.00    +0.000 C 
+ENDBRANCH   5  11
+ENDBRANCH   1   2
+BRANCH   1  12
+ATOM     12  N1  LPR A 702      41.372  34.411  46.962  0.00  0.00    +0.000 NA
+BRANCH  12  13
+ATOM     13  C4  LPR A 702      41.066  35.542  47.342  0.00  0.00    +0.000 C 
+BRANCH  13  16
+ATOM     14  O2  LPR A 702      43.073  36.735  47.977  0.00  0.00    +0.000 OA
+ATOM     15  O3  LPR A 702      42.288  37.087  45.998  0.00  0.00    +0.000 OA
+ATOM     16  C3  LPR A 702      42.214  36.514  47.068  0.00  0.00    +0.000 C 
+ENDBRANCH  13  16
+BRANCH  13  17
+ATOM     17  C14 LPR A 702      40.602  36.082  48.636  0.00  0.00    +0.000 C 
+ATOM     18  C15 LPR A 702      39.859  37.376  48.933  0.00  0.00    +0.000 C 
+BRANCH  18  19
+ATOM     19  C16 LPR A 702      39.491  37.671  50.355  0.00  0.00    +0.000 A 
+ATOM     20  C17 LPR A 702      39.084  39.008  50.760  0.00  0.00    +0.000 A 
+ATOM     21  C18 LPR A 702      38.746  39.280  52.132  0.00  0.00    +0.000 A 
+ATOM     22  C19 LPR A 702      38.812  38.220  53.120  0.00  0.00    +0.000 A 
+ATOM     23  C20 LPR A 702      39.219  36.885  52.724  0.00  0.00    +0.000 A 
+ATOM     24  C21 LPR A 702      39.557  36.610  51.345  0.00  0.00    +0.000 A 
+ENDBRANCH  18  19
+ENDBRANCH  13  17
+ENDBRANCH  12  13
+ENDBRANCH   1  12
+BRANCH   1  25
+ATOM     25  C10 LPR A 702      42.816  32.564  45.931  0.00  0.00    +0.000 C 
+BRANCH  25  26
+ATOM     26  C11 LPR A 702      43.947  32.054  45.148  0.00  0.00    +0.000 C 
+BRANCH  26  27
+ATOM     27  C12 LPR A 702      43.555  31.165  43.881  0.00  0.00    +0.000 C 
+BRANCH  27  29
+ATOM     28  N3  LPR A 702      41.973  29.677  42.839  0.00  0.00    +0.000 NA
+ATOM     29  C13 LPR A 702      42.367  30.390  44.102  0.00  0.00    +0.000 C 
+ENDBRANCH  27  29
+ENDBRANCH  26  27
+ENDBRANCH  25  26
+ENDBRANCH   1  25
+TORSDOF 11
+ENDMDL

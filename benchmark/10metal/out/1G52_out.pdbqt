@@ -1,0 +1,405 @@
+MODEL 1
+REMARK VINA RESULT:      -5.3      0.000      0.000
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1G52_F2B.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C03_3  and  S11_11
+REMARK    2  A    between atoms: C06_6  and  C07_7
+REMARK    3  A    between atoms: N09_9  and  C10_10
+REMARK    4  A    between atoms: C10_10  and  C15_15
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C07 F2B A 555      -4.719   5.800  13.893  0.00  0.00    +0.000 C 
+ATOM      2  O08 F2B A 555      -3.999   6.573  14.488  0.00  0.00    +0.000 OA
+ATOM      3  N09 F2B A 555      -5.214   6.101  12.622  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   9
+ATOM      4  C01 F2B A 555      -4.290   3.355  14.333  0.00  0.00    +0.000 A 
+ATOM      5  C02 F2B A 555      -4.574   2.105  14.930  0.00  0.00    +0.000 A 
+ATOM      6  C03 F2B A 555      -5.691   2.009  15.798  0.00  0.00    +0.000 A 
+ATOM      7  C04 F2B A 555      -6.460   3.170  16.013  0.00  0.00    +0.000 A 
+ATOM      8  C05 F2B A 555      -6.150   4.396  15.397  0.00  0.00    +0.000 A 
+ATOM      9  C06 F2B A 555      -5.069   4.493  14.562  0.00  0.00    +0.000 A 
+BRANCH   6  10
+ATOM     10  S11 F2B A 555      -6.013   0.372  16.543  0.00  0.00    +0.000 S 
+ATOM     11  NP2 F2B A 555      -5.613   0.325  18.033  0.00  0.00    +0.000 NA
+ATOM     12  O13 F2B A 555      -5.226  -0.469  15.530  0.00  0.00    +0.000 OA
+ATOM     13  O14 F2B A 555      -7.452   0.162  16.240  0.00  0.00    +0.000 OA
+ENDBRANCH   6  10
+ENDBRANCH   1   9
+BRANCH   3  14
+ATOM     14  C10 F2B A 555      -4.978   7.305  11.805  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C15 F2B A 555      -5.772   7.496  10.631  0.00  0.00    +0.000 A 
+ATOM     16  C16 F2B A 555      -5.832   6.444   9.681  0.00  0.00    +0.000 A 
+ATOM     17  C17 F2B A 555      -6.591   6.543   8.481  0.00  0.00    +0.000 A 
+ATOM     18  C18 F2B A 555      -7.302   7.741   8.247  0.00  0.00    +0.000 A 
+ATOM     19  C19 F2B A 555      -7.269   8.832   9.179  0.00  0.00    +0.000 A 
+ATOM     20  C20 F2B A 555      -6.492   8.706  10.390  0.00  0.00    +0.000 A 
+ATOM     21  F21 F2B A 555      -7.959   9.951   8.919  0.00  0.00    +0.000 F 
+ATOM     22  F22 F2B A 555      -6.456   9.719  11.267  0.00  0.00    +0.000 F 
+ENDBRANCH  14  15
+ENDBRANCH   3  14
+TORSDOF 4
+ENDMDL
+MODEL 2
+REMARK VINA RESULT:      -5.2      2.961      4.198
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1G52_F2B.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C03_3  and  S11_11
+REMARK    2  A    between atoms: C06_6  and  C07_7
+REMARK    3  A    between atoms: N09_9  and  C10_10
+REMARK    4  A    between atoms: C10_10  and  C15_15
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C07 F2B A 555      -4.990   5.670  13.420  0.00  0.00    +0.000 C 
+ATOM      2  O08 F2B A 555      -5.932   6.345  13.067  0.00  0.00    +0.000 OA
+ATOM      3  N09 F2B A 555      -3.676   6.043  13.124  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   9
+ATOM      4  C01 F2B A 555      -4.385   3.327  14.131  0.00  0.00    +0.000 A 
+ATOM      5  C02 F2B A 555      -4.599   2.121  14.836  0.00  0.00    +0.000 A 
+ATOM      6  C03 F2B A 555      -5.758   2.009  15.647  0.00  0.00    +0.000 A 
+ATOM      7  C04 F2B A 555      -6.633   3.111  15.700  0.00  0.00    +0.000 A 
+ATOM      8  C05 F2B A 555      -6.389   4.295  14.980  0.00  0.00    +0.000 A 
+ATOM      9  C06 F2B A 555      -5.270   4.407  14.199  0.00  0.00    +0.000 A 
+BRANCH   6  10
+ATOM     10  S11 F2B A 555      -5.988   0.430  16.537  0.00  0.00    +0.000 S 
+ATOM     11  NP2 F2B A 555      -5.499   0.512  17.998  0.00  0.00    +0.000 NA
+ATOM     12  O13 F2B A 555      -5.237  -0.471  15.546  0.00  0.00    +0.000 OA
+ATOM     13  O14 F2B A 555      -7.434   0.162  16.339  0.00  0.00    +0.000 OA
+ENDBRANCH   6  10
+ENDBRANCH   1   9
+BRANCH   3  14
+ATOM     14  C10 F2B A 555      -3.201   7.233  12.395  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C15 F2B A 555      -2.497   8.240  13.125  0.00  0.00    +0.000 A 
+ATOM     16  C16 F2B A 555      -2.004   7.916  14.415  0.00  0.00    +0.000 A 
+ATOM     17  C17 F2B A 555      -1.296   8.855  15.219  0.00  0.00    +0.000 A 
+ATOM     18  C18 F2B A 555      -1.088  10.149  14.692  0.00  0.00    +0.000 A 
+ATOM     19  C19 F2B A 555      -1.570  10.522  13.393  0.00  0.00    +0.000 A 
+ATOM     20  C20 F2B A 555      -2.286   9.551  12.597  0.00  0.00    +0.000 A 
+ATOM     21  F21 F2B A 555      -1.352  11.761  12.932  0.00  0.00    +0.000 F 
+ATOM     22  F22 F2B A 555      -2.739   9.890  11.383  0.00  0.00    +0.000 F 
+ENDBRANCH  14  15
+ENDBRANCH   3  14
+TORSDOF 4
+ENDMDL
+MODEL 3
+REMARK VINA RESULT:      -4.8      0.413      1.103
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1G52_F2B.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C03_3  and  S11_11
+REMARK    2  A    between atoms: C06_6  and  C07_7
+REMARK    3  A    between atoms: N09_9  and  C10_10
+REMARK    4  A    between atoms: C10_10  and  C15_15
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C07 F2B A 555      -4.993   5.743  13.588  0.00  0.00    +0.000 C 
+ATOM      2  O08 F2B A 555      -4.728   6.711  14.267  0.00  0.00    +0.000 OA
+ATOM      3  N09 F2B A 555      -5.100   5.838  12.198  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   9
+ATOM      4  C01 F2B A 555      -6.286   4.243  15.149  0.00  0.00    +0.000 A 
+ATOM      5  C02 F2B A 555      -6.528   3.027  15.828  0.00  0.00    +0.000 A 
+ATOM      6  C03 F2B A 555      -5.635   1.945  15.615  0.00  0.00    +0.000 A 
+ATOM      7  C04 F2B A 555      -4.552   2.148  14.737  0.00  0.00    +0.000 A 
+ATOM      8  C05 F2B A 555      -4.341   3.374  14.082  0.00  0.00    +0.000 A 
+ATOM      9  C06 F2B A 555      -5.203   4.420  14.283  0.00  0.00    +0.000 A 
+BRANCH   6  10
+ATOM     10  S11 F2B A 555      -5.993   0.396  16.516  0.00  0.00    +0.000 S 
+ATOM     11  NP2 F2B A 555      -5.641   0.504  18.015  0.00  0.00    +0.000 NA
+ATOM     12  O13 F2B A 555      -5.181  -0.550  15.622  0.00  0.00    +0.000 OA
+ATOM     13  O14 F2B A 555      -7.423   0.162  16.190  0.00  0.00    +0.000 OA
+ENDBRANCH   6  10
+ENDBRANCH   1   9
+BRANCH   3  14
+ATOM     14  C10 F2B A 555      -4.919   7.024  11.341  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C15 F2B A 555      -5.929   7.324  10.375  0.00  0.00    +0.000 A 
+ATOM     16  C16 F2B A 555      -6.401   6.273   9.547  0.00  0.00    +0.000 A 
+ATOM     17  C17 F2B A 555      -7.401   6.476   8.553  0.00  0.00    +0.000 A 
+ATOM     18  C18 F2B A 555      -7.927   7.778   8.404  0.00  0.00    +0.000 A 
+ATOM     19  C19 F2B A 555      -7.479   8.872   9.218  0.00  0.00    +0.000 A 
+ATOM     20  C20 F2B A 555      -6.464   8.639  10.220  0.00  0.00    +0.000 A 
+ATOM     21  F21 F2B A 555      -8.005  10.092   9.044  0.00  0.00    +0.000 F 
+ATOM     22  F22 F2B A 555      -6.039   9.654  10.985  0.00  0.00    +0.000 F 
+ENDBRANCH  14  15
+ENDBRANCH   3  14
+TORSDOF 4
+ENDMDL
+MODEL 4
+REMARK VINA RESULT:      -4.8      1.374      1.994
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1G52_F2B.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C03_3  and  S11_11
+REMARK    2  A    between atoms: C06_6  and  C07_7
+REMARK    3  A    between atoms: N09_9  and  C10_10
+REMARK    4  A    between atoms: C10_10  and  C15_15
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C07 F2B A 555      -4.902   5.854  13.901  0.00  0.00    +0.000 C 
+ATOM      2  O08 F2B A 555      -4.366   6.701  14.581  0.00  0.00    +0.000 OA
+ATOM      3  N09 F2B A 555      -5.286   6.115  12.583  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   9
+ATOM      4  C01 F2B A 555      -5.942   4.370  15.655  0.00  0.00    +0.000 A 
+ATOM      5  C02 F2B A 555      -6.199   3.124  16.272  0.00  0.00    +0.000 A 
+ATOM      6  C03 F2B A 555      -5.626   1.958  15.704  0.00  0.00    +0.000 A 
+ATOM      7  C04 F2B A 555      -4.827   2.111  14.554  0.00  0.00    +0.000 A 
+ATOM      8  C05 F2B A 555      -4.589   3.368  13.970  0.00  0.00    +0.000 A 
+ATOM      9  C06 F2B A 555      -5.144   4.496  14.514  0.00  0.00    +0.000 A 
+BRANCH   6  10
+ATOM     10  S11 F2B A 555      -5.989   0.374  16.539  0.00  0.00    +0.000 S 
+ATOM     11  NP2 F2B A 555      -5.631   0.415  18.040  0.00  0.00    +0.000 NA
+ATOM     12  O13 F2B A 555      -5.185  -0.537  15.602  0.00  0.00    +0.000 OA
+ATOM     13  O14 F2B A 555      -7.421   0.162  16.208  0.00  0.00    +0.000 OA
+ENDBRANCH   6  10
+ENDBRANCH   1   9
+BRANCH   3  14
+ATOM     14  C10 F2B A 555      -5.126   7.359  11.808  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C15 F2B A 555      -6.005   7.590  10.706  0.00  0.00    +0.000 A 
+ATOM     16  C16 F2B A 555      -6.742   8.803  10.676  0.00  0.00    +0.000 A 
+ATOM     17  C17 F2B A 555      -7.646   9.120   9.622  0.00  0.00    +0.000 A 
+ATOM     18  C18 F2B A 555      -7.799   8.180   8.580  0.00  0.00    +0.000 A 
+ATOM     19  C19 F2B A 555      -7.077   6.940   8.570  0.00  0.00    +0.000 A 
+ATOM     20  C20 F2B A 555      -6.165   6.642   9.650  0.00  0.00    +0.000 A 
+ATOM     21  F21 F2B A 555      -7.253   6.075   7.561  0.00  0.00    +0.000 F 
+ATOM     22  F22 F2B A 555      -5.486   5.487   9.648  0.00  0.00    +0.000 F 
+ENDBRANCH  14  15
+ENDBRANCH   3  14
+TORSDOF 4
+ENDMDL
+MODEL 5
+REMARK VINA RESULT:      -4.7      1.801      2.360
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1G52_F2B.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C03_3  and  S11_11
+REMARK    2  A    between atoms: C06_6  and  C07_7
+REMARK    3  A    between atoms: N09_9  and  C10_10
+REMARK    4  A    between atoms: C10_10  and  C15_15
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C07 F2B A 555      -4.728   5.516  13.297  0.00  0.00    +0.000 C 
+ATOM      2  O08 F2B A 555      -3.728   6.148  13.557  0.00  0.00    +0.000 OA
+ATOM      3  N09 F2B A 555      -5.620   5.940  12.309  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   9
+ATOM      4  C01 F2B A 555      -6.030   4.187  15.001  0.00  0.00    +0.000 A 
+ATOM      5  C02 F2B A 555      -6.316   3.025  15.753  0.00  0.00    +0.000 A 
+ATOM      6  C03 F2B A 555      -5.514   1.873  15.547  0.00  0.00    +0.000 A 
+ATOM      7  C04 F2B A 555      -4.472   1.956  14.602  0.00  0.00    +0.000 A 
+ATOM      8  C05 F2B A 555      -4.215   3.132  13.875  0.00  0.00    +0.000 A 
+ATOM      9  C06 F2B A 555      -4.988   4.245  14.069  0.00  0.00    +0.000 A 
+BRANCH   6  10
+ATOM     10  S11 F2B A 555      -5.926   0.398  16.544  0.00  0.00    +0.000 S 
+ATOM     11  NP2 F2B A 555      -5.621   0.608  18.042  0.00  0.00    +0.000 NA
+ATOM     12  O13 F2B A 555      -5.101  -0.621  15.747  0.00  0.00    +0.000 OA
+ATOM     13  O14 F2B A 555      -7.348   0.162  16.188  0.00  0.00    +0.000 OA
+ENDBRANCH   6  10
+ENDBRANCH   1   9
+BRANCH   3  14
+ATOM     14  C10 F2B A 555      -5.536   7.131  11.445  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C15 F2B A 555      -4.988   6.983  10.134  0.00  0.00    +0.000 A 
+ATOM     16  C16 F2B A 555      -3.620   7.303   9.936  0.00  0.00    +0.000 A 
+ATOM     17  C17 F2B A 555      -2.987   7.191   8.665  0.00  0.00    +0.000 A 
+ATOM     18  C18 F2B A 555      -3.768   6.744   7.577  0.00  0.00    +0.000 A 
+ATOM     19  C19 F2B A 555      -5.155   6.411   7.729  0.00  0.00    +0.000 A 
+ATOM     20  C20 F2B A 555      -5.774   6.532   9.029  0.00  0.00    +0.000 A 
+ATOM     21  F21 F2B A 555      -5.859   5.990   6.670  0.00  0.00    +0.000 F 
+ATOM     22  F22 F2B A 555      -7.069   6.222   9.182  0.00  0.00    +0.000 F 
+ENDBRANCH  14  15
+ENDBRANCH   3  14
+TORSDOF 4
+ENDMDL
+MODEL 6
+REMARK VINA RESULT:      -4.5      1.372      1.747
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1G52_F2B.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C03_3  and  S11_11
+REMARK    2  A    between atoms: C06_6  and  C07_7
+REMARK    3  A    between atoms: N09_9  and  C10_10
+REMARK    4  A    between atoms: C10_10  and  C15_15
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C07 F2B A 555      -4.750   5.274  12.874  0.00  0.00    +0.000 C 
+ATOM      2  O08 F2B A 555      -4.526   6.352  13.380  0.00  0.00    +0.000 OA
+ATOM      3  N09 F2B A 555      -4.698   5.096  11.489  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   9
+ATOM      4  C01 F2B A 555      -4.410   2.899  13.652  0.00  0.00    +0.000 A 
+ATOM      5  C02 F2B A 555      -4.686   1.782  14.473  0.00  0.00    +0.000 A 
+ATOM      6  C03 F2B A 555      -5.685   1.908  15.471  0.00  0.00    +0.000 A 
+ATOM      7  C04 F2B A 555      -6.351   3.145  15.585  0.00  0.00    +0.000 A 
+ATOM      8  C05 F2B A 555      -6.053   4.233  14.745  0.00  0.00    +0.000 A 
+ATOM      9  C06 F2B A 555      -5.086   4.116  13.783  0.00  0.00    +0.000 A 
+BRANCH   6  10
+ATOM     10  S11 F2B A 555      -6.002   0.436  16.506  0.00  0.00    +0.000 S 
+ATOM     11  NP2 F2B A 555      -5.613   0.669  17.981  0.00  0.00    +0.000 NA
+ATOM     12  O13 F2B A 555      -5.202  -0.573  15.671  0.00  0.00    +0.000 OA
+ATOM     13  O14 F2B A 555      -7.437   0.163  16.238  0.00  0.00    +0.000 OA
+ENDBRANCH   6  10
+ENDBRANCH   1   9
+BRANCH   3  14
+ATOM     14  C10 F2B A 555      -4.378   6.087  10.446  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C15 F2B A 555      -5.113   7.313  10.427  0.00  0.00    +0.000 A 
+ATOM     16  C16 F2B A 555      -6.514   7.255  10.216  0.00  0.00    +0.000 A 
+ATOM     17  C17 F2B A 555      -7.329   8.423  10.175  0.00  0.00    +0.000 A 
+ATOM     18  C18 F2B A 555      -6.698   9.673  10.355  0.00  0.00    +0.000 A 
+ATOM     19  C19 F2B A 555      -5.283   9.780  10.570  0.00  0.00    +0.000 A 
+ATOM     20  C20 F2B A 555      -4.479   8.581  10.607  0.00  0.00    +0.000 A 
+ATOM     21  F21 F2B A 555      -4.724  10.987  10.735  0.00  0.00    +0.000 F 
+ATOM     22  F22 F2B A 555      -3.157   8.671  10.808  0.00  0.00    +0.000 F 
+ENDBRANCH  14  15
+ENDBRANCH   3  14
+TORSDOF 4
+ENDMDL
+MODEL 7
+REMARK VINA RESULT:      -4.5      1.304      1.435
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1G52_F2B.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C03_3  and  S11_11
+REMARK    2  A    between atoms: C06_6  and  C07_7
+REMARK    3  A    between atoms: N09_9  and  C10_10
+REMARK    4  A    between atoms: C10_10  and  C15_15
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C07 F2B A 555      -5.071   5.928  14.089  0.00  0.00    +0.000 C 
+ATOM      2  O08 F2B A 555      -5.150   6.873  14.843  0.00  0.00    +0.000 OA
+ATOM      3  N09 F2B A 555      -4.828   6.105  12.725  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   9
+ATOM      4  C01 F2B A 555      -4.329   3.530  14.340  0.00  0.00    +0.000 A 
+ATOM      5  C02 F2B A 555      -4.440   2.215  14.846  0.00  0.00    +0.000 A 
+ATOM      6  C03 F2B A 555      -5.517   1.916  15.719  0.00  0.00    +0.000 A 
+ATOM      7  C04 F2B A 555      -6.420   2.952  16.031  0.00  0.00    +0.000 A 
+ATOM      8  C05 F2B A 555      -6.280   4.249  15.504  0.00  0.00    +0.000 A 
+ATOM      9  C06 F2B A 555      -5.239   4.542  14.663  0.00  0.00    +0.000 A 
+BRANCH   6  10
+ATOM     10  S11 F2B A 555      -5.615   0.202  16.345  0.00  0.00    +0.000 S 
+ATOM     11  NP2 F2B A 555      -4.868  -0.792  15.430  0.00  0.00    +0.000 NA
+ATOM     12  O13 F2B A 555      -7.143   0.115  16.456  0.00  0.00    +0.000 OA
+ATOM     13  O14 F2B A 555      -5.098   0.340  17.730  0.00  0.00    +0.000 OA
+ENDBRANCH   6  10
+ENDBRANCH   1   9
+BRANCH   3  14
+ATOM     14  C10 F2B A 555      -4.624   7.363  11.983  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C15 F2B A 555      -5.335   7.552  10.758  0.00  0.00    +0.000 A 
+ATOM     16  C16 F2B A 555      -4.587   7.686   9.560  0.00  0.00    +0.000 A 
+ATOM     17  C17 F2B A 555      -5.206   7.883   8.293  0.00  0.00    +0.000 A 
+ATOM     18  C18 F2B A 555      -6.617   7.944   8.250  0.00  0.00    +0.000 A 
+ATOM     19  C19 F2B A 555      -7.414   7.815   9.437  0.00  0.00    +0.000 A 
+ATOM     20  C20 F2B A 555      -6.761   7.615  10.710  0.00  0.00    +0.000 A 
+ATOM     21  F21 F2B A 555      -8.749   7.878   9.352  0.00  0.00    +0.000 F 
+ATOM     22  F22 F2B A 555      -7.497   7.493  11.823  0.00  0.00    +0.000 F 
+ENDBRANCH  14  15
+ENDBRANCH   3  14
+TORSDOF 4
+ENDMDL
+MODEL 8
+REMARK VINA RESULT:      -4.5      1.395      1.787
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1G52_F2B.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C03_3  and  S11_11
+REMARK    2  A    between atoms: C06_6  and  C07_7
+REMARK    3  A    between atoms: N09_9  and  C10_10
+REMARK    4  A    between atoms: C10_10  and  C15_15
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C07 F2B A 555      -4.101   5.527  13.777  0.00  0.00    +0.000 C 
+ATOM      2  O08 F2B A 555      -3.435   6.301  14.431  0.00  0.00    +0.000 OA
+ATOM      3  N09 F2B A 555      -4.415   5.789  12.441  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   9
+ATOM      4  C01 F2B A 555      -3.712   3.505  15.233  0.00  0.00    +0.000 A 
+ATOM      5  C02 F2B A 555      -4.110   2.311  15.877  0.00  0.00    +0.000 A 
+ATOM      6  C03 F2B A 555      -5.448   1.871  15.717  0.00  0.00    +0.000 A 
+ATOM      7  C04 F2B A 555      -6.307   2.652  14.919  0.00  0.00    +0.000 A 
+ATOM      8  C05 F2B A 555      -5.874   3.832  14.289  0.00  0.00    +0.000 A 
+ATOM      9  C06 F2B A 555      -4.583   4.262  14.444  0.00  0.00    +0.000 A 
+BRANCH   6  10
+ATOM     10  S11 F2B A 555      -5.911   0.323  16.571  0.00  0.00    +0.000 S 
+ATOM     11  NP2 F2B A 555      -5.611   0.384  18.084  0.00  0.00    +0.000 NA
+ATOM     12  O13 F2B A 555      -5.108  -0.642  15.687  0.00  0.00    +0.000 OA
+ATOM     13  O14 F2B A 555      -7.336   0.162  16.187  0.00  0.00    +0.000 OA
+ENDBRANCH   6  10
+ENDBRANCH   1   9
+BRANCH   3  14
+ATOM     14  C10 F2B A 555      -4.031   6.949  11.617  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C15 F2B A 555      -5.044   7.605  10.853  0.00  0.00    +0.000 A 
+ATOM     16  C16 F2B A 555      -5.357   8.953  11.167  0.00  0.00    +0.000 A 
+ATOM     17  C17 F2B A 555      -6.355   9.688  10.466  0.00  0.00    +0.000 A 
+ATOM     18  C18 F2B A 555      -7.046   9.033   9.424  0.00  0.00    +0.000 A 
+ATOM     19  C19 F2B A 555      -6.765   7.670   9.072  0.00  0.00    +0.000 A 
+ATOM     20  C20 F2B A 555      -5.747   6.946   9.799  0.00  0.00    +0.000 A 
+ATOM     21  F21 F2B A 555      -7.445   7.085   8.076  0.00  0.00    +0.000 F 
+ATOM     22  F22 F2B A 555      -5.478   5.673   9.477  0.00  0.00    +0.000 F 
+ENDBRANCH  14  15
+ENDBRANCH   3  14
+TORSDOF 4
+ENDMDL
+MODEL 9
+REMARK VINA RESULT:      -4.3      1.985      2.254
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1G52_F2B.pdb
+REMARK  4 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C03_3  and  S11_11
+REMARK    2  A    between atoms: C06_6  and  C07_7
+REMARK    3  A    between atoms: N09_9  and  C10_10
+REMARK    4  A    between atoms: C10_10  and  C15_15
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C07 F2B A 555      -4.321   5.437  13.443  0.00  0.00    +0.000 C 
+ATOM      2  O08 F2B A 555      -3.217   5.892  13.654  0.00  0.00    +0.000 OA
+ATOM      3  N09 F2B A 555      -5.174   6.012  12.498  0.00  0.00    +0.000 NA
+ENDROOT
+BRANCH   1   9
+ATOM      4  C01 F2B A 555      -4.121   2.993  14.028  0.00  0.00    +0.000 A 
+ATOM      5  C02 F2B A 555      -4.488   1.824  14.733  0.00  0.00    +0.000 A 
+ATOM      6  C03 F2B A 555      -5.538   1.909  15.684  0.00  0.00    +0.000 A 
+ATOM      7  C04 F2B A 555      -6.159   3.160  15.868  0.00  0.00    +0.000 A 
+ATOM      8  C05 F2B A 555      -5.769   4.302  15.144  0.00  0.00    +0.000 A 
+ATOM      9  C06 F2B A 555      -4.754   4.223  14.228  0.00  0.00    +0.000 A 
+BRANCH   6  10
+ATOM     10  S11 F2B A 555      -5.973   0.370  16.567  0.00  0.00    +0.000 S 
+ATOM     11  NP2 F2B A 555      -5.693   0.473  18.081  0.00  0.00    +0.000 NA
+ATOM     12  O13 F2B A 555      -5.137  -0.594  15.715  0.00  0.00    +0.000 OA
+ATOM     13  O14 F2B A 555      -7.389   0.166  16.170  0.00  0.00    +0.000 OA
+ENDBRANCH   6  10
+ENDBRANCH   1   9
+BRANCH   3  14
+ATOM     14  C10 F2B A 555      -4.933   7.179  11.631  0.00  0.00    +0.000 C 
+BRANCH  14  15
+ATOM     15  C15 F2B A 555      -5.133   7.032  10.223  0.00  0.00    +0.000 A 
+ATOM     16  C16 F2B A 555      -6.161   7.792   9.607  0.00  0.00    +0.000 A 
+ATOM     17  C17 F2B A 555      -6.439   7.709   8.213  0.00  0.00    +0.000 A 
+ATOM     18  C18 F2B A 555      -5.651   6.833   7.434  0.00  0.00    +0.000 A 
+ATOM     19  C19 F2B A 555      -4.602   6.044   8.015  0.00  0.00    +0.000 A 
+ATOM     20  C20 F2B A 555      -4.339   6.147   9.432  0.00  0.00    +0.000 A 
+ATOM     21  F21 F2B A 555      -3.878   5.225   7.239  0.00  0.00    +0.000 F 
+ATOM     22  F22 F2B A 555      -3.362   5.415   9.982  0.00  0.00    +0.000 F 
+ENDBRANCH  14  15
+ENDBRANCH   3  14
+TORSDOF 4
+ENDMDL

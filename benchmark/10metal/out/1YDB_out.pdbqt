@@ -1,0 +1,243 @@
+MODEL 1
+REMARK VINA RESULT:      -2.6      0.000      0.000
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1YDB_AZM.pdb
+REMARK  1 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  S1_12
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C1  AZM A 264      -5.075   1.533  16.203  0.00  0.00    +0.000 A 
+ATOM      2  C2  AZM A 264      -4.525   3.469  15.213  0.00  0.00    +0.000 A 
+ATOM      3  C3  AZM A 264      -5.327   5.354  14.157  0.00  0.00    +0.000 C 
+ATOM      4  C4  AZM A 264      -4.860   6.594  13.424  0.00  0.00    +0.000 C 
+ATOM      5  N2  AZM A 264      -3.460   2.809  15.518  0.00  0.00    +0.000 NA
+ATOM      6  N3  AZM A 264      -3.782   1.632  16.114  0.00  0.00    +0.000 NA
+ATOM      7  N4  AZM A 264      -4.297   4.597  14.567  0.00  0.00    +0.000 NA
+ATOM      8  O3  AZM A 264      -6.528   5.135  14.301  0.00  0.00    +0.000 OA
+ATOM      9  S2  AZM A 264      -6.023   2.821  15.604  0.00  0.00    +0.000 S 
+ENDROOT
+BRANCH   1  13
+ATOM     10  N1  AZM A 264      -5.656   0.353  18.480  0.00  0.00    +0.000 NA
+ATOM     11  O1  AZM A 264      -7.218   0.012  16.537  0.00  0.00    +0.000 OA
+ATOM     12  O2  AZM A 264      -5.113  -1.105  16.364  0.00  0.00    +0.000 OA
+ATOM     13  S1  AZM A 264      -5.805   0.090  16.915  0.00  0.00    +0.000 S 
+ENDBRANCH   1  13
+TORSDOF 1
+ENDMDL
+MODEL 2
+REMARK VINA RESULT:      -2.3      1.905      1.993
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1YDB_AZM.pdb
+REMARK  1 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  S1_12
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C1  AZM A 264      -5.648   1.988  15.873  0.00  0.00    +0.000 A 
+ATOM      2  C2  AZM A 264      -4.991   3.914  14.932  0.00  0.00    +0.000 A 
+ATOM      3  C3  AZM A 264      -3.222   5.067  14.006  0.00  0.00    +0.000 C 
+ATOM      4  C4  AZM A 264      -2.845   6.431  13.468  0.00  0.00    +0.000 C 
+ATOM      5  N2  AZM A 264      -6.213   4.011  15.332  0.00  0.00    +0.000 NA
+ATOM      6  N3  AZM A 264      -6.620   2.851  15.908  0.00  0.00    +0.000 NA
+ATOM      7  N4  AZM A 264      -4.499   5.027  14.421  0.00  0.00    +0.000 NA
+ATOM      8  O3  AZM A 264      -2.391   4.162  14.039  0.00  0.00    +0.000 OA
+ATOM      9  S2  AZM A 264      -4.176   2.463  15.148  0.00  0.00    +0.000 S 
+ENDROOT
+BRANCH   1  13
+ATOM     10  N1  AZM A 264      -5.379   0.582  18.079  0.00  0.00    +0.000 NA
+ATOM     11  O1  AZM A 264      -7.284   0.013  16.537  0.00  0.00    +0.000 OA
+ATOM     12  O2  AZM A 264      -5.113  -0.598  15.748  0.00  0.00    +0.000 OA
+ATOM     13  S1  AZM A 264      -5.866   0.380  16.574  0.00  0.00    +0.000 S 
+ENDBRANCH   1  13
+TORSDOF 1
+ENDMDL
+MODEL 3
+REMARK VINA RESULT:      -2.2      2.832      2.954
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1YDB_AZM.pdb
+REMARK  1 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  S1_12
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C1  AZM A 264      -5.117   1.500  14.674  0.00  0.00    +0.000 A 
+ATOM      2  C2  AZM A 264      -4.994   2.974  12.988  0.00  0.00    +0.000 A 
+ATOM      3  C3  AZM A 264      -4.045   3.437  10.939  0.00  0.00    +0.000 C 
+ATOM      4  C4  AZM A 264      -3.951   4.528   9.894  0.00  0.00    +0.000 C 
+ATOM      5  N2  AZM A 264      -5.715   3.453  13.944  0.00  0.00    +0.000 NA
+ATOM      6  N3  AZM A 264      -5.792   2.570  14.972  0.00  0.00    +0.000 NA
+ATOM      7  N4  AZM A 264      -4.813   3.803  11.978  0.00  0.00    +0.000 NA
+ATOM      8  O3  AZM A 264      -3.444   2.376  10.785  0.00  0.00    +0.000 OA
+ATOM      9  S2  AZM A 264      -4.342   1.436  13.153  0.00  0.00    +0.000 S 
+ENDROOT
+BRANCH   1  13
+ATOM     10  N1  AZM A 264      -3.877   0.670  16.839  0.00  0.00    +0.000 NA
+ATOM     11  O1  AZM A 264      -6.287   0.016  16.531  0.00  0.00    +0.000 OA
+ATOM     12  O2  AZM A 264      -4.736  -1.084  15.084  0.00  0.00    +0.000 OA
+ATOM     13  S1  AZM A 264      -5.008   0.170  15.833  0.00  0.00    +0.000 S 
+ENDBRANCH   1  13
+TORSDOF 1
+ENDMDL
+MODEL 4
+REMARK VINA RESULT:      -2.1      1.820      2.013
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1YDB_AZM.pdb
+REMARK  1 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  S1_12
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C1  AZM A 264      -5.510   1.800  15.459  0.00  0.00    +0.000 A 
+ATOM      2  C2  AZM A 264      -5.784   3.868  14.635  0.00  0.00    +0.000 A 
+ATOM      3  C3  AZM A 264      -4.970   5.449  13.169  0.00  0.00    +0.000 C 
+ATOM      4  C4  AZM A 264      -5.174   6.886  12.738  0.00  0.00    +0.000 C 
+ATOM      5  N2  AZM A 264      -6.632   3.652  15.583  0.00  0.00    +0.000 NA
+ATOM      6  N3  AZM A 264      -6.471   2.404  16.092  0.00  0.00    +0.000 NA
+ATOM      7  N4  AZM A 264      -5.831   5.088  14.133  0.00  0.00    +0.000 NA
+ATOM      8  O3  AZM A 264      -4.085   4.768  12.656  0.00  0.00    +0.000 OA
+ATOM      9  S2  AZM A 264      -4.719   2.645  14.202  0.00  0.00    +0.000 S 
+ENDROOT
+BRANCH   1  13
+ATOM     10  N1  AZM A 264      -3.605   0.368  16.571  0.00  0.00    +0.000 NA
+ATOM     11  O1  AZM A 264      -5.989  -0.367  16.906  0.00  0.00    +0.000 OA
+ATOM     12  O2  AZM A 264      -5.114  -0.703  14.707  0.00  0.00    +0.000 OA
+ATOM     13  S1  AZM A 264      -5.044   0.158  15.917  0.00  0.00    +0.000 S 
+ENDBRANCH   1  13
+TORSDOF 1
+ENDMDL
+MODEL 5
+REMARK VINA RESULT:      -1.9      2.174      2.395
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1YDB_AZM.pdb
+REMARK  1 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  S1_12
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C1  AZM A 264      -5.610   1.878  15.833  0.00  0.00    +0.000 A 
+ATOM      2  C2  AZM A 264      -4.869   3.784  14.913  0.00  0.00    +0.000 A 
+ATOM      3  C3  AZM A 264      -3.006   4.992  14.293  0.00  0.00    +0.000 C 
+ATOM      4  C4  AZM A 264      -2.595   6.344  13.748  0.00  0.00    +0.000 C 
+ATOM      5  N2  AZM A 264      -6.152   3.825  15.044  0.00  0.00    +0.000 NA
+ATOM      6  N3  AZM A 264      -6.610   2.677  15.605  0.00  0.00    +0.000 NA
+ATOM      7  N4  AZM A 264      -4.338   4.895  14.436  0.00  0.00    +0.000 NA
+ATOM      8  O3  AZM A 264      -2.156   4.147  14.562  0.00  0.00    +0.000 OA
+ATOM      9  S2  AZM A 264      -4.045   2.404  15.396  0.00  0.00    +0.000 S 
+ENDROOT
+BRANCH   1  13
+ATOM     10  N1  AZM A 264      -4.930  -0.661  15.757  0.00  0.00    +0.000 NA
+ATOM     11  O1  AZM A 264      -5.480   0.351  17.994  0.00  0.00    +0.000 OA
+ATOM     12  O2  AZM A 264      -7.345   0.012  16.538  0.00  0.00    +0.000 OA
+ATOM     13  S1  AZM A 264      -5.889   0.305  16.588  0.00  0.00    +0.000 S 
+ENDBRANCH   1  13
+TORSDOF 1
+ENDMDL
+MODEL 6
+REMARK VINA RESULT:      -1.8      2.104      2.180
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1YDB_AZM.pdb
+REMARK  1 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  S1_12
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C1  AZM A 264      -5.635   1.832  15.600  0.00  0.00    +0.000 A 
+ATOM      2  C2  AZM A 264      -4.986   3.464  14.206  0.00  0.00    +0.000 A 
+ATOM      3  C3  AZM A 264      -3.460   4.088  12.595  0.00  0.00    +0.000 C 
+ATOM      4  C4  AZM A 264      -3.038   5.275  11.756  0.00  0.00    +0.000 C 
+ATOM      5  N2  AZM A 264      -5.952   3.878  14.954  0.00  0.00    +0.000 NA
+ATOM      6  N3  AZM A 264      -6.349   2.898  15.806  0.00  0.00    +0.000 NA
+ATOM      7  N4  AZM A 264      -4.497   4.383  13.395  0.00  0.00    +0.000 NA
+ATOM      8  O3  AZM A 264      -2.859   3.020  12.505  0.00  0.00    +0.000 OA
+ATOM      9  S2  AZM A 264      -4.442   1.886  14.379  0.00  0.00    +0.000 S 
+ENDROOT
+BRANCH   1  13
+ATOM     10  N1  AZM A 264      -5.493   0.870  18.043  0.00  0.00    +0.000 NA
+ATOM     11  O1  AZM A 264      -7.318   0.013  16.537  0.00  0.00    +0.000 OA
+ATOM     12  O2  AZM A 264      -5.111  -0.729  15.995  0.00  0.00    +0.000 OA
+ATOM     13  S1  AZM A 264      -5.901   0.386  16.580  0.00  0.00    +0.000 S 
+ENDBRANCH   1  13
+TORSDOF 1
+ENDMDL
+MODEL 7
+REMARK VINA RESULT:      -1.6      1.018      1.230
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1YDB_AZM.pdb
+REMARK  1 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  S1_12
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C1  AZM A 264      -5.144   1.496  16.191  0.00  0.00    +0.000 A 
+ATOM      2  C2  AZM A 264      -4.621   3.461  15.245  0.00  0.00    +0.000 A 
+ATOM      3  C3  AZM A 264      -5.439   5.311  14.140  0.00  0.00    +0.000 C 
+ATOM      4  C4  AZM A 264      -4.982   6.576  13.443  0.00  0.00    +0.000 C 
+ATOM      5  N2  AZM A 264      -3.548   2.850  15.620  0.00  0.00    +0.000 NA
+ATOM      6  N3  AZM A 264      -3.854   1.656  16.190  0.00  0.00    +0.000 NA
+ATOM      7  N4  AZM A 264      -4.404   4.601  14.617  0.00  0.00    +0.000 NA
+ATOM      8  O3  AZM A 264      -6.634   5.034  14.203  0.00  0.00    +0.000 OA
+ATOM      9  S2  AZM A 264      -6.110   2.741  15.532  0.00  0.00    +0.000 S 
+ENDROOT
+BRANCH   1  13
+ATOM     10  N1  AZM A 264      -4.967  -1.128  16.175  0.00  0.00    +0.000 NA
+ATOM     11  O1  AZM A 264      -5.693  -0.003  18.306  0.00  0.00    +0.000 OA
+ATOM     12  O2  AZM A 264      -7.304   0.013  16.541  0.00  0.00    +0.000 OA
+ATOM     13  S1  AZM A 264      -5.850   0.016  16.849  0.00  0.00    +0.000 S 
+ENDBRANCH   1  13
+TORSDOF 1
+ENDMDL
+MODEL 8
+REMARK VINA RESULT:      -1.5      2.805      2.835
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1YDB_AZM.pdb
+REMARK  1 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  S1_12
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C1  AZM A 264      -4.718   0.652  14.658  0.00  0.00    +0.000 A 
+ATOM      2  C2  AZM A 264      -3.971   1.522  12.730  0.00  0.00    +0.000 A 
+ATOM      3  C3  AZM A 264      -3.891   3.406  11.405  0.00  0.00    +0.000 C 
+ATOM      4  C4  AZM A 264      -3.429   3.881  10.043  0.00  0.00    +0.000 C 
+ATOM      5  N2  AZM A 264      -3.700   0.262  12.782  0.00  0.00    +0.000 NA
+ATOM      6  N3  AZM A 264      -4.152  -0.276  13.944  0.00  0.00    +0.000 NA
+ATOM      7  N4  AZM A 264      -3.624   2.105  11.598  0.00  0.00    +0.000 NA
+ATOM      8  O3  AZM A 264      -4.452   4.182  12.175  0.00  0.00    +0.000 OA
+ATOM      9  S2  AZM A 264      -4.756   2.240  14.029  0.00  0.00    +0.000 S 
+ENDROOT
+BRANCH   1  13
+ATOM     10  N1  AZM A 264      -4.812   1.360  17.189  0.00  0.00    +0.000 NA
+ATOM     11  O1  AZM A 264      -6.889   0.387  16.153  0.00  0.00    +0.000 OA
+ATOM     12  O2  AZM A 264      -5.113  -1.166  16.536  0.00  0.00    +0.000 OA
+ATOM     13  S1  AZM A 264      -5.431   0.252  16.224  0.00  0.00    +0.000 S 
+ENDBRANCH   1  13
+TORSDOF 1
+ENDMDL
+MODEL 9
+REMARK VINA RESULT:      -1.5      1.989      2.017
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/metal_validation/tmp_work/1YDB_AZM.pdb
+REMARK  1 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C1_1  and  S1_12
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  C1  AZM A 264      -5.512   1.745  15.510  0.00  0.00    +0.000 A 
+ATOM      2  C2  AZM A 264      -5.776   3.837  14.746  0.00  0.00    +0.000 A 
+ATOM      3  C3  AZM A 264      -5.029   5.415  13.241  0.00  0.00    +0.000 C 
+ATOM      4  C4  AZM A 264      -5.214   6.867  12.853  0.00  0.00    +0.000 C 
+ATOM      5  N2  AZM A 264      -6.548   3.634  15.759  0.00  0.00    +0.000 NA
+ATOM      6  N3  AZM A 264      -6.392   2.372  16.233  0.00  0.00    +0.000 NA
+ATOM      7  N4  AZM A 264      -5.819   5.067  14.270  0.00  0.00    +0.000 NA
+ATOM      8  O3  AZM A 264      -4.218   4.712  12.644  0.00  0.00    +0.000 OA
+ATOM      9  S2  AZM A 264      -4.799   2.584  14.204  0.00  0.00    +0.000 S 
+ENDROOT
+BRANCH   1  13
+ATOM     10  N1  AZM A 264      -6.221  -0.363  16.912  0.00  0.00    +0.000 NA
+ATOM     11  O1  AZM A 264      -5.112  -0.741  14.685  0.00  0.00    +0.000 OA
+ATOM     12  O2  AZM A 264      -3.679   0.070  16.417  0.00  0.00    +0.000 OA
+ATOM     13  S1  AZM A 264      -5.072   0.078  15.900  0.00  0.00    +0.000 S 
+ENDBRANCH   1  13
+TORSDOF 1
+ENDMDL
