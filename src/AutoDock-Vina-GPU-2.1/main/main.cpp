@@ -860,6 +860,7 @@ Thank you!\n";
 			    "number of ligands dispatched simultaneously to each GPU (default 32)")
 			("ligand2", value<std::string>(&ligand2_name), "second ligand for co-docking (PDBQT); activates CPU dual-ligand mode")
 			("out2", value<std::string>(&out2_name), "output poses for second ligand (PDBQT; required when --ligand2 is given)")
+			("ref", value<std::string>(), "reference / co-crystal ligand PDBQT: auto-computes box center and size (ligand extent + 10 A margin)")
 			("ad4zn", bool_switch(&ad4zn_mode), "use AutoDock4Zn calibrated Zn coordination parameters (GPU mode)")
 			;
 		//options_description search_area("Search area (required, except with --score_only)");
@@ -1005,12 +1006,52 @@ Thank you!\n";
 		if (vm.count("log") > 0)
 			log.init(log_name);
 
+		// --ref: auto-compute box from co-crystal / reference ligand
+		if (vm.count("ref") > 0) {
+			const std::string ref_path = vm["ref"].as<std::string>();
+			std::ifstream ref_file(ref_path);
+			if (!ref_file) throw usage_error("Cannot open reference ligand: " + ref_path);
+
+			std::vector<fl> xs, ys, zs;
+			std::string line;
+			while (std::getline(ref_file, line)) {
+				if (line.size() < 54) continue;
+				if (line.substr(0,6) != "ATOM  " && line.substr(0,6) != "HETATM") continue;
+				try {
+					xs.push_back(std::stof(line.substr(30, 8)));
+					ys.push_back(std::stof(line.substr(38, 8)));
+					zs.push_back(std::stof(line.substr(46, 8)));
+				} catch (...) {}
+			}
+			if (xs.empty()) throw usage_error("No ATOM/HETATM records in reference ligand: " + ref_path);
+
+			auto sum_v = [](const std::vector<fl>& v) { fl s=0; for (auto x:v) s+=x; return s; };
+			center_x = sum_v(xs) / xs.size();
+			center_y = sum_v(ys) / ys.size();
+			center_z = sum_v(zs) / zs.size();
+
+			// Box = ligand extent + 10 Å margin on each side, minimum 20 Å
+			auto range = [](const std::vector<fl>& v) {
+				return *std::max_element(v.begin(),v.end()) - *std::min_element(v.begin(),v.end());
+			};
+			size_x = std::max<fl>(range(xs) + 10.0f, 20.0f);
+			size_y = std::max<fl>(range(ys) + 10.0f, 20.0f);
+			size_z = std::max<fl>(range(zs) + 10.0f, 20.0f);
+
+			printf("Auto-box from %s:\n", ref_path.c_str());
+			printf("  center = (%.3f, %.3f, %.3f)\n", center_x, center_y, center_z);
+			printf("  size   = (%.1f x %.1f x %.1f) A\n", size_x, size_y, size_z);
+		}
+
 		if (search_box_needed) {
-			options_occurrence oo = get_occurrence(vm, search_area);
-			if (!oo.all) {
-				check_occurrence(vm, search_area);
-				std::cerr << "\nCorrect usage:\n" << desc_simple << std::endl;
-				return 1;
+			// If --ref was given, center/size are already set — skip the "all required" check
+			if (vm.count("ref") == 0) {
+				options_occurrence oo = get_occurrence(vm, search_area);
+				if (!oo.all) {
+					check_occurrence(vm, search_area);
+					std::cerr << "\nCorrect usage:\n" << desc_simple << std::endl;
+					return 1;
+				}
 			}
 			if (size_x <= 0 || size_y <= 0 || size_z <= 0)
 				throw usage_error("Search space dimensions should be positive");
