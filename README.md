@@ -382,8 +382,10 @@ Standard pose-recovery benchmark across diverse protein classes.
 | Metric | sd=32 |
 |--------|-------|
 | Best dist < 2 Å (all poses) | **18/19 (95 %)** |
-| Vina rank-1 PASS | 12/19 (63 %) |
+| Vina rank-1 PASS | 11–12/19 (58–63 %)† |
 | LigandScope ETr=1 PASS | **14/18 (78 %)** |
+
+†Vina rank-1 varies by run (stochastic search); canonical run (metal_results.tsv): 12/19; LigandScope pipeline run: 11/19.
 
 To reproduce: `cd metal_validation && bash reproduce.sh --depth 32`
 
