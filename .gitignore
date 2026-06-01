@@ -2,7 +2,8 @@
 *.sif
 *.simg
 
-# Compiled binaries
+# Compiled binaries (root-level copy and src build)
+AutoDock-Vina-GPU-2-1
 src/AutoDock-Vina-GPU-2.1/AutoDock-Vina-GPU-2-1
 
 # Compiled OpenCL kernel binaries (machine-specific, regenerated on first run)
