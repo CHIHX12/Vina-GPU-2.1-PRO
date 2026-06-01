@@ -18,7 +18,7 @@ with two key additions: **metal coordination scoring** for metalloenzyme targets
 | Multi-GPU work-stealing dispatch | ✗ | ✅ |
 | PDBbind self-docking — Best RMSD < 2 Å (1000 targets) | — | **67.1 % (12,291/18,320)** |
 | PDBbind self-docking — Best RMSD < 1 Å (1000 targets) | — | **44.6 % (8,179/18,320)** |
-| Metalloenzyme self-docking (Best RMSD < 2 Å, 19 targets) | 61 % (11/18) | **95 % (18/19)** |
+| Metalloenzyme self-docking Best RMSD < 2 Å (19 targets) | 61 % (11/18) | **95 % (18/19)** |
 | Throughput (1 GPU, sd=32, thread=8000) | 0.50 mol/s | **1.34 mol/s** |
 | Throughput (2 GPU, sd=32, thread=8000) | — | **2.59 mol/s** |
 | Throughput (2 GPU, sd=1,  thread=8000) | — | **27 mol/s** (with `--cpu 4`) |
@@ -333,54 +333,57 @@ Standard pose-recovery benchmark across diverse protein classes.
 | Top-1 RMSD < 2 Å | **12/12 (100 %)** | 12/12 (100 %) |
 | Speed per target | ~2 s | ~15–50 s |
 
-### Metalloenzyme Self-Docking (20 targets)
+### Metalloenzyme Self-Docking (19 targets)
 
-20 metalloprotein crystal structures — Zn, Mg, Fe across CAII, MMP, ACE, HIV-IN, PHD2.
+19 metalloprotein crystal structures — Zn, Mg, Fe, Mo across CAII, MMP, ACE, HIV-IN, PHD2, XO.
 
 | Metric | Baseline (standard Vina) | **PRO** |
 |--------|--------------------------|---------|
-| Best RMSD < 2 Å | 11/18 = 61 % | **20/20 = 100 %** ✓ |
-| Mg / Fe targets ETr=1 PASS | 0/3 (0 %) | **2/3 (67 %)** |
-| LigandScope ETr=1 re-ranking PASS | — | **18/20 (90 %)** |
-| Average Best RMSD | ~2.5 Å | **< 1.0 Å** (18/20) |
+| Best RMSD < 2 Å | 11/18 = 61 % | **18/19 (95 %)** |
+| Vina rank-1 < 2 Å | — | **12/19 (63 %)** |
+| LigandScope ETr=1 re-ranking PASS | — | **14/18 (78 %)** |
+| Mg / Fe / Mo ETr=1 PASS | 0/3 (0 %) | **2/3 (67 %)** |
 
-> **Failure analysis:** 1G52 — near-crystal pose has flipped sulfonyl (O→Zn not N→Zn), true crystal mode not sampled.
-> 3S3M — Raltegravir bridges two Mg²⁺; no pose achieves both centroid < 2 Å and dual-Mg coordination simultaneously.
+> **Failure analysis (2G1M):** Fe-PHD2 with 4HG inhibitor — all 9 poses > 3 Å.
+> Unusual Fe²⁺ coordination geometry (distorted octahedral with bulky 4HG) results in no viable binding mode.
+>
+> **LigandScope re-ranking note:** ETr=1 worsened 1OQ5 (1.244 → 4.419 Å) and 2C6N (1.419 → 8.642 Å).
+> Vina default rank-1 already achieves < 2 Å for these two targets — re-ranking not universally beneficial.
 
-#### Results table (sd=32, LigandScope ETr=1 re-ranking)
+#### Results table (sd=32, LigandScope ETr=1 re-ranking, 18 of 19 targets)
 
 | PDB | Metal | Ki (nM) | Vina R1 Å | ETr=1 Å | Best Å | Enzyme |
 |-----|-------|---------|-----------|---------|--------|--------|
-| 1OQ5 | Zn |    9 | 0.86 | **0.86** | 0.86 | CAII |
-| 1BNN | Zn |  380 | 2.16 | **1.77** | 0.21 | CAII |
-| 3P5A | Zn |  200 | 0.67 | **0.50** | 0.50 | CAII |
-| 1A42 | Zn |   15 | 0.36 | **0.74** | 0.36 | CAII |
-| 1YDB | Zn |    2 | 0.29 | **0.51** | 0.29 | CAII |
-| 3HS4 | Zn | 8300 | 1.22 | **0.84** | 0.84 | CAII |
-| 2CBD | Zn |  900 | 0.77 | **0.69** | 0.69 | CAII |
-| 1G52‡ | Zn |  100 | 2.58 | 2.79 | 0.17 | CAII |
-| 1ZNC | Zn |  200 | 1.92 | **1.51** | 1.51 | CAII |
-| 1GKC | Zn |   27 | 0.30 | **0.37** | 0.30 | MMP-2 |
-| 1MMQ | Zn |  670 | 0.19 | **0.19** | 0.19 | MMP-1 |
-| 1JAQ | Zn |   10 | 2.33 | **1.56** | 1.56 | MMP-8 |
-| 2OVX | Zn |   26 | 0.50 | **0.50** | 0.50 | MMP-9 |
-| 1O86 | Zn |  1.7 | 0.18 | **0.18** | 0.18 | ACE |
-| 2C6N | Zn | 0.27 | 0.70 | **0.70** | 0.70 | ACE |
-| 1UZE | Zn |  2.2 | 0.27 | **0.27** | 0.27 | ACE |
-| 3L2U | Mg |  2.0 | 0.48 | **0.48** | 0.48 | HIV-IN |
-| 3S3M†| Mg |  3.0 | 5.32 | 5.32 | 1.995 | HIV-IN |
-| 2W0D | Zn |  1.0 | 0.54 | **0.54** | 0.54 | MMP-9 |
-| 2G1M | Fe |   50 | 1.83 | **1.50** | 1.50 | PHD2 |
+| 1A42 | Zn |   15 | 1.509 | **1.509** | 1.130 | CAII |
+| 1BNN | Zn |  380 | 3.942 | **1.266** | 1.266 | CAII |
+| 1G52‡| Zn |  100 | 4.577 | 4.577 | 1.285 | CAII |
+| 1GKC | Zn |   27 | 1.201 | **1.201** | 0.776 | MMP-2 |
+| 1JAQ | Zn |   10 | 3.656 | **1.332** | 0.773 | MMP-8 |
+| 1MMQ | Zn |  670 | 1.127 | **0.685** | 0.685 | MMP-1 |
+| 1O86 | Zn |  1.7 | 1.216 | **1.236** | 0.913 | ACE |
+| 1OQ5*| Zn |    9 | 1.244 | 4.419 | 1.244 | CAII |
+| 1UZE | Zn |  2.2 | 1.459 | **1.459** | 0.472 | ACE |
+| 1YDB | Zn |    2 | 1.259 | **1.259** | 1.259 | CAII |
+| 2C6N*| Zn | 0.27 | 1.419 | 8.642 | 0.866 | ACE |
+| 2G1M | Fe |   50 | 3.143 | 3.911 | 3.143 | PHD2 |
+| 2OVX | Zn |   26 | 1.163 | **1.081** | 1.081 | MMP-9 |
+| 2W0D | Zn |  1.0 | 4.935 | **1.701** | 1.226 | MMP-9 |
+| 3HS4 | Zn | 8300 | 2.387 | **1.859** | 1.612 | CAII |
+| 3L2U | Mg |  2.0 | 1.935 | **1.935** | 1.264 | HIV-IN |
+| 3NRZ | Mo |20000 | 2.922 | — | 0.640 | XO |
+| 3P5A | Zn |  200 | 3.872 | **1.038** | 1.038 | CAII |
+| 3S3M | Mg |  3.0 | 1.355 | **1.355** | 0.490 | HIV-IN |
 
 **Bold ETr=1** = LigandScope re-ranking PASS (< 2 Å).  
-†3S3M: dual Mg²⁺ bridging pharmacophore; best=1.995Å found only at sd=512 (single-Mg coord, centroid metric misleading for elongated bridging ligand).  
-‡1G52: best=0.17Å pose has flipped sulfonyl (O→Zn not crystal N→Zn); true crystal mode not sampled.
+‡1G52: best=1.285Å pose has flipped sulfonyl (O→Zn instead of crystal N→Zn); correct binding mode not sampled.  
+*1OQ5, 2C6N: Vina rank-1 already < 2 Å; ETr=1 re-ranking selected a suboptimal pose for these targets.  
+3NRZ: LigandScope re-ranking not yet run; Vina best pose = 0.640 Å (RECOV).
 
 | Metric | sd=32 |
 |--------|-------|
-| LigandScope ETr=1 PASS | **18/20 (90%)** |
-| Vina rank-1 baseline PASS | 16/20 (80%) |
-| Best dist < 2 Å (all poses) | 19/20 (95%) |
+| Best dist < 2 Å (all poses) | **18/19 (95 %)** |
+| Vina rank-1 PASS | 12/19 (63 %) |
+| LigandScope ETr=1 PASS | **14/18 (78 %)** |
 
 To reproduce: `cd metal_validation && bash reproduce.sh --depth 32`
 
