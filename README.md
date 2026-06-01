@@ -14,8 +14,11 @@ with two key additions: **metal coordination scoring** for metalloenzyme targets
 | Feature | Upstream | PRO |
 |---------|----------|-----|
 | Metal coordination scoring (Zn, Mg, Fe, Mn, Ca) | ✗ | ✅ |
+| **Receptor prep: full periodic table** (62 metals, no recompile) | ✗ | ✅ |
 | Multi-GPU work-stealing dispatch | ✗ | ✅ |
-| Metalloenzyme self-docking (Best RMSD < 2 Å) | 61 % (11/18) | **95 % (19/20)** sd=32; 100 % with sd=512 |
+| PDBbind self-docking — Best RMSD < 2 Å (1000 targets) | — | **67.1 % (12,291/18,320)** |
+| PDBbind self-docking — Best RMSD < 1 Å (1000 targets) | — | **44.6 % (8,179/18,320)** |
+| Metalloenzyme self-docking (Best RMSD < 2 Å, 19 targets) | 61 % (11/18) | **95 % (18/19)** |
 | Throughput (1 GPU, sd=32, thread=8000) | 0.50 mol/s | **1.34 mol/s** |
 | Throughput (2 GPU, sd=32, thread=8000) | — | **2.59 mol/s** |
 | Throughput (2 GPU, sd=1,  thread=8000) | — | **27 mol/s** (with `--cpu 4`) |
@@ -36,15 +39,37 @@ docker build -t autodock-vina-gpu .
 singularity build autodock-vina-gpu.sif docker-daemon://autodock-vina-gpu:latest
 ```
 
-### Step 2 — Prepare inputs
+### Step 2 — Patch meeko (one-time, any metal in the periodic table)
 
-- **Receptor:** run `prepare_receptor4.py` — keep the catalytic metal, remove the co-crystallized ligand
+Standard meeko only recognises Zn/Fe/Mg/Ca/Mn.  
+Run this **once** after installing meeko to enable all 62 metals (Cu, Ru, Gd, Ac, Th …):
+
+```bash
+# activate the environment where meeko is installed
+conda activate jp_214
+PYTHONNOUSERSITE=1 python3 tools/patch_meeko_metals.py
+```
+
+> **No Vina recompilation needed.**  
+> Metal support lives entirely in meeko (receptor/ligand `.pdbqt` preparation).  
+> Vina-GPU reads only the atom types in the PDBQT — it does not care which element produced them.  
+> To undo: `python3 tools/patch_meeko_metals.py --restore`
+
+### Step 3 — Prepare inputs
+
+- **Receptor:** `mk_prepare_receptor.py --read_pdb receptor.pdb -o rec -p`  
+  Keep the catalytic metal atom; remove the co-crystallised ligand before prep.
 - **Ligands:** one `.pdbqt` per compound in a single directory
 - **Reference ligand** (for auto-box): the co-crystal ligand saved as PDBQT
 
-> See `metal_validation/prepare_all.py` for a preparation reference.
+```bash
+# Example: Ru-containing receptor
+PYTHONNOUSERSITE=1 mk_prepare_receptor.py --read_pdb 1RU.pdb -o 1RU_rec -p
+```
 
-### Step 3 — Run
+> See `metal_validation/prepare_all.py` for a batch preparation reference.
+
+### Step 4 — Run
 
 ```bash
 ./dock.sh \
@@ -206,6 +231,97 @@ All PRO changes are in `src/AutoDock-Vina-GPU-2.1/` — the modified files are:
 
 ---
 
+## Metal Receptor Preparation (Full Periodic Table)
+
+### Why no recompilation is needed
+
+Vina-GPU reads receptors and ligands as **PDBQT** files.  
+The PDBQT format carries only atom coordinates + AD4 atom-type strings (e.g. `Zn`, `Fe`, `Cu`).  
+Vina never sees element numbers — it only sees those type strings.
+
+Metal support therefore lives entirely in **meeko** (the preparation tool), not in Vina.  
+Adding a new metal = patching meeko's data files so it writes the correct atom-type string into the PDBQT.  
+**No C++ / OpenCL recompilation required.**
+
+### One-time setup
+
+```bash
+conda activate jp_214
+PYTHONNOUSERSITE=1 python3 tools/patch_meeko_metals.py
+```
+
+Output confirms 62 metals patched:
+
+```
+覆蓋 62 種金屬（基礎 12 + 擴充 50）
+  ✓ autodock4_atom_types_elements.py: 62 種金屬全部存在
+  ✓ ad4_types.json: 62 種金屬類型全部存在
+  ✓ residue_chem_templates.json: 62 種金屬模板存在
+  ✓ residue_chem_templates.json: ambiguous 無衝突
+  ✓ rdkitutils.py: 62 種金屬 covalent_radius 全部存在
+  ✓ utils.py mini_periodic_table: 62 種金屬原子序全部存在
+  所有 62 種金屬 patch 已正確套用 ✓
+```
+
+### Supported metals (62 total)
+
+| Group | Elements |
+|-------|---------|
+| Core (meeko default) | Zn, Fe, Mg, Ca, Mn |
+| 3d transition | V, Cr, Co, Ni, Cu |
+| 4d transition | Y, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd |
+| 5d transition | Hf, Ta, W, Re, Os, Ir, Pt, Au, Hg |
+| Post-transition | Al, Ga, Ge, As, Se, In, Sn, Sb, Te, Tl, Pb, Bi |
+| Alkali / alkaline earth | Li, Na, K, Rb, Cs, Be, Sr, Ba |
+| Lanthanides | La, Ce, Pr, Nd, Sm, Eu, Gd, Tb, Dy, Ho, Er, Tm, Yb, Lu |
+| Actinides | Ac, Th |
+
+### Usage
+
+```bash
+# Receptor with any metal — same command regardless of element
+PYTHONNOUSERSITE=1 mk_prepare_receptor.py --read_pdb receptor.pdb -o rec -p
+
+# Examples
+PYTHONNOUSERSITE=1 mk_prepare_receptor.py --read_pdb 1RU_ru.pdb  -o ru_rec  -p   # Ru
+PYTHONNOUSERSITE=1 mk_prepare_receptor.py --read_pdb gd_mri.pdb  -o gd_rec  -p   # Gd (MRI contrast)
+PYTHONNOUSERSITE=1 mk_prepare_receptor.py --read_pdb lu_dotatate.pdb -o lu_rec -p # 177Lu therapy
+```
+
+To restore the original meeko files: `python3 tools/patch_meeko_metals.py --restore`
+
+### Self-docking redocking validation (crystal structure overlap)
+
+20 metalloprotein crystal structures redocked; RMSD measured against co-crystal pose:
+
+| PDB | Metal | Enzyme | Top-1 RMSD (Å) | Best RMSD (Å) | Status |
+|-----|-------|--------|---------------|--------------|--------|
+| 1A42 | Zn | CAII | 1.509 | **1.130** | PASS |
+| 1BNN | Zn | CAII | 3.942 | **1.266** | RECOV |
+| 1G52 | Zn | CAII | 4.577 | **1.285** | RECOV |
+| 1GKC | Zn | MMP-2 | 1.201 | **0.776** | PASS |
+| 1JAQ | Zn | MMP-8 | 3.656 | **0.773** | RECOV |
+| 1MMQ | Zn | MMP-1 | 0.685 | **0.685** | PASS |
+| 1O86 | Zn | ACE | 1.216 | **0.913** | PASS |
+| 1OQ5 | Zn | CAII | 1.793 | **1.244** | PASS |
+| 1UZE | Zn | ACE | 1.459 | **0.472** | PASS |
+| 1YDB | Zn | CAII | 1.259 | **1.259** | PASS |
+| 2C6N | Zn | ACE | 1.419 | **0.866** | PASS |
+| 2G1M | Fe | PHD2 | 4.864 | 3.143 | FAIL |
+| 2OVX | Zn | MMP-9 | 1.081 | **1.081** | PASS |
+| 2W0D | Zn | MMP-9 | 1.226 | **1.226** | PASS |
+| 3HS4 | Zn | CAII | 2.387 | **1.612** | RECOV |
+| 3L2U | Mg | HIV-IN | 1.935 | **1.264** | PASS |
+| 3NRZ | Mo | Xanthine oxidase | 2.922 | **0.640** | RECOV |
+| 3P5A | Zn | CAII | 3.690 | **1.038** | RECOV |
+| 3S3M | Mg | HIV-IN | 1.355 | **0.490** | PASS |
+
+**PASS** = top-1 pose RMSD < 2 Å; **RECOV** = best pose < 2 Å (ranking needs LigandScope re-scoring); **FAIL** = best > 2 Å (2G1M: Fe-PHD2 unusual coordination geometry).
+
+Summary: **18/19 best RMSD < 2 Å** (95 %) — redocked poses overlap with crystal structures.
+
+---
+
 ## Validation
 
 ### LigandScope Self-Docking (12 targets)
@@ -282,6 +398,84 @@ To reproduce: `cd metal_validation && bash reproduce.sh --depth 32`
 
 Distances from CSD medians. Implemented as a Gaussian energy well in `kernel1.cl`:
 `E = −weight × exp(−(r − r_ideal)² / (2σ²))`
+
+---
+
+## Repository Structure
+
+```
+Vina-GPU-2.1/
+├── AutoDock-Vina-GPU-2-1   ← compiled binary (RTX 6000 Ada / CUDA)
+├── Kernel1_Opt.bin          ← pre-compiled OpenCL kernel (grid)
+├── Kernel2_Opt.bin          ← pre-compiled OpenCL kernel (search)
+├── dock.sh                  ← one-shot docking wrapper
+├── benchmark/               ← throughput & docking benchmark scripts
+│   ├── 10lig/               ← 10-ligand throughput test
+│   ├── 10dual/              ← dual-ligand mode test
+│   └── run_*.sh
+├── example/                 ← config templates (screen / balanced / accurate)
+├── src/                     ← C++ / OpenCL source
+│   └── AutoDock-Vina-GPU-2.1/
+│       ├── lib/             ← core scoring, main_procedure_cl
+│       ├── main/main.cpp    ← entry point, --cpu, multi-GPU dispatch
+│       └── OpenCL/src/kernels/
+│           ├── kernel1.cl   ← grid + metal coordination Gaussian
+│           └── kernel2.cl   ← BFGS search
+├── tools/
+│   ├── prep/                ← receptor/ligand preparation
+│   │   ├── patch_meeko_metals.py  ← 62-metal meeko patch (one-time)
+│   │   ├── smiles_to_pdbqt.py
+│   │   └── setup_env.sh
+│   ├── diagnostics/         ← pose analysis & scoring debug
+│   └── tests/               ← unit tests
+├── README.md
+├── QUICKSTART.md
+└── USAGE.md
+```
+
+**LigandScope** (companion scoring engine, `~/LigandScope/`):
+```
+LigandScope/
+├── data/
+│   ├── Metal_enzymes/       ← 19 metalloprotein targets (Zn/Mg/Fe/Mo)
+│   │   ├── 1A42/            ← {PDB}_ligand.pdbqt, _receptor.pdbqt
+│   │   ├── 1JAQ/            ← tripeptide hydroxamate (MMP-8)
+│   │   └── ...  (19 targets total)
+│   ├── Kinases/             ← 3 kinase targets
+│   ├── GPCR/                ← 3 GPCR targets
+│   ├── Ion_channels/        ← 3 ion channel targets
+│   └── Nuclear_receptors/   ← 3 nuclear receptor targets
+├── scripts/
+│   ├── core/                ← rank_poses.py, batch_redock_pdbbind.py, ...
+│   ├── analysis/            ← calibrate_weights.py, gpu_batch_scoring.py, ...
+│   ├── tools/               ← fix_altloc.py, make_pairs_from_pdbqt.py, ...
+│   ├── legacy/              ← ML training, old diagnostic scripts
+│   └── ligandscope/         ← Python package (energy, structs, output)
+├── validation/
+│   ├── pdbbind/             ← 18,320 completed PDBbind self-dockings
+│   ├── metal/               ← 19 metalloenzyme validation runs
+│   └── xo/                  ← xanthine oxidase (Mo) benchmark
+└── results/
+    ├── pdbbind_results.tsv       ← 19,037 targets, RMSD + LigandScope scores
+    └── benchmark_1000.tsv        ← 1,000-target paper benchmark subset
+```
+
+---
+
+## Large-Scale Benchmark (PDBbind, 18,320 targets)
+
+Self-docking pose recovery across PDBbind (all years, sd=32, RTX 6000 Ada):
+
+| Metric | Result |
+|--------|--------|
+| Total targets completed | 18,320 / 19,037 (96.2 %) |
+| Best RMSD < **1 Å** | **8,179 / 18,320 = 44.6 %** |
+| Best RMSD < **2 Å** | **12,291 / 18,320 = 67.1 %** |
+| Median Best RMSD | 1.117 Å |
+| Mean Best RMSD | 2.116 Å |
+
+> These statistics come from existing runs in `LigandScope/results/pdbbind_results.tsv`.  
+> A curated 1,000-target benchmark subset is available at `LigandScope/results/benchmark_1000.tsv`.
 
 ---
 
