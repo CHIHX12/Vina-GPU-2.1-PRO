@@ -344,12 +344,35 @@ const fl xs_vdw_radii[] = {
 	1.2  // Met_D
 };
 
+// Vinardo scoring function uses slightly different XS radii
+// (Quiroga & Villarreal, PLOS ONE 2016)
+const fl xs_vdw_radii_vinardo[] = {
+	2.0,  // C_H  (Vina: 1.9)
+	2.0,  // C_P  (Vina: 1.9)
+	1.75, // N_P  (Vina: 1.8)
+	1.75, // N_D  (Vina: 1.8)
+	1.75, // N_A  (Vina: 1.8)
+	1.75, // N_DA (Vina: 1.8)
+	1.6,  // O_P  (Vina: 1.7)
+	1.6,  // O_D  (Vina: 1.7)
+	1.6,  // O_A  (Vina: 1.7)
+	1.6,  // O_DA (Vina: 1.7)
+	2.0,  // S_P  (same)
+	2.1,  // P_P  (same)
+	1.5,  // F_H  (same)
+	1.8,  // Cl_H (same)
+	2.0,  // Br_H (same)
+	2.2,  // I_H  (same)
+	1.2   // Met_D (same)
+};
+
+// Active radii table — set to xs_vdw_radii_vinardo when --scoring vinardo is selected.
+// Must be set before precalculation (single-threaded startup).
+extern const fl* active_xs_radii;
 
 inline fl xs_radius(sz t) {
-	const sz n = sizeof(xs_vdw_radii) / sizeof(const fl);
-	assert(n == XS_TYPE_SIZE);
-	assert(t < n);
-	return xs_vdw_radii[t];
+	assert(t < XS_TYPE_SIZE);
+	return active_xs_radii[t];
 }
 
 const std::string non_ad_metal_names[] = { // metals/metalloids not in atom_kind_data — get XS_TYPE_Met_D

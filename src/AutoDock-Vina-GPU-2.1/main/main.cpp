@@ -309,8 +309,8 @@ void dual_procedure(
 {
 	doing(verbosity, "Setting up the dual-ligand scoring function", log);
 
-	everything t;
-	VINA_CHECK(weights.size() == 6);
+	everything t(g_scoring_type);
+	VINA_CHECK(weights.size() == 5 || weights.size() == 6);
 	weighted_terms wt(&t, weights);
 	precalculate prec(wt);
 	done(verbosity, log);
@@ -485,8 +485,8 @@ void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, /
 
 	int ligand_num = ms.size();
 
-	everything t;
-	VINA_CHECK(weights.size() == 6);
+	everything t(g_scoring_type);
+	VINA_CHECK(weights.size() == 5 || weights.size() == 6);
 
 	weighted_terms wt(&t, weights);
 	precalculate prec(wt);
@@ -829,7 +829,9 @@ Thank you!\n";
 			opencl_binary_path = ocl_env ? std::string(ocl_env) : ".";
 		}
 		int rilc_bfgs = 1;
-		
+
+		std::string scoring_name = "vina";
+
 		// -0.035579, -0.005156, 0.840245, -0.035069, -0.587439, 0.05846
 		fl weight_gauss1 = -0.035579;
 		fl weight_gauss2 = -0.005156;
@@ -862,6 +864,8 @@ Thank you!\n";
 			("out2", value<std::string>(&out2_name), "output poses for second ligand (PDBQT; required when --ligand2 is given)")
 			("ref", value<std::string>(), "reference / co-crystal ligand PDBQT: auto-computes box center and size (ligand extent + 10 A margin)")
 			("ad4zn", bool_switch(&ad4zn_mode), "use AutoDock4Zn calibrated Zn coordination parameters (GPU mode)")
+			("scoring", value<std::string>(&scoring_name)->default_value(scoring_name),
+			    "scoring function: vina (default) | vinardo")
 			;
 		//options_description search_area("Search area (required, except with --score_only)");
 		options_description search_area("Search space (required)");
@@ -1089,13 +1093,40 @@ Thank you!\n";
 
 		grid_dims gd; // n's = 0 via default c'tor
 
+		// Resolve scoring function and set weights/radii accordingly
+		ScoringType scoring_type = ScoringType::Vina;
+		if (scoring_name == "vinardo") {
+			scoring_type = ScoringType::Vinardo;
+			g_scoring_type = ScoringType::Vinardo;
+			active_xs_radii = xs_vdw_radii_vinardo; // must be set before everything() ctor
+			// Override defaults with Vinardo weights (5 terms, no gauss2)
+			weight_gauss1      = -0.045;
+			weight_gauss2      =  0.0;   // unused in Vinardo
+			weight_repulsion   =  0.80;
+			weight_hydrophobic = -0.035;
+			weight_hydrogen    = -0.60;
+			weight_rot         =  0.02;
+			std::cout << "Scoring: Vinardo (Quiroga & Villarreal, PLOS ONE 2016)\n";
+		} else if (scoring_name != "vina") {
+			throw usage_error("Unknown scoring function '" + scoring_name + "'. Use: vina, vinardo");
+		}
+
 		flv weights;
-		weights.push_back(weight_gauss1);
-		weights.push_back(weight_gauss2);
-		weights.push_back(weight_repulsion);
-		weights.push_back(weight_hydrophobic);
-		weights.push_back(weight_hydrogen);
-		weights.push_back(5 * weight_rot / 0.1 - 1); // linearly maps onto a different range, internally. see everything.cpp
+		if (scoring_type == ScoringType::Vinardo) {
+			// Vinardo has 4 distance-dependent terms + 1 conf-independent (no gauss2)
+			weights.push_back(weight_gauss1);      // -0.045  gauss(o=0, w=0.8)
+			weights.push_back(weight_repulsion);   //  0.80   repulsion(o=0)
+			weights.push_back(weight_hydrophobic); // -0.035  hydrophobic(g=0.0, b=2.5)
+			weights.push_back(weight_hydrogen);    // -0.60   non_dir_h_bond(g=-0.6)
+			weights.push_back(5 * weight_rot / 0.1 - 1); // 0.0  num_tors_div
+		} else {
+			weights.push_back(weight_gauss1);
+			weights.push_back(weight_gauss2);
+			weights.push_back(weight_repulsion);
+			weights.push_back(weight_hydrophobic);
+			weights.push_back(weight_hydrogen);
+			weights.push_back(5 * weight_rot / 0.1 - 1); // linearly maps onto a different range
+		}
 
 		if (search_box_needed) {
 			const fl granularity = 0.375;

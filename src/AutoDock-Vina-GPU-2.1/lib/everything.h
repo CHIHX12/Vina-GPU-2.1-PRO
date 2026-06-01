@@ -24,10 +24,15 @@
 #define VINA_EVERYTHING_H
 
 #include "terms.h"
-//½á¹¹Ìåeverything  ¼Ì³Ð¸¸Ààterms
-//ÉùÃ÷º¯Êýeverything
+
+enum class ScoringType { Vina, Vinardo };
+
+// Global scoring type â€” set before precalculation in main().
+extern ScoringType g_scoring_type;
+
+// everything initialises the scoring term set for the chosen scoring function.
 struct everything : public terms {
-	everything();
+	everything(ScoringType st = ScoringType::Vina);
 };
 
 #endif
