@@ -15,12 +15,15 @@ with two key additions: **metal coordination scoring** for metalloenzyme targets
 |---------|----------|-----|
 | Metal coordination scoring (Zn, Mg, Fe, Mn, Ca) | ✗ | ✅ |
 | **Receptor prep: full periodic table** (62 metals, no recompile) | ✗ | ✅ |
+| Vinardo scoring function (`--scoring vinardo`) | ✗ | ✅ |
+| Per-residue energy decomposition (`--residue_energy_output`) | ✗ | ✅ |
 | Multi-GPU work-stealing dispatch | ✗ | ✅ |
 | PDBbind self-docking — Best RMSD < 2 Å (18,320 targets) | — | **67.1 % (12,291/18,320)** |
 | PDBbind self-docking — Best RMSD < 1 Å (18,320 targets) | — | **44.6 % (8,179/18,320)** |
 | PDBbind self-docking — Best RMSD < 2 Å (1,000-target GPU run) | — | **75.4 % (754/1000)** |
 | PDBbind self-docking — Best RMSD < 1 Å (1,000-target GPU run) | — | **43.6 % (436/1000)** |
-| Metalloenzyme self-docking Best RMSD < 2 Å (19 targets) | 61 % (11/18) | **95 % (18/19)** |
+| Metalloenzyme self-docking Best RMSD < 2 Å (19 targets, Vina) | 61 % (11/18) | **95 % (18/19)** |
+| Metalloenzyme self-docking Best RMSD < 2 Å (19 targets, Vinardo) | — | **95 % (18/19)** |
 | Throughput (1 GPU, sd=32, thread=8000) | 0.50 mol/s | **1.34 mol/s** |
 | Throughput (2 GPU, sd=32, thread=8000) | — | **2.59 mol/s** |
 | Throughput (2 GPU, sd=1,  thread=8000) | — | **27 mol/s** (with `--cpu 4`) |
@@ -227,9 +230,12 @@ All PRO changes are in `src/AutoDock-Vina-GPU-2.1/` — the modified files are:
 | File | Change |
 |------|--------|
 | `src/AutoDock-Vina-GPU-2.1/OpenCL/src/kernels/kernel1.cl` | Metal coordination Gaussian scoring (Zn/Mg/Fe/Mo …) |
-| `src/AutoDock-Vina-GPU-2.1/main/main.cpp` | Parallel ligand parsing (`--cpu N`), multi-GPU dual-ligand dispatch |
+| `src/AutoDock-Vina-GPU-2.1/main/main.cpp` | Parallel ligand parsing (`--cpu N`), multi-GPU dispatch, Vinardo, per-residue output |
 | `src/AutoDock-Vina-GPU-2.1/lib/main_procedure_cl.cpp` | Per-GPU OCL context map, work-stealing dispatch |
 | `src/AutoDock-Vina-GPU-2.1/OpenCL/inc/wrapcl.h / wrapcl.cpp` | Multi-GPU queue management |
+| `src/AutoDock-Vina-GPU-2.1/lib/everything.h/.cpp` | Vinardo scoring terms + `ScoringType` enum |
+| `src/AutoDock-Vina-GPU-2.1/lib/atom_constants.h` | Vinardo VDW radii, runtime-switchable `active_xs_radii` |
+| `src/AutoDock-Vina-GPU-2.1/lib/residue_energy.h/.cpp` | Per-residue energy decomposition |
 
 ---
 
@@ -390,6 +396,124 @@ Standard pose-recovery benchmark across diverse protein classes.
 †Vina rank-1 varies by run (stochastic search); canonical run (metal_results.tsv): 12/19; LigandScope pipeline run: 11/19.
 
 To reproduce: run `tools/diagnostics/dock_pipeline.sh` on each target in `LigandScope/data/Metal_enzymes/`; apply `LigandScope/scripts/core/rank_poses.py` for ETr=1 re-ranking.
+
+---
+
+## Vinardo Scoring (`--scoring vinardo`)
+
+An alternative scoring function based on Quiroga & Villarreal (PLOS ONE 2016).
+Enabled with a single flag — no other changes needed:
+
+```bash
+./AutoDock-Vina-GPU-2-1 --receptor rec.pdbqt --ligand lig.pdbqt \
+    --scoring vinardo \
+    [... usual box / output options ...]
+```
+
+### Differences from Vina
+
+| Parameter | Vina | Vinardo |
+|-----------|------|---------|
+| Gaussian terms | 2 (w=0.5 + w=2.0) | 1 (w=0.8) |
+| Hydrophobic onset/end | g=0.5, b=1.5 | g=0.0, b=2.5 |
+| H-bond onset | g=−0.7 | g=−0.6 |
+| C VDW radius | 1.9 Å | 2.0 Å |
+| N VDW radius | 1.8 Å | 1.75 Å |
+| O VDW radius | 1.7 Å | 1.6 Å |
+
+Vinardo uses a single, narrower Gaussian — interactions become more contact-sensitive.
+Residues that are not directly touching contribute essentially zero, making the
+per-residue decomposition (see below) cleaner and the metal coordination signals
+(ZN, HIS coordination) more pronounced.
+
+### Vinardo vs Vina — 19-target metalloenzyme benchmark (sd=32, RTX 6000 Ada)
+
+| PDB | Metal | Enzyme | Vina top-1 | Vrd top-1 | Vina best | Vrd best | Better |
+|-----|-------|--------|-----------|----------|----------|---------|--------|
+| 1A42 | Zn | CAII    | 1.005 | 2.605 | 1.004 | **0.793** | Vinardo |
+| 1BNN | Zn | CAII    | 3.928 | 4.549 | 1.343 | **1.140** | Vinardo |
+| 1G52 | Zn | CAII    | 4.633 | 4.771 | 1.156 | 1.199 | ~tie |
+| 1GKC | Zn | MMP-2   | 1.486 | 0.961 | **0.727** | 0.961 | Vina |
+| 1JAQ | Zn | MMP-8   | 2.209 | 1.185 | 1.202 | **1.145** | Vinardo |
+| 1MMQ | Zn | MMP-1   | 1.194 | 0.745 | 0.711 | 0.743 | ~tie |
+| 1O86 | Zn | ACE     | 0.985 | 1.415 | 0.985 | **0.959** | ~tie |
+| 1OQ5 | Zn | CAII    | 1.340 | 1.252 | **0.525** | 0.617 | Vina |
+| 1UZE | Zn | ACE     | 1.107 | 0.703 | **0.353** | 0.703 | Vina |
+| 1YDB | Zn | CAII    | 1.293 | 1.310 | **0.536** | 0.743 | Vina |
+| 2C6N | Zn | ACE     | 1.369 | 1.382 | 1.219 | **1.025** | Vinardo |
+| 2G1M | Fe | PHD2    | 3.851 | 3.887 | **3.321** | 3.440 | Vina |
+| 2OVX | Zn | MMP-9   | 1.129 | 1.069 | 1.058 | 1.069 | ~tie |
+| 2W0D | Zn | MMP-9   | 1.786 | **1.138** | 1.714 | **1.138** | Vinardo |
+| 3HS4 | Zn | CAII    | 1.221 | 2.550 | 0.843 | **0.780** | Vinardo |
+| 3L2U | Mg | HIV-IN  | 1.880 | 1.896 | 1.310 | **1.285** | ~tie |
+| 3NRZ | Mo | XO      | 2.908 | 2.919 | 0.872 | **0.618** | Vinardo |
+| 3P5A | Zn | CAII    | 3.859 | 3.937 | 1.077 | **1.065** | ~tie |
+| 3S3M | Mg | HIV-IN  | 10.602 | 8.463 | 1.202 | **1.096** | Vinardo |
+
+**Summary (19 targets, best RMSD):**
+
+| Metric | Vina | Vinardo |
+|--------|------|---------|
+| Wins (best RMSD, Δ > 0.05 Å) | 5 | **8** |
+| Ties | 6 | 6 |
+| Top-1 < 1.0 Å | 1 | **3** |
+| Best < 1.0 Å | 8 | **9** |
+| Best < 2.0 Å | **18/19** | **18/19** |
+
+Vinardo slightly outperforms Vina on metalloenzyme targets overall (8 vs 5 wins),
+with the biggest gains for targets where ZN/HIS direct coordination dominates
+(3NRZ Mo, 2W0D MMP-9, 1A42/1BNN CAII).  Vina retains an edge on a few targets
+(1UZE, 1GKC) where the wider hydrophobic term captures a better binding geometry.
+
+**Recommendation:** run both if accuracy is critical; use Vinardo for metal-coordination
+analysis and per-residue output interpretation.
+
+---
+
+## Per-Residue Energy Decomposition (`--residue_energy_output`)
+
+After docking, compute how much each receptor residue contributes to the total
+interaction energy for every output pose:
+
+```bash
+./AutoDock-Vina-GPU-2-1 \
+    --receptor receptor.pdbqt --ligand ligand.pdbqt \
+    --center_x X --center_y Y --center_z Z \
+    --size_x SX --size_y SY --size_z SZ \
+    --out output.pdbqt \
+    --residue_energy_output residues.tsv
+```
+
+Output (`residues.tsv`) — TSV, one block per pose, sorted most-stabilising first:
+
+```
+# Per-residue energy decomposition (Vina-GPU PRO)
+# Negative = stabilising, Positive = clashing
+
+## Pose 1
+pose  chain  resname  resnum  energy_kcal_mol
+1     A      THR      199     -0.9252
+1     A      GLN      92      -0.6260
+...
+1     A      ZN       262     -0.0028
+1     A      HIS      94       0.0027   ← positive = clashing
+```
+
+- Works with both `--scoring vina` (default) and `--scoring vinardo`
+- Virtual screening mode: auto-derives `<output_stem>_residues.tsv` per ligand
+- Uses the same precalculated pair-energy table as the GPU kernel — no extra approximation
+- Metal ions (ZN, Mg, Fe …) and coordinating residues (HIS, CYS) appear explicitly
+
+### Vina vs Vinardo per-residue comparison (1A42, Zn metalloenzyme, pose 1)
+
+| Residue | Vina (kcal/mol) | Vinardo (kcal/mol) | Interpretation |
+|---------|----------------|-------------------|----------------|
+| THR 199 | −0.925 | **−1.242** | Vinardo weights H-bond more |
+| GLN 92  | −0.626 | −0.810 | similar |
+| PRO 202 | −0.468 | −0.006 | narrow Gaussian → distant hydrophobics → 0 |
+| VAL 135 | −0.389 | −0.001 | same |
+| HIS 94  | +0.003 | **−0.348** | Vina misses coordination; Vinardo captures it |
+| ZN 262  | −0.003 | **−0.191** | metal signal 64× stronger in Vinardo |
 
 ---
 
