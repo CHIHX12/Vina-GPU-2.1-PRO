@@ -50,6 +50,7 @@
 #include "coords.h" // add_to_output_container
 #include "main_procedure_cl.h"
 #include "dual_mc.h"
+#include "residue_energy.h"
 #include <experimental/filesystem>
 
 // Forward declaration — implemented in wrapcl.cpp
@@ -479,7 +480,9 @@ void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, /
 	int cpu, int seed, int verbosity, sz num_modes, fl energy_range,
 	tee& log, int search_depth, int thread, std::string opencl_binary_path, std::vector<std::vector<std::string>> ligand_names, int rilc_bfgs,
 	const std::string& gpu_id_str, const std::string& cpu_str, const int batch_size,
-	bool ad4zn) {
+	bool ad4zn,
+	const std::string& rigid_name = "",
+	const std::string& residue_energy_output = "") {
 
 	doing(verbosity, "Setting up the scoring function", log);
 
@@ -629,6 +632,11 @@ void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, /
 	const scoring_function& sf = wt;
 	std::cout << std::endl;
 
+	// Parse receptor residue labels once (same receptor for all ligands).
+	ResidueLabels res_labels;
+	if (!residue_energy_output.empty() && !rigid_name.empty())
+		res_labels = parse_receptor_residue_labels(rigid_name);
+
 	for (int ligand_count = 0; ligand_count < ligand_num; ligand_count++) {
 
 		output_container out_cont = out_conts[ligand_count];
@@ -691,7 +699,27 @@ void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, /
 		}
 		std::cout << "Writing ligand " << name_tmp2 << " output...";
 		write_all_output(m, out_cont, how_many, out_names[ligand_count], remarks);
-		
+
+		// Per-residue energy decomposition
+		if (!residue_energy_output.empty() && !res_labels.empty() && how_many > 0) {
+			// Single-ligand: write to the provided path.
+			// Virtual-screening: derive a per-ligand file next to the output PDBQT.
+			std::string res_path;
+			if (ligand_num == 1) {
+				res_path = residue_energy_output;
+			} else {
+				std::string base = out_names[ligand_count];
+				const std::string ext = ".pdbqt";
+				if (base.size() >= ext.size() && base.substr(base.size() - ext.size()) == ext)
+					base.resize(base.size() - ext.size());
+				res_path = base + "_residues.tsv";
+			}
+			for (sz i = 0; i < (sz)how_many; ++i) {
+				m.set(out_cont[i].c);
+				auto contrib = compute_residue_energy(m, prec, res_labels);
+				write_residue_energy_file(contrib, res_path, (int)(i + 1));
+			}
+		}
 
 		if (how_many < 1) {
 			log << "WARNING: Could not find any conformations completely within the search space.\n"
@@ -879,10 +907,13 @@ Thank you!\n";
 
 			;
 		//options_description outputs("Output prefixes (optional - by default, input names are stripped of .pdbqt\nare used as prefixes. _001.pdbqt, _002.pdbqt, etc. are appended to the prefixes to produce the output names");
+		std::string residue_energy_output;
 		options_description outputs("Output (optional)");
 		outputs.add_options()
 			("out", value<std::string>(&out_name), "output models (PDBQT), the default is chosen based on the ligand file name")
 			("log", value<std::string>(&log_name), "optionally, write log file")
+			("residue_energy_output", value<std::string>(&residue_energy_output)->default_value(""),
+			    "per-residue binding energy decomposition output (TSV); VS mode auto-derives per-ligand files")
 			;
 		options_description advanced("Advanced options (see the manual)");
 		advanced.add_options()
@@ -1275,7 +1306,8 @@ Thank you!\n";
 				gd, exhaustiveness,
 				weights,
 				cpu, seed, verbosity, max_modes_sz, energy_range, log, search_depth, thread, opencl_binary_path, ligand_names, rilc_bfgs, gpu_id_str, cpu_str, batch_size,
-				ad4zn_mode);
+				ad4zn_mode,
+				rigid_name, residue_energy_output);
 		} // end single-ligand path
 	}
 	catch (file_error& e) {
