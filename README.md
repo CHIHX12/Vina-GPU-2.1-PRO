@@ -16,8 +16,10 @@ with two key additions: **metal coordination scoring** for metalloenzyme targets
 | Metal coordination scoring (Zn, Mg, Fe, Mn, Ca) | ✗ | ✅ |
 | **Receptor prep: full periodic table** (62 metals, no recompile) | ✗ | ✅ |
 | Multi-GPU work-stealing dispatch | ✗ | ✅ |
-| PDBbind self-docking — Best RMSD < 2 Å (1000 targets) | — | **67.1 % (12,291/18,320)** |
-| PDBbind self-docking — Best RMSD < 1 Å (1000 targets) | — | **44.6 % (8,179/18,320)** |
+| PDBbind self-docking — Best RMSD < 2 Å (18,320 targets) | — | **67.1 % (12,291/18,320)** |
+| PDBbind self-docking — Best RMSD < 1 Å (18,320 targets) | — | **44.6 % (8,179/18,320)** |
+| PDBbind self-docking — Best RMSD < 2 Å (1,000-target GPU run) | — | **75.4 % (754/1000)** |
+| PDBbind self-docking — Best RMSD < 1 Å (1,000-target GPU run) | — | **43.6 % (436/1000)** |
 | Metalloenzyme self-docking Best RMSD < 2 Å (19 targets) | 61 % (11/18) | **95 % (18/19)** |
 | Throughput (1 GPU, sd=32, thread=8000) | 0.50 mol/s | **1.34 mol/s** |
 | Throughput (2 GPU, sd=32, thread=8000) | — | **2.59 mol/s** |
@@ -467,9 +469,11 @@ LigandScope/
 
 ---
 
-## Large-Scale Benchmark (PDBbind, 18,320 targets)
+## Large-Scale Benchmark (PDBbind)
 
-Self-docking pose recovery across PDBbind (all years, sd=32, RTX 6000 Ada):
+### 18,320-target aggregate (full PDBbind, sd=32, RTX 6000 Ada)
+
+Self-docking pose recovery across PDBbind (all years):
 
 | Metric | Result |
 |--------|--------|
@@ -479,8 +483,24 @@ Self-docking pose recovery across PDBbind (all years, sd=32, RTX 6000 Ada):
 | Median Best RMSD | 1.117 Å |
 | Mean Best RMSD | 2.116 Å |
 
-> These statistics come from existing runs in `LigandScope/results/pdbbind_results.tsv`.  
-> A curated 1,000-target benchmark subset is available at `LigandScope/results/benchmark_1000.tsv`.
+> Full results: `LigandScope/results/pdbbind_results.tsv`
+
+### 1,000-target GPU-confirmed benchmark (sd=32, thread=8000, RTX 6000 Ada)
+
+Stratified sample (450 best<1Å / 350 best 1–2Å / 200 best>2Å) re-run on GPU to confirm reproducibility:
+
+| Metric | Result |
+|--------|--------|
+| Total targets completed | **1,000 / 1,000 (100 %)** |
+| Best RMSD < **1 Å** | **436 / 1,000 = 43.6 %** |
+| Best RMSD < **2 Å** | **754 / 1,000 = 75.4 %** |
+| Top-1 RMSD < **2 Å** | 497 / 1,000 = 49.7 % |
+| Median Best RMSD | **1.102 Å** |
+| Mean Best RMSD | 1.849 Å |
+
+> Results: `LigandScope/results/benchmark_1000_gpu_results.tsv`  
+> Target list: `LigandScope/results/benchmark_1000.tsv`  
+> Note: Best<2Å is higher than the 18K aggregate because the stratified sample over-represents near-native targets by design.
 
 ---
 
