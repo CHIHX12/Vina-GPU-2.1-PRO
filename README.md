@@ -47,13 +47,13 @@ Run this **once** after installing meeko to enable all 62 metals (Cu, Ru, Gd, Ac
 ```bash
 # activate the environment where meeko is installed
 conda activate jp_214
-PYTHONNOUSERSITE=1 python3 tools/patch_meeko_metals.py
+PYTHONNOUSERSITE=1 python3 tools/prep/patch_meeko_metals.py
 ```
 
 > **No Vina recompilation needed.**  
 > Metal support lives entirely in meeko (receptor/ligand `.pdbqt` preparation).  
 > Vina-GPU reads only the atom types in the PDBQT — it does not care which element produced them.  
-> To undo: `python3 tools/patch_meeko_metals.py --restore`
+> To undo: `python3 tools/prep/patch_meeko_metals.py --restore`
 
 ### Step 3 — Prepare inputs
 
@@ -67,7 +67,7 @@ PYTHONNOUSERSITE=1 python3 tools/patch_meeko_metals.py
 PYTHONNOUSERSITE=1 mk_prepare_receptor.py --read_pdb 1RU.pdb -o 1RU_rec -p
 ```
 
-> See `metal_validation/prepare_all.py` for a batch preparation reference.
+> For batch ligand prep from SMILES, see `tools/prep/smiles_to_pdbqt.py`.
 
 ### Step 4 — Run
 
@@ -247,7 +247,7 @@ Adding a new metal = patching meeko's data files so it writes the correct atom-t
 
 ```bash
 conda activate jp_214
-PYTHONNOUSERSITE=1 python3 tools/patch_meeko_metals.py
+PYTHONNOUSERSITE=1 python3 tools/prep/patch_meeko_metals.py
 ```
 
 Output confirms 62 metals patched:
@@ -288,7 +288,7 @@ PYTHONNOUSERSITE=1 mk_prepare_receptor.py --read_pdb gd_mri.pdb  -o gd_rec  -p  
 PYTHONNOUSERSITE=1 mk_prepare_receptor.py --read_pdb lu_dotatate.pdb -o lu_rec -p # 177Lu therapy
 ```
 
-To restore the original meeko files: `python3 tools/patch_meeko_metals.py --restore`
+To restore the original meeko files: `python3 tools/prep/patch_meeko_metals.py --restore`
 
 ### Self-docking redocking validation (crystal structure overlap)
 
@@ -387,7 +387,7 @@ Standard pose-recovery benchmark across diverse protein classes.
 
 †Vina rank-1 varies by run (stochastic search); canonical run (metal_results.tsv): 12/19; LigandScope pipeline run: 11/19.
 
-To reproduce: `cd metal_validation && bash reproduce.sh --depth 32`
+To reproduce: run `tools/diagnostics/dock_pipeline.sh` on each target in `LigandScope/data/Metal_enzymes/`; apply `LigandScope/scripts/core/rank_poses.py` for ETr=1 re-ranking.
 
 ---
 
