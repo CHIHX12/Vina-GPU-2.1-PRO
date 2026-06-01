@@ -292,7 +292,7 @@ To restore the original meeko files: `python3 tools/patch_meeko_metals.py --rest
 
 ### Self-docking redocking validation (crystal structure overlap)
 
-20 metalloprotein crystal structures redocked; RMSD measured against co-crystal pose:
+19 metalloprotein crystal structures redocked; RMSD measured against co-crystal pose:
 
 | PDB | Metal | Enzyme | Top-1 RMSD (Å) | Best RMSD (Å) | Status |
 |-----|-------|--------|---------------|--------------|--------|
@@ -301,24 +301,24 @@ To restore the original meeko files: `python3 tools/patch_meeko_metals.py --rest
 | 1G52 | Zn | CAII | 4.577 | **1.285** | RECOV |
 | 1GKC | Zn | MMP-2 | 1.201 | **0.776** | PASS |
 | 1JAQ | Zn | MMP-8 | 3.656 | **0.773** | RECOV |
-| 1MMQ | Zn | MMP-1 | 0.685 | **0.685** | PASS |
+| 1MMQ | Zn | MMP-1 | 1.127 | **0.685** | PASS |
 | 1O86 | Zn | ACE | 1.216 | **0.913** | PASS |
-| 1OQ5 | Zn | CAII | 1.793 | **1.244** | PASS |
+| 1OQ5 | Zn | CAII | 1.244 | **1.244** | PASS |
 | 1UZE | Zn | ACE | 1.459 | **0.472** | PASS |
 | 1YDB | Zn | CAII | 1.259 | **1.259** | PASS |
 | 2C6N | Zn | ACE | 1.419 | **0.866** | PASS |
-| 2G1M | Fe | PHD2 | 4.864 | 3.143 | FAIL |
-| 2OVX | Zn | MMP-9 | 1.081 | **1.081** | PASS |
-| 2W0D | Zn | MMP-9 | 1.226 | **1.226** | PASS |
+| 2G1M | Fe | PHD2 | 3.143 | 3.143 | FAIL |
+| 2OVX | Zn | MMP-9 | 1.163 | **1.081** | PASS |
+| 2W0D | Zn | MMP-9 | 4.935 | **1.226** | RECOV |
 | 3HS4 | Zn | CAII | 2.387 | **1.612** | RECOV |
 | 3L2U | Mg | HIV-IN | 1.935 | **1.264** | PASS |
 | 3NRZ | Mo | Xanthine oxidase | 2.922 | **0.640** | RECOV |
-| 3P5A | Zn | CAII | 3.690 | **1.038** | RECOV |
+| 3P5A | Zn | CAII | 3.872 | **1.038** | RECOV |
 | 3S3M | Mg | HIV-IN | 1.355 | **0.490** | PASS |
 
 **PASS** = top-1 pose RMSD < 2 Å; **RECOV** = best pose < 2 Å (ranking needs LigandScope re-scoring); **FAIL** = best > 2 Å (2G1M: Fe-PHD2 unusual coordination geometry).
 
-Summary: **18/19 best RMSD < 2 Å** (95 %) — redocked poses overlap with crystal structures.
+Summary: **18/19 best RMSD < 2 Å** (95 %) — 11/19 top-1 PASS, 7 RECOV (best pose found but needs re-ranking), 1 FAIL.
 
 ---
 
