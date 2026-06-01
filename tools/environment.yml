@@ -1,27 +1,30 @@
-# Vina-GPU 2.1 — 可攜式 conda 環境
+# Vina-GPU 2.1 — 可攜式 conda 環境（2024-2025 最新工具鏈）
 #
 # 用法：
 #   conda env create -f tools/environment.yml
 #   conda activate vina_docking
 #
-# 包含：
-#   - obabel         : SMILES → PDBQT 3D 生成（MMFF94 力場）
-#   - rdkit          : 化學資訊學（可選，dimorphite-dl 依賴）
-#   - adfrsuite      : Python 3 版 MGLTools（prepare_receptor / prepare_ligand）
-#   - dimorphite_dl  : pH 7.4 正確質子化（NH3+/COO- 等）
+# 工具鏈：
+#   meeko              : 官方 Python 3 配體/受體準備（Scripps Forli Lab）
+#   gemmi              : meeko 依賴（CIF/PDB 解析）
+#   rdkit              : 3D 構型生成（ETKDGv3 + MMFF94）
+#   dimorphite_dl 1.2.5: pH 7.4 質子化（NH3+/COO- 正確原子類型）
+#   openbabel          : 格式轉換備用
+#
+# 注意：
+#   - dimorphite_dl v2.x 對脂肪族胺有已知 bug，必須用 v1.2.5
+#   - meeko v0.7+ 需要 gemmi；用 PDBQTWriterLegacy.write_string()
 
 name: vina_docking
 channels:
   - conda-forge
-  - ccsb-scripps
   - defaults
 dependencies:
   - python=3.10
-  - openbabel>=3.1
-  - rdkit>=2023.09
-  - adfrsuite          # Python 3 MGLTools (prepare_receptor4, prepare_ligand4)
+  - rdkit>=2023.09          # 3D 生成（ETKDGv3 + MMFF94）
+  - gemmi>=0.6              # meeko 依賴（macromolecule parsing）
+  - openbabel>=3.1          # 格式轉換備用
   - pip
   - pip:
-    - dimorphite_dl==1.2.5  # pKa-based protonation (NH3+/COO- correct atom typing)
-                             # NOTE: v2.x has a bug where aliphatic amines (pKa~10) are
-                             # not protonated at pH 7.4; use v1.2.5
+    - meeko                 # mk_prepare_ligand.py / mk_prepare_receptor.py
+    - dimorphite_dl==1.2.5  # pH 質子化（v2.x 有 amine bug，用 1.2.5）
