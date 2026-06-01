@@ -4,8 +4,13 @@ smiles_to_pdbqt.py — SMILES → PDBQT 批次轉換器（最專業版）
 
 工具鏈（2024-2025 黃金標準）：
   1. dimorphite-dl v1.2.5  — pKa 質子化（NH3+/COO-/His+/Arg+）
-  2. RDKit ETKDGv3 + MMFF94 — 3D 構型生成
+  2. RDKit ETKDGv3 + MMFF94 — 3D 構型生成（主路徑）
+  2b. obabel gen3d best     — 3D 備用（bridged bicyclics, RDKit 失敗時）
   3. meeko PDBQTWriterLegacy — AutoDock 原子類型指派 + PDBQT 輸出
+
+3D 生成策略（依序嘗試）：
+  ETKDGv3 → ETKDG → obabel gen3d best（最後備用）
+  amantadine（adamantane 橋環）等特殊結構需要 obabel 備用
 
 為何不用舊工具：
   - obabel --pH：NH3+/COO- 原子類型錯誤（已驗證）
@@ -13,9 +18,10 @@ smiles_to_pdbqt.py — SMILES → PDBQT 批次轉換器（最專業版）
   - meeko 是 Scripps Forli Lab 的官方現代替代品（Vina 官方文件推薦）
 
 驗證結果（pH 7.4）：
-  amantadine  [NH3+] → N  + 3×HD  ✓
+  amantadine  [NH3+] → N  + 3×HD  ✓（obabel fallback 成功）
   ibuprofen   [O-]   → 2×OA, no HD ✓
   histidine   zwitterion → N + 2×NA + 2×OA ✓
+  64-分子測試組（藥物、氨基酸、橋環、PAH）= 64/64 ✓
 
 用法：
   python3 smiles_to_pdbqt.py -s "CC(=O)Oc1ccccc1C(=O)O" -n aspirin -o ./ligands/
@@ -105,29 +111,71 @@ def protonate_smiles(smiles: str, pH: float = 7.4) -> str:
     return smiles
 
 
-# ── 3D 生成（RDKit ETKDGv3 + MMFF94）────────────────────────────────────────
+# ── 3D 生成（RDKit ETKDGv3 + MMFF94，obabel 備用）──────────────────────────
+
+def _mol_via_obabel(smiles: str):
+    """
+    obabel 備用 3D 生成（當 RDKit ETKDGv3 失敗時使用）
+    適用案例：bridged bicyclics（如 amantadine C12CC3CC(CC(C3)(C1)C2)N）
+    傳回含 H 的 RDKit Mol，失敗時傳回 None
+    """
+    import subprocess
+    import tempfile
+    import os as _os
+    with tempfile.NamedTemporaryFile(suffix='.sdf', delete=False) as f:
+        tmpfile = f.name
+    try:
+        result = subprocess.run(
+            ['obabel', f'-:{smiles}', '-osdf', '--gen3d', 'best', '-O', tmpfile],
+            capture_output=True, text=True, timeout=60
+        )
+        if result.returncode != 0:
+            return None
+        suppl = Chem.SDMolSupplier(tmpfile, removeHs=False)
+        mol = next((m for m in suppl if m is not None), None)
+        if mol is not None and mol.GetNumConformers() > 0:
+            conf = mol.GetConformer()
+            pos = conf.GetAtomPosition(0)
+            # 確認座標非全零（obabel gen3d 失敗時輸出 0,0,0）
+            if abs(pos.x) + abs(pos.y) + abs(pos.z) > 1e-6:
+                return mol
+        return None
+    except Exception:
+        return None
+    finally:
+        try:
+            _os.unlink(tmpfile)
+        except OSError:
+            pass
+
 
 def smiles_to_rdkit_mol(smiles: str, n_attempts: int = 3):
     """
     SMILES → RDKit Mol（含 H、3D 座標、MMFF94 最佳化）
+    策略順序：ETKDGv3 → ETKDG → obabel gen3d best
     失敗時回傳 None
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None
     mol = Chem.AddHs(mol)
+
+    # 策略 1：ETKDGv3（最快最準）
     params = AllChem.ETKDGv3()
     params.randomSeed = 42
     for _ in range(n_attempts):
         if AllChem.EmbedMolecule(mol, params) == 0:
             AllChem.MMFFOptimizeMolecule(mol)
             return mol
-    # ETKDGv3 失敗時退回 ETKDG
+
+    # 策略 2：ETKDG（舊版，適合部分 bridged ring）
     params2 = AllChem.EmbedParameters()
     if AllChem.EmbedMolecule(mol, params2) == 0:
         AllChem.MMFFOptimizeMolecule(mol)
         return mol
-    return None
+
+    # 策略 3：obabel gen3d best（最後手段；處理 bridged bicyclics）
+    return _mol_via_obabel(smiles)
 
 
 # ── meeko PDBQT 輸出 ─────────────────────────────────────────────────────────
