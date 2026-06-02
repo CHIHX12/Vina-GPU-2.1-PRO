@@ -365,9 +365,17 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 			grids_ptr->grids[i].m_factor_inv[j] = tmp_grid_ptr[i].m_factor_inv[j];
 		}
 		if (tmp_grid_ptr[i].m_data.dim0() != 0) {
-			grids_ptr->grids[i].m_i = tmp_grid_ptr[i].m_data.dim0(); if(MAX_NUM_OF_GRID_MI < grids_ptr->grids[i].m_i){throw std::runtime_error("MAX_NUM_OF_GRID_MI too small!  Define a large box (see readme) would help");}
-			grids_ptr->grids[i].m_j = tmp_grid_ptr[i].m_data.dim1(); if(MAX_NUM_OF_GRID_MJ < grids_ptr->grids[i].m_j){throw std::runtime_error("MAX_NUM_OF_GRID_MJ too small!  Define a large box (see readme) would help");}
-			grids_ptr->grids[i].m_k = tmp_grid_ptr[i].m_data.dim2(); if(MAX_NUM_OF_GRID_MK < grids_ptr->grids[i].m_k){throw std::runtime_error("MAX_NUM_OF_GRID_MK too small!  Define a large box (see readme) would help");}
+			grids_ptr->grids[i].m_i = tmp_grid_ptr[i].m_data.dim0();
+			grids_ptr->grids[i].m_j = tmp_grid_ptr[i].m_data.dim1();
+			grids_ptr->grids[i].m_k = tmp_grid_ptr[i].m_data.dim2();
+			if(grids_ptr->grids[i].m_i > MAX_NUM_OF_GRID_DIM) throw std::runtime_error("Grid dim i too large! Define a large box (see readme) would help.");
+			if(grids_ptr->grids[i].m_j > MAX_NUM_OF_GRID_DIM) throw std::runtime_error("Grid dim j too large! Define a large box (see readme) would help.");
+			if(grids_ptr->grids[i].m_k > MAX_NUM_OF_GRID_DIM) throw std::runtime_error("Grid dim k too large! Define a large box (see readme) would help.");
+			{
+				long long vol = (long long)grids_ptr->grids[i].m_i * grids_ptr->grids[i].m_j * grids_ptr->grids[i].m_k;
+				long long max_vol = (long long)MAX_NUM_OF_GRID_MI * MAX_NUM_OF_GRID_MJ * MAX_NUM_OF_GRID_MK;
+				if(vol > max_vol) throw std::runtime_error("Grid volume (mi*mj*mk) too large! Use a smaller docking box.");
+			}
 			grids_front = i;
 		}
 		else {

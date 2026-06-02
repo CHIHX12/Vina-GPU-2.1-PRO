@@ -16,7 +16,7 @@
 #define SIZE_OF_MOLEC_STRUC ((3+4+MAX_NUM_OF_LIG_TORSION+MAX_NUM_OF_FLEX_TORSION+ 1)*sizeof(float) )
 #define SIZE_OF_CHANGE_STRUC ((3+3+MAX_NUM_OF_LIG_TORSION+MAX_NUM_OF_FLEX_TORSION + 1)*sizeof(float))
 #define MAX_HESSIAN_MATRIX_SIZE ((6 +  MAX_NUM_OF_LIG_TORSION + MAX_NUM_OF_FLEX_TORSION)*(6 +  MAX_NUM_OF_LIG_TORSION + MAX_NUM_OF_FLEX_TORSION + 1) / 2)
-#define MAX_NUM_OF_LIG_PAIRS 8192
+#define MAX_NUM_OF_LIG_PAIRS 9216
 #define MAX_NUM_OF_BFGS_STEPS 64
 #define MAX_NUM_OF_RANDOM_MAP 20000 // not too large (stack overflow!)
 #define GRIDS_SIZE 17
@@ -27,15 +27,19 @@
 	#define MAX_NUM_OF_GRID_MI 300
 	#define MAX_NUM_OF_GRID_MJ 300
 	#define MAX_NUM_OF_GRID_MK 300
+	#define MAX_NUM_OF_GRID_DIM 300      // per-dimension guard: matches array dims for large box
 	#define MAX_NUM_OF_AR_CELLS 16384    // max szv_grid cells: ceil(70/0.375)=187 → int(187*0.375/3)=23 per dim → 23^3=12167
 	#define MAX_NUM_OF_ATOM_RELATION_COUNT 1024  // max protein atoms per szv_grid cell
 #endif
 
 #ifdef SMALL_BOX
-	// docking box size <= 48x48x48 (128 grid points × 0.375 Å)
-	#define MAX_NUM_OF_GRID_MI 128
+	// docking box size <= 72x72x72 (192 grid points × 0.375 Å)
+	// m_data uses actual mi*mj*mk as stride product; 128³=2M voxels covers all PDBbind targets
+	// MAX_NUM_OF_GRID_MI/MJ/MK size the m_data array; MAX_NUM_OF_GRID_DIM guards per-dimension
+	#define MAX_NUM_OF_GRID_MI 128       // array-size constant — product 128³ fits all PDBbind boxes
 	#define MAX_NUM_OF_GRID_MJ 128
 	#define MAX_NUM_OF_GRID_MK 128
+	#define MAX_NUM_OF_GRID_DIM 256      // per-dimension guard: covers elongated boxes up to ~95 Å
 	#define MAX_NUM_OF_AR_CELLS 4096     // max szv_grid cells: worst-case ~2535 across PDBbind
 	#define MAX_NUM_OF_ATOM_RELATION_COUNT 1024  // max protein atoms per szv_grid cell
 #endif
