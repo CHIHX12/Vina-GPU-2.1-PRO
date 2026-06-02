@@ -27,15 +27,17 @@
 	#define MAX_NUM_OF_GRID_MI 300
 	#define MAX_NUM_OF_GRID_MJ 300
 	#define MAX_NUM_OF_GRID_MK 300
-	#define MAX_NUM_OF_ATOM_RELATION_COUNT 38000
+	#define MAX_NUM_OF_AR_CELLS 16384    // max szv_grid cells: ceil(70/0.375)=187 → int(187*0.375/3)=23 per dim → 23^3=12167
+	#define MAX_NUM_OF_ATOM_RELATION_COUNT 1024  // max protein atoms per szv_grid cell
 #endif
 
 #ifdef SMALL_BOX
-	// docking box size <= 30x30x30
+	// docking box size <= 48x48x48 (128 grid points × 0.375 Å)
 	#define MAX_NUM_OF_GRID_MI 128
 	#define MAX_NUM_OF_GRID_MJ 128
 	#define MAX_NUM_OF_GRID_MK 128
-	#define MAX_NUM_OF_ATOM_RELATION_COUNT 1024
+	#define MAX_NUM_OF_AR_CELLS 4096     // max szv_grid cells: worst-case ~2535 across PDBbind
+	#define MAX_NUM_OF_ATOM_RELATION_COUNT 1024  // max protein atoms per szv_grid cell
 #endif
 //#define GRID_MI 65//55
 //#define GRID_MJ 71//55
@@ -181,8 +183,8 @@ typedef struct {
 } gb_cl;
 
 typedef struct {
-	int relation[MAX_NUM_OF_ATOM_RELATION_COUNT][MAX_NUM_OF_ATOM_RELATION_COUNT];
-	int relation_size[MAX_NUM_OF_ATOM_RELATION_COUNT];
+	int relation[MAX_NUM_OF_AR_CELLS][MAX_NUM_OF_ATOM_RELATION_COUNT];  // [cell_idx][atom_idx]
+	int relation_size[MAX_NUM_OF_AR_CELLS];
 } ar_cl;
 
 typedef struct {

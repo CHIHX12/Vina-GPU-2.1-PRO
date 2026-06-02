@@ -337,7 +337,7 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 	size_t gb_size = sizeof(gb_cl);
 
 	// Preparing atom relationship
-	if(MAX_NUM_OF_ATOM_RELATION_COUNT < ig.m_data.m_data.size()){throw std::runtime_error("Relation too large! Define a large box (see readme) would help");}
+	if(MAX_NUM_OF_AR_CELLS < ig.m_data.m_data.size()){throw std::runtime_error("Relation too large! Define a large box (see readme) would help");}
 	// assert(ig.m_data.m_i <= 10); assert(ig.m_data.m_j <= 10); assert(ig.m_data.m_k <= 10);
 	ar_cl* ar_ptr = (ar_cl*)malloc(sizeof(ar_cl));
 	for (int i = 0; i < ig.m_data.m_data.size(); i++) {
@@ -1147,7 +1147,7 @@ void main_procedure_cl_dual(
 	for (int i = 0; i < 3; i++) gb_ptr->range[i] = ig.m_range.data[i];
 
 	// Atom relation map
-	if (MAX_NUM_OF_ATOM_RELATION_COUNT < ig.m_data.m_data.size()) throw std::runtime_error("Relation too large!");
+	if (MAX_NUM_OF_AR_CELLS < ig.m_data.m_data.size()) throw std::runtime_error("Relation too large!");
 	ar_cl* ar_ptr = (ar_cl*)malloc(sizeof(ar_cl));
 	for (int i = 0; i < (int)ig.m_data.m_data.size(); i++) {
 		ar_ptr->relation_size[i] = ig.m_data.m_data[i].size();

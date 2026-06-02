@@ -215,7 +215,7 @@ $L__BB0_22:
 	cvt.s64.s32 	%rd8, %r93;
 	mul.wide.s32 	%rd36, %r93, 4;
 	add.s64 	%rd37, %rd26, %rd36;
-	ld.global.u32 	%r26, [%rd37+4194304];
+	ld.global.u32 	%r26, [%rd37+16777216];
 	setp.lt.s32 	%p19, %r26, 1;
 	@%p19 bra 	$L__BB0_207;
 
