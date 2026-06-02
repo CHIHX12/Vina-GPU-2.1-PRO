@@ -1,4 +1,4 @@
-void get_heavy_atom_movable_coords(output_type_cl* tmp, const m_cl* m, ligand_atom_coords_cl* coords) {
+void get_heavy_atom_movable_coords(output_type_cl* tmp, const m_cl_private* m, ligand_atom_coords_cl* coords) {
 	int counter = 0;
 	for (int i = 0; i < m->m_num_movable_atoms; i++) {
 		if (m->atoms[i].types[0] != EL_TYPE_H) {
@@ -65,7 +65,19 @@ void kernel2(
 		// Base offsets for this ligand's data
 		int base = lig_id * mis->thread;
 
-		m_cl m = mg[lig_id];
+		// Build a pairs-free private copy of m — keeps GPU private memory ~33 KB
+		// instead of ~224 KB (with MAX_NUM_OF_LIG_PAIRS=16384 full copy would OOM).
+		// Pairs stay in global memory and are accessed via pairs_g.
+		m_cl_private m;
+		m.m_num_movable_atoms = mg[lig_id].m_num_movable_atoms;
+		for (int _i = 0; _i < m.m_num_movable_atoms; _i++)
+			m.atoms[_i] = mg[lig_id].atoms[_i];
+		m.m_coords    = mg[lig_id].m_coords;
+		m.minus_forces = mg[lig_id].minus_forces;
+		m.ligand.begin = mg[lig_id].ligand.begin;
+		m.ligand.end   = mg[lig_id].ligand.end;
+		m.ligand.rigid = mg[lig_id].ligand.rigid;
+		__global const lig_pairs_cl* pairs_g = &mg[lig_id].ligand.pairs;
 
 		float best_e = INFINITY;
 		output_type_cl best_out;
@@ -98,6 +110,7 @@ void kernel2(
 				rilc_bfgs(	&candidate,
 						&g,
 						&m,
+						pairs_g,
 						pre,
 						grids,
 						mis,
@@ -108,6 +121,7 @@ void kernel2(
 				bfgs(	&candidate,
 						&g,
 						&m,
+						pairs_g,
 						pre,
 						grids,
 						mis,
@@ -130,6 +144,7 @@ void kernel2(
 						rilc_bfgs(	&tmp,
 								&g,
 								&m,
+								pairs_g,
 								pre,
 								grids,
 								mis,
@@ -140,6 +155,7 @@ void kernel2(
 						bfgs(	&tmp,
 								&g,
 								&m,
+								pairs_g,
 								pre,
 								grids,
 								mis,
@@ -185,8 +201,8 @@ static int k2_nat(int atu) {
 // Pairwise lig-lig Vina energy — uses the same precomputed fast[] table
 // as intra-ligand scoring. No gradients needed for Metropolis accept/reject.
 float eval_lig_lig_cl(
-	const m_cl* ma,
-	const m_cl* mb,
+	const m_cl_private* ma,
+	const m_cl_private* mb,
 	const __global pre_cl* pre,
 	int atu
 ) {
@@ -215,12 +231,12 @@ float eval_lig_lig_cl(
 }
 
 // Macro: run bfgs or rilc_bfgs depending on rilc flag
-#define DUAL_BFGS(x, g, m, torsion) \
+#define DUAL_BFGS(x, g, m, pg, torsion) \
 	do { \
 		if (rilc_bfgs_enable == 1) \
-			rilc_bfgs((x), (g), (m), pre, grids, mis, (torsion), max_bfgs_steps); \
+			rilc_bfgs((x), (g), (m), (pg), pre, grids, mis, (torsion), max_bfgs_steps); \
 		else \
-			bfgs((x), (g), (m), pre, grids, mis, (torsion), max_bfgs_steps); \
+			bfgs((x), (g), (m), (pg), pre, grids, mis, (torsion), max_bfgs_steps); \
 	} while(0)
 
 __kernel
@@ -267,9 +283,28 @@ void kernel2_dual(
 		int search_depth   = search_depths_arr[lig_id];
 		int max_bfgs_steps = bfgs_steps_arr[lig_id];
 
-		// Private copies of both models
-		m_cl ma = mg_a[lig_id];
-		m_cl mb = mg_b[lig_id];
+		// Pairs-free private copies — same memory optimisation as kernel2.
+		m_cl_private ma;
+		ma.m_num_movable_atoms = mg_a[lig_id].m_num_movable_atoms;
+		for (int _i = 0; _i < ma.m_num_movable_atoms; _i++)
+			ma.atoms[_i] = mg_a[lig_id].atoms[_i];
+		ma.m_coords    = mg_a[lig_id].m_coords;
+		ma.minus_forces = mg_a[lig_id].minus_forces;
+		ma.ligand.begin = mg_a[lig_id].ligand.begin;
+		ma.ligand.end   = mg_a[lig_id].ligand.end;
+		ma.ligand.rigid = mg_a[lig_id].ligand.rigid;
+		__global const lig_pairs_cl* pairs_ga = &mg_a[lig_id].ligand.pairs;
+
+		m_cl_private mb;
+		mb.m_num_movable_atoms = mg_b[lig_id].m_num_movable_atoms;
+		for (int _i = 0; _i < mb.m_num_movable_atoms; _i++)
+			mb.atoms[_i] = mg_b[lig_id].atoms[_i];
+		mb.m_coords    = mg_b[lig_id].m_coords;
+		mb.minus_forces = mg_b[lig_id].minus_forces;
+		mb.ligand.begin = mg_b[lig_id].ligand.begin;
+		mb.ligand.end   = mg_b[lig_id].ligand.end;
+		mb.ligand.rigid = mg_b[lig_id].ligand.rigid;
+		__global const lig_pairs_cl* pairs_gb = &mg_b[lig_id].ligand.pairs;
 
 		// Initial conformations for this trajectory
 		output_type_cl tmp_a = ric_a[base + traj_id];
@@ -282,9 +317,9 @@ void kernel2_dual(
 		set(&tmp_b, &mb.ligand.rigid, &mb.m_coords, mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 
 		// Quick initial minimization for both
-		DUAL_BFGS(&tmp_a, &ga, &ma, torsion_a);
+		DUAL_BFGS(&tmp_a, &ga, &ma, pairs_ga, torsion_a);
 		set(&tmp_a, &ma.ligand.rigid, &ma.m_coords, ma.atoms, ma.m_num_movable_atoms, mis->epsilon_fl);
-		DUAL_BFGS(&tmp_b, &gb, &mb, torsion_b);
+		DUAL_BFGS(&tmp_b, &gb, &mb, pairs_gb, torsion_b);
 		set(&tmp_b, &mb.ligand.rigid, &mb.m_coords, mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 
 		float e_ll   = eval_lig_lig_cl(&ma, &mb, pre, atu);
@@ -311,7 +346,7 @@ void kernel2_dual(
 					ma.ligand.begin, ma.ligand.end, ma.atoms, &ma.m_coords,
 					ma.ligand.rigid.origin[0], mis->epsilon_fl,
 					mis->mutation_amplitude, torsion_a);
-				DUAL_BFGS(&cand_a, &ga, &ma, torsion_a);
+				DUAL_BFGS(&cand_a, &ga, &ma, pairs_ga, torsion_a);
 				set(&cand_a, &ma.ligand.rigid, &ma.m_coords,
 					ma.atoms, ma.m_num_movable_atoms, mis->epsilon_fl);
 
@@ -323,7 +358,7 @@ void kernel2_dual(
 					cur_combined = new_combined;
 					if (new_combined < best_combined) {
 						// Extra refinement on the new best
-						DUAL_BFGS(&tmp_a, &ga, &ma, torsion_a);
+						DUAL_BFGS(&tmp_a, &ga, &ma, pairs_ga, torsion_a);
 						set(&tmp_a, &ma.ligand.rigid, &ma.m_coords,
 							ma.atoms, ma.m_num_movable_atoms, mis->epsilon_fl);
 						float e_ll2 = eval_lig_lig_cl(&ma, &mb, pre, atu);
@@ -350,7 +385,7 @@ void kernel2_dual(
 					mb.ligand.begin, mb.ligand.end, mb.atoms, &mb.m_coords,
 					mb.ligand.rigid.origin[0], mis->epsilon_fl,
 					mis->mutation_amplitude, torsion_b);
-				DUAL_BFGS(&cand_b, &gb, &mb, torsion_b);
+				DUAL_BFGS(&cand_b, &gb, &mb, pairs_gb, torsion_b);
 				set(&cand_b, &mb.ligand.rigid, &mb.m_coords,
 					mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 
@@ -361,7 +396,7 @@ void kernel2_dual(
 					tmp_b = cand_b;
 					cur_combined = new_combined;
 					if (new_combined < best_combined) {
-						DUAL_BFGS(&tmp_b, &gb, &mb, torsion_b);
+						DUAL_BFGS(&tmp_b, &gb, &mb, pairs_gb, torsion_b);
 						set(&tmp_b, &mb.ligand.rigid, &mb.m_coords,
 							mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 						float e_ll2 = eval_lig_lig_cl(&ma, &mb, pre, atu);

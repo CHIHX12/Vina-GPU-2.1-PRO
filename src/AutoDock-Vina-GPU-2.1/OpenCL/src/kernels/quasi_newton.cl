@@ -192,10 +192,10 @@ float g_evaluate(			const __global	grid_cl*	g,
 
 
 float ig_eval_deriv(						output_type_cl*		x,
-											change_cl*			g, 
+											change_cl*			g,
 						const				float				v,
 								const __global	grids_cl*			grids,
-											m_cl*				m,
+											m_cl_private*		m,
 						const				float				epsilon_fl
 ) {
 	float e = 0;
@@ -395,7 +395,7 @@ inline void curl(float* e, float* deriv, float v, const float epsilon_fl) {
 
 float eval_interacting_pairs_deriv(			const __global	pre_cl*			pre,
 									const				float			v,
-									const				lig_pairs_cl*   pairs,
+									const __global		lig_pairs_cl*   pairs,
 									const			 	m_coords_cl*	m_coords,
 														m_minus_forces* minus_forces,
 									const				float			epsilon_fl
@@ -502,27 +502,28 @@ void POT_deriv(	const					m_minus_forces* minus_forces,
 }
 
 
-float m_eval_deriv(						output_type_cl*		c,
-										change_cl*			g,
-										m_cl*				m,
+float m_eval_deriv(						output_type_cl*			c,
+										change_cl*				g,
+										m_cl_private*			m,
+						const __global	lig_pairs_cl*			pairs_g,
 							const __global	pre_cl*				pre,
 							const __global	grids_cl*			grids,
-					const	__global	float*				v,
-					const				float				epsilon_fl
+					const	__global	float*					v,
+					const				float					epsilon_fl
 ) {
 	set(c, &m->ligand.rigid, &m->m_coords, m->atoms, m->m_num_movable_atoms, epsilon_fl);
 
 	float e = ig_eval_deriv(	c,
-								g, 
-								v[1],				
+								g,
+								v[1],
 								grids,
 								m,
-								epsilon_fl							
+								epsilon_fl
 							);
-	
+
 	e += eval_interacting_pairs_deriv(	pre,
 										v[0],
-										&m->ligand.pairs,
+										pairs_g,
 										&m->m_coords,
 										&m->minus_forces,
 										epsilon_fl
@@ -607,7 +608,8 @@ inline float to_norm(const change_cl* in, const int n, const int torsion_size)
 }
 
 
-inline int line_search_lewisoverton(					m_cl* 			m_cl_gpu,
+inline int line_search_lewisoverton(				m_cl_private*	m_cl_gpu,
+							const __global	lig_pairs_cl*	pairs_g,
 											const __global 	pre_cl* 		p_cl_gpu,
 											const __global 	grids_cl* 		ig_cl_gpu,
 														int 			n,
@@ -651,6 +653,7 @@ inline int line_search_lewisoverton(					m_cl* 			m_cl_gpu,
 		*f = m_eval_deriv(x,
 			g,
 			m_cl_gpu,
+			pairs_g,
 			p_cl_gpu,
 			ig_cl_gpu,
 			hunt_cap,
@@ -693,7 +696,8 @@ inline int line_search_lewisoverton(					m_cl* 			m_cl_gpu,
 	}
 }
 
-float line_search(					 	m_cl*				m,
+float line_search(					 	m_cl_private*		m,
+						const __global	lig_pairs_cl*		pairs_g,
 							const __global	pre_cl*				pre,
 							const __global	grids_cl*			grids,
 										int					n,
@@ -724,6 +728,7 @@ float line_search(					 	m_cl*				m,
 		*f1 =  m_eval_deriv(x_new,
 							g_new,
 							m,
+							pairs_g,
 							pre,
 							grids,
 							hunt_cap,
@@ -776,7 +781,8 @@ bool bfgs_update(			matrix*			h,
 
 void rilc_bfgs(				output_type_cl* 	x,
 						change_cl* 			g,
-						m_cl* 				m_cl_gpu,
+						m_cl_private*		m_cl_gpu,
+			const __global	lig_pairs_cl*		pairs_g,
 			const __global	pre_cl* 			p_cl_gpu,
 			const __global	grids_cl* 			ig_cl_gpu,
 	const	__global	mis_cl*				mis,
@@ -805,6 +811,7 @@ void rilc_bfgs(				output_type_cl* 	x,
 	fx = m_eval_deriv(	x,
 						g,
 						m_cl_gpu,
+						pairs_g,
 						p_cl_gpu,
 						ig_cl_gpu,
 						mis->hunt_cap,
@@ -839,6 +846,7 @@ void rilc_bfgs(				output_type_cl* 	x,
 
 
 			ls = line_search_lewisoverton(m_cl_gpu,
+				pairs_g,
 				p_cl_gpu,
 				ig_cl_gpu,
 				n,
@@ -963,13 +971,14 @@ void rilc_bfgs(				output_type_cl* 	x,
 
 void bfgs(					output_type_cl*			x,
 								change_cl*			g,
-								m_cl*				m,
+								m_cl_private*		m,
+					const __global	lig_pairs_cl*	pairs_g,
 					const __global	pre_cl*				pre,
 					const __global	grids_cl*			grids,
 			const	__global	mis_cl*				mis,
 			const				int					torsion_size,
 			const				int					max_bfgs_steps
-) 
+)
 {
 	int lig_torsion_size = torsion_size;
 	int n = 3 + 3 + lig_torsion_size; // the dimensions of matirx
@@ -984,6 +993,7 @@ void bfgs(					output_type_cl*			x,
 	float f0 = m_eval_deriv(	x,
 								g,
 								m,
+								pairs_g,
 								pre,
 								grids,
 								mis->hunt_cap,
@@ -1003,6 +1013,7 @@ void bfgs(					output_type_cl*			x,
 		float f1 = 0;
 
 		const float alpha = line_search(	m,
+											pairs_g,
 											pre,
 											grids,
 											n,

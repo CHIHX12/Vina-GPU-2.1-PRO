@@ -16,7 +16,7 @@
 #define SIZE_OF_MOLEC_STRUC ((3+4+MAX_NUM_OF_LIG_TORSION+MAX_NUM_OF_FLEX_TORSION+ 1)*sizeof(float) )
 #define SIZE_OF_CHANGE_STRUC ((3+3+MAX_NUM_OF_LIG_TORSION+MAX_NUM_OF_FLEX_TORSION + 1)*sizeof(float))
 #define MAX_HESSIAN_MATRIX_SIZE ((6 +  MAX_NUM_OF_LIG_TORSION + MAX_NUM_OF_FLEX_TORSION)*(6 +  MAX_NUM_OF_LIG_TORSION + MAX_NUM_OF_FLEX_TORSION + 1) / 2)
-#define MAX_NUM_OF_LIG_PAIRS 9216
+#define MAX_NUM_OF_LIG_PAIRS 16384
 #define MAX_NUM_OF_BFGS_STEPS 64
 #define MAX_NUM_OF_RANDOM_MAP 20000 // not too large (stack overflow!)
 #define GRIDS_SIZE 17
@@ -135,6 +135,14 @@ typedef struct {
 	rigid_cl rigid;
 } ligand_cl;
 
+// Pair-free ligand for the in-kernel private copy.
+// Pairs are accessed via __global lig_pairs_cl* from the mg[] global buffer.
+typedef struct {
+	int begin;
+	int end;
+	rigid_cl rigid;
+} ligand_private_cl;
+
 typedef struct {
 	int		int_map		[MAX_NUM_OF_RANDOM_MAP];
 	float	pi_map		[MAX_NUM_OF_RANDOM_MAP];
@@ -148,6 +156,17 @@ typedef struct {
 	m_minus_forces minus_forces;
 	ligand_cl ligand;
 } m_cl;
+
+// In-kernel private copy of m_cl — excludes lig_pairs_cl to fit GPU private memory.
+// With MAX_NUM_OF_LIG_PAIRS=16384 the full m_cl is ~224 KB; m_cl_private is ~33 KB.
+// Pairs are accessed directly from __global mg[lig_id].ligand.pairs.
+typedef struct {
+	int m_num_movable_atoms;
+	atom_cl atoms[MAX_NUM_OF_ATOMS];
+	m_coords_cl m_coords;
+	m_minus_forces minus_forces;
+	ligand_private_cl ligand;
+} m_cl_private;
 
 typedef struct {
 	int m_i;
