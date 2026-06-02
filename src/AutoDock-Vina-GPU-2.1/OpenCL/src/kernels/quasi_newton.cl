@@ -366,17 +366,17 @@ void p_eval_deriv(						float*		out,
 					const				float		epsilon_fl
 ) {
 	const float cutoff_sqr = pre->m_cutoff_sqr;
-	if(r2 > cutoff_sqr)
+	if(r2 > cutoff_sqr) { out[0] = 0.0f; out[1] = 0.0f; return; }
 	const __global p_m_data_cl* tmp = &pre->m_data[type_pair_index];
 	float r2_factored = tmp->factor * r2;
-	if (r2_factored + 1 >= SMOOTH_SIZE)
+	if (r2_factored + 1 >= SMOOTH_SIZE) { out[0] = 0.0f; out[1] = 0.0f; return; }
 	int i1 = (int)(r2_factored);
 	int i2 = i1 + 1;
-	if (i1 >= SMOOTH_SIZE || i1 < 0)
-	if (i2 >= SMOOTH_SIZE || i2 < 0)
+	if (i1 >= SMOOTH_SIZE || i1 < 0) { out[0] = 0.0f; out[1] = 0.0f; return; }
+	if (i2 >= SMOOTH_SIZE || i2 < 0) { out[0] = 0.0f; out[1] = 0.0f; return; }
 	float rem = r2_factored - i1;
-	if (rem < -epsilon_fl)
-	if (rem >= 1 + epsilon_fl)
+	if (rem < -epsilon_fl) { rem = 0.0f; }
+	if (rem >= 1 + epsilon_fl) { rem = 1.0f - epsilon_fl; }
 	float p1[2] = { tmp->smooth[i1][0], tmp->smooth[i1][1] };
 	float p2[2] = { tmp->smooth[i2][0], tmp->smooth[i2][1] };
 	float e = p1[0] + rem * (p2[0] - p1[0]);
