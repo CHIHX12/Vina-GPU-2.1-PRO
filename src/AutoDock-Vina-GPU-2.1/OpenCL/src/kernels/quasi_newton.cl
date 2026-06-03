@@ -200,18 +200,64 @@ float ig_eval_deriv(						output_type_cl*		x,
 ) {
 	float e = 0;
 	int nat = num_atom_types(grids->atu);
+
+	// --- Standard atom-type affinity grids (unchanged Vina scoring) ---
 	for (int i = 0; i < m->m_num_movable_atoms; i++) {
 		int t = m->atoms[i].types[grids->atu];
 		if (t >= nat) {
-			for (int j = 0; j < 3; j++)m->minus_forces.coords[i][j] = 0;
+			for (int j = 0; j < 3; j++) m->minus_forces.coords[i][j] = 0;
 			continue;
 		}
 		float deriv[3];
-
-		e = e + g_evaluate(&grids->grids[t], m->m_coords.coords[i], grids->slope, v, deriv, epsilon_fl);
-
+		e += g_evaluate(&grids->grids[t], m->m_coords.coords[i], grids->slope, v, deriv, epsilon_fl);
 		for (int j = 0; j < 3; j++) m->minus_forces.coords[i][j] = deriv[j];
 	}
+
+	// --- QFD Phase 1: field-charge electrostatics + desolvation penalty ---
+	// Only active when QFD grids were loaded (m_i > 0 for grid GRID_IDX_ESP).
+	// Uses trilinear interpolation on precomputed receptor field grids.
+	if (grids->grids[GRID_IDX_ESP].m_i > 0) {
+		for (int i = 0; i < m->m_num_movable_atoms; i++) {
+			float q = m->atoms[i].charge;
+			if (q == 0.0f) continue;
+
+			// Electrostatic coupling: E_elec = QFD_ELEC_WEIGHT * q * ESP(r)
+			float esp_deriv[3];
+			float esp_e = g_evaluate(&grids->grids[GRID_IDX_ESP],
+			                         m->m_coords.coords[i],
+			                         grids->slope, v, esp_deriv, epsilon_fl);
+			float qw_elec = QFD_ELEC_WEIGHT * q;
+			e += qw_elec * esp_e;
+			for (int j = 0; j < 3; j++)
+				m->minus_forces.coords[i][j] += qw_elec * esp_deriv[j];
+
+			// Desolvation penalty: E_desolv = QFD_DESOLV_WEIGHT * q² * DESOLV(r)
+			float desolv_deriv[3];
+			float desolv_e = g_evaluate(&grids->grids[GRID_IDX_DESOLV],
+			                             m->m_coords.coords[i],
+			                             grids->slope, v, desolv_deriv, epsilon_fl);
+			float qw_desolv = QFD_DESOLV_WEIGHT * (q * q);
+			e += qw_desolv * desolv_e;
+			for (int j = 0; j < 3; j++)
+				m->minus_forces.coords[i][j] += qw_desolv * desolv_deriv[j];
+		}
+	}
+
+	// --- QFD Phase 1 addendum: information resonance field ---
+	// Adds centre-of-charge coupling to the receptor's information field.
+	// Only active when GRID_IDX_INFOMAP was loaded.
+	if (grids->grids[GRID_IDX_INFOMAP].m_i > 0) {
+		for (int i = 0; i < m->m_num_movable_atoms; i++) {
+			float infomap_deriv[3];
+			float infomap_e = g_evaluate(&grids->grids[GRID_IDX_INFOMAP],
+			                              m->m_coords.coords[i],
+			                              grids->slope, v, infomap_deriv, epsilon_fl);
+			e += QFD_INFO_WEIGHT * infomap_e;
+			for (int j = 0; j < 3; j++)
+				m->minus_forces.coords[i][j] += QFD_INFO_WEIGHT * infomap_deriv[j];
+		}
+	}
+
 	return e;
 }
 

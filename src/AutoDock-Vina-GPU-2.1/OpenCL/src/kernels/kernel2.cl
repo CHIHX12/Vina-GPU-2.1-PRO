@@ -88,6 +88,21 @@ void kernel2(
 		change_cl g;
 		output_type_cl candidate;
 
+		// --- QFD Phase 2: Replica Exchange Temperature Annealing ---
+		// Assign a starting temperature from a geometric ladder based on traj_id mod N_REPLICAS.
+		// Each replica anneals from T_start toward QFD_T_FINAL over the full search_depth.
+		// Geometric ladder: T_start[k] = T_min * (T_max/T_min)^(k/(N-1))  for k=0..N-1
+		int   rep_id  = traj_id % QFD_N_REPLICAS;
+		float T_start = QFD_T_START_MIN
+		                * pow(QFD_T_START_MAX / QFD_T_START_MIN,
+		                      (float)rep_id / (float)(QFD_N_REPLICAS - 1));
+
+		// --- QFD Phase 3: Partition function accumulation ---
+		// Z = Σ exp(-E / T_ref) over accepted states; ΔG = -T_ref * ln(Z / n_acc)
+		// Stored in log-sum-exp form for numerical stability.
+		float log_Z     = -QFD_LOG_Z_OFFSET;  // running log(partition function)
+		int   n_acc     = 0;                   // number of accepted states
+
 		for (int step = 0; step < search_depth; step++) {
 			candidate = tmp;
 
@@ -132,12 +147,27 @@ void kernel2(
 
 			float n = generate_n(rmap->pi_map, map_index);
 
-			if (step == 0 || metropolis_accept(tmp.e, candidate.e, 1.2, n)) {
+			// QFD temperature: anneal exponentially from T_start → QFD_T_FINAL
+			float progress    = (float)step / (float)search_depth;
+			float temperature = T_start * pow(QFD_T_FINAL / T_start, progress);
+
+			if (step == 0 || metropolis_accept(tmp.e, candidate.e, temperature, n)) {
 
 				tmp = candidate;
 
 				set(&tmp, &m.ligand.rigid, &m.m_coords,
 					m.atoms, m.m_num_movable_atoms, mis->epsilon_fl);
+
+				// QFD Phase 3: accumulate partition function in log-space
+				// log_Z = log(exp(log_Z) + exp(-tmp.e / T_ref))
+				//       = log_Z + log(1 + exp(-tmp.e/T_ref - log_Z))
+				float new_term = -tmp.e / QFD_T_REF;
+				if (new_term > log_Z) {
+					log_Z = new_term + log(1.0f + exp(log_Z - new_term));
+				} else {
+					log_Z = log_Z + log(1.0f + exp(new_term - log_Z));
+				}
+				n_acc++;
 
 				if (tmp.e < best_e) {
 					if (rilc_bfgs_enable==1){
@@ -176,6 +206,16 @@ void kernel2(
 
 				}
 			}
+		}
+
+		// Store free energy ΔG in the output's 'e' field of best_out (negative is better).
+		// If no states were accepted, fall back to the Boltzmann energy of best_out.
+		// ΔG = -T_ref * log(Z / n_acc)  where Z = exp(log_Z)
+		if (n_acc > 0 && best_e < INFINITY) {
+			float log_Z_per_state = log_Z - log((float)n_acc);
+			float delta_G = -QFD_T_REF * log_Z_per_state;
+			// Blend: 80% free energy + 20% best-pose energy for ranking stability
+			best_out.e = 0.8f * delta_G + 0.2f * best_e;
 		}
 
 		// write the best conformation back to CPU

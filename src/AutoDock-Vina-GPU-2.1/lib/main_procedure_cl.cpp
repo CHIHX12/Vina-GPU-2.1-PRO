@@ -108,6 +108,37 @@ std::vector<output_type> cl_to_vina(output_type_cl result_ptr[],
 	return results_vina;
 }
 
+// QFD grid binary format (written by scripts/prep_qfd_grids.py):
+//   int[3]   : m_i, m_j, m_k
+//   float[12]: m_init[3], m_factor[3], m_dim_fl_minus_1[3], m_factor_inv[3]
+//   float[m_i*m_j*m_k*8]: trilinear interpolation coefficients
+// Returns true and fills slot if loaded; returns false and leaves slot zeroed if file absent.
+static bool load_qfd_grid_file(const std::string& path, grid_cl* slot) {
+	FILE* f = std::fopen(path.c_str(), "rb");
+	if (!f) return false;
+	int dims[3];
+	float meta[12];
+	if (std::fread(dims, sizeof(int), 3, f) != 3 || std::fread(meta, sizeof(float), 12, f) != 12) {
+		std::fclose(f); return false;
+	}
+	int mi = dims[0], mj = dims[1], mk = dims[2];
+	if (mi <= 0 || mj <= 0 || mk <= 0 || mi > MAX_NUM_OF_GRID_DIM || mj > MAX_NUM_OF_GRID_DIM || mk > MAX_NUM_OF_GRID_DIM) {
+		std::fclose(f); return false;
+	}
+	size_t ndata = (size_t)mi * mj * mk * 8;
+	if (std::fread(slot->m_data, sizeof(float), ndata, f) != ndata) {
+		std::fclose(f); return false;
+	}
+	std::fclose(f);
+	slot->m_i = mi; slot->m_j = mj; slot->m_k = mk;
+	std::memcpy(slot->m_init,            meta + 0, 3 * sizeof(float));
+	std::memcpy(slot->m_factor,          meta + 3, 3 * sizeof(float));
+	std::memcpy(slot->m_dim_fl_minus_1,  meta + 6, 3 * sizeof(float));
+	std::memcpy(slot->m_factor_inv,      meta + 9, 3 * sizeof(float));
+	printf("QFD: loaded %s  dims=%d×%d×%d\n", path.c_str(), mi, mj, mk);
+	return true;
+}
+
 void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalculate& p, const parallel_mc par,
 	const vec& corner1, const vec& corner2, const int seed, std::vector<output_container>& outs, std::string opencl_binary_path,
 	const std::vector<std::vector<std::string>> ligand_names, const int rilc_bfgs,
@@ -350,14 +381,18 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 	size_t ar_size = sizeof(ar_cl);
 
 	// Preparing grid related data
-	if(GRIDS_SIZE != c.grids.size()){throw std::runtime_error("grid_size has to be 17!");} // grid_size has to be 17
+	// QFD: c.grids holds the standard atom-type grids (typically 17); GRIDS_SIZE=21 adds 4 QFD slots.
+	// Allow c.grids.size() <= GRIDS_SIZE; extra QFD slots stay zero-filled (m_i=0 → kernel skips them).
+	int base_grids = (int)c.grids.size();
+	if (base_grids > GRIDS_SIZE) { throw std::runtime_error("grid_size exceeds GRIDS_SIZE=" + std::to_string(GRIDS_SIZE) + "!"); }
 	grids_cl* grids_ptr = (grids_cl*)malloc(sizeof(grids_cl)); if (grids_ptr == nullptr) {throw std::runtime_error("Grid too large! Define a large box (see readme) would help");}
+	memset(grids_ptr, 0, sizeof(grids_cl)); // zero-fills all slots including QFD slots 17-20
 	grid* tmp_grid_ptr = &c.grids[0];
 
 	grids_ptr->atu = c.atu; // atu
 	grids_ptr->slope = c.slope; // slope
-	int grids_front;
-	for (int i = GRIDS_SIZE - 1; i >= 0; i--) {
+	int grids_front = 0;
+	for (int i = base_grids - 1; i >= 0; i--) {
 		for (int j = 0; j < 3; j++) {
 			grids_ptr->grids[i].m_init[j] = tmp_grid_ptr[i].m_init[j];
 			grids_ptr->grids[i].m_factor[j] = tmp_grid_ptr[i].m_factor[j];
@@ -378,12 +413,12 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 			}
 			grids_front = i;
 		}
-		else {
-			grids_ptr->grids[i].m_i = 0;
-			grids_ptr->grids[i].m_j = 0;
-			grids_ptr->grids[i].m_k = 0;
-		}
+		// else: m_i/j/k already 0 from memset
 	}
+	// QFD: optionally load precomputed field grids from CWD (produced by scripts/prep_qfd_grids.py)
+	load_qfd_grid_file("qfd_esp.bin",      &grids_ptr->grids[GRID_IDX_ESP]);
+	load_qfd_grid_file("qfd_desolv.bin",   &grids_ptr->grids[GRID_IDX_DESOLV]);
+	load_qfd_grid_file("qfd_infomap.bin",  &grids_ptr->grids[GRID_IDX_INFOMAP]);
 	size_t grids_size = sizeof(grids_cl);
 
 	// miscellaneous
@@ -568,6 +603,7 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 						m_ptr->atoms[ai].types[2] = mi.atoms[ai].xs;
 						m_ptr->atoms[ai].types[3] = mi.atoms[ai].sy;
 						for (int j = 0; j < 3; j++) m_ptr->atoms[ai].coords[j] = mi.atoms[ai].coords[j];
+						m_ptr->atoms[ai].charge = (float)mi.atoms[ai].charge; // QFD: partial charge [e]
 					}
 					for (int ci = 0; ci < (int)mi.coords.size(); ci++)
 						for (int j = 0; j < 3; j++) m_ptr->m_coords.coords[ci][j] = mi.coords[ci].data[j];
@@ -1164,14 +1200,21 @@ void main_procedure_cl_dual(
 	}
 
 	// Grids
-	if (GRIDS_SIZE != c.grids.size()) throw std::runtime_error("grid_size has to be 17!");
+	// QFD: GRIDS_SIZE=21 adds slots 17-20 for QFD grids. c.grids has standard atom-type grids (≤17).
+	// Allow c.grids.size() <= GRIDS_SIZE; zero-fill extra QFD slots so kernel skips them (m_i=0).
+	{
+		int bg = (int)c.grids.size();
+		if (bg > GRIDS_SIZE) throw std::runtime_error("grid_size exceeds GRIDS_SIZE=" + std::to_string(GRIDS_SIZE) + "!");
+	}
 	grids_cl* grids_ptr = (grids_cl*)malloc(sizeof(grids_cl));
 	if (!grids_ptr) throw std::runtime_error("Grid too large!");
+	memset(grids_ptr, 0, sizeof(grids_cl)); // zero-fills QFD slots 17-20
 	grid* tmp_grid_ptr = &c.grids[0];
 	grids_ptr->atu   = c.atu;
 	grids_ptr->slope = c.slope;
 	int grids_front = 0;
-	for (int i = GRIDS_SIZE - 1; i >= 0; i--) {
+	int base_grids2 = (int)c.grids.size();
+	for (int i = base_grids2 - 1; i >= 0; i--) {
 		for (int j = 0; j < 3; j++) {
 			grids_ptr->grids[i].m_init[j]            = tmp_grid_ptr[i].m_init[j];
 			grids_ptr->grids[i].m_factor[j]          = tmp_grid_ptr[i].m_factor[j];
@@ -1183,10 +1226,13 @@ void main_procedure_cl_dual(
 			grids_ptr->grids[i].m_j = tmp_grid_ptr[i].m_data.dim1();
 			grids_ptr->grids[i].m_k = tmp_grid_ptr[i].m_data.dim2();
 			grids_front = i;
-		} else {
-			grids_ptr->grids[i].m_i = grids_ptr->grids[i].m_j = grids_ptr->grids[i].m_k = 0;
 		}
+		// else: m_i/j/k already 0 from memset
 	}
+	// QFD: optionally load precomputed field grids from CWD (produced by scripts/prep_qfd_grids.py)
+	load_qfd_grid_file("qfd_esp.bin",      &grids_ptr->grids[GRID_IDX_ESP]);
+	load_qfd_grid_file("qfd_desolv.bin",   &grids_ptr->grids[GRID_IDX_DESOLV]);
+	load_qfd_grid_file("qfd_infomap.bin",  &grids_ptr->grids[GRID_IDX_INFOMAP]);
 	mis_ptr->grids_front = grids_front;
 	size_t mis_size    = sizeof(mis_cl);
 	size_t pre_size    = sizeof(pre_cl);
@@ -1215,20 +1261,29 @@ void main_procedure_cl_dual(
 	err = clEnqueueWriteBuffer(queue, ar_gpu,     false, 0, ar_size,  ar_ptr,     0, NULL, NULL); checkErr(err);
 
 	// grids_gpu: upload ONLY the metadata fields (atu, slope, m_i/j/k, m_init, m_factor…)
-	// for each grid_cl. Skip m_data (136MB of zeros) — kernel1 writes it entirely anyway.
-	// Saves ~200ms of PCIe DMA + clFinish.
+	// for standard grids — skip m_data (kernel1 writes those entirely anyway).
+	// For QFD grids (slots 17-20), also upload m_data because kernel1 never writes those slots.
 	{
-		// Header: atu + slope (8 bytes)
-		const size_t hdr_sz    = offsetof(grids_cl, grids);     // = 8 bytes
-		// Per-grid metadata up to (but not including) m_data
-		const size_t meta_sz   = offsetof(grid_cl, m_data);     // = 60 bytes
+		const size_t hdr_sz    = offsetof(grids_cl, grids);     // atu + slope header (8 bytes)
+		const size_t meta_sz   = offsetof(grid_cl,  m_data);    // per-grid metadata (60 bytes)
 		const size_t grid_full = sizeof(grid_cl);
 		const char*  src       = reinterpret_cast<const char*>(grids_ptr);
 
 		err = clEnqueueWriteBuffer(queue, grids_gpu, false, 0, hdr_sz, src, 0, NULL, NULL); checkErr(err);
+		// Upload metadata for ALL slots (standard + QFD, all 21)
 		for (int i = 0; i < GRIDS_SIZE; i++) {
 			size_t off = hdr_sz + (size_t)i * grid_full;
 			err = clEnqueueWriteBuffer(queue, grids_gpu, false, off, meta_sz, src + off, 0, NULL, NULL); checkErr(err);
+		}
+		// Upload m_data for QFD slots that were loaded (kernel1 won't fill these)
+		for (int i = base_grids2; i < GRIDS_SIZE; i++) {
+			if (grids_ptr->grids[i].m_i > 0) {
+				size_t data_off = hdr_sz + (size_t)i * grid_full + meta_sz;
+				size_t data_sz  = (size_t)grids_ptr->grids[i].m_i
+				                * (size_t)grids_ptr->grids[i].m_j
+				                * (size_t)grids_ptr->grids[i].m_k * 8 * sizeof(float);
+				err = clEnqueueWriteBuffer(queue, grids_gpu, false, data_off, data_sz, src + data_off, 0, NULL, NULL); checkErr(err);
+			}
 		}
 	}
 
@@ -1288,6 +1343,7 @@ void main_procedure_cl_dual(
 			m_ptr->atoms[ai].types[2] = m.atoms[ai].xs;
 			m_ptr->atoms[ai].types[3] = m.atoms[ai].sy;
 			for (int j = 0; j < 3; j++) m_ptr->atoms[ai].coords[j] = m.atoms[ai].coords[j];
+			m_ptr->atoms[ai].charge = (float)m.atoms[ai].charge; // QFD: partial charge [e]
 		}
 		for (int ci = 0; ci < (int)m.coords.size(); ci++)
 			for (int j = 0; j < 3; j++) m_ptr->m_coords.coords[ci][j] = m.coords[ci].data[j];

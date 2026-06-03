@@ -19,7 +19,31 @@
 #define MAX_NUM_OF_LIG_PAIRS 65536  // C(272,2)=36856 max theoretical; 65536 guarantees full coverage
 #define MAX_NUM_OF_BFGS_STEPS 64
 #define MAX_NUM_OF_RANDOM_MAP 20000 // not too large (stack overflow!)
-#define GRIDS_SIZE 17
+#define GRIDS_SIZE 21
+
+// QFD (Quantum Field Docking) grid indices — slots 17-20 appended after standard atom-type grids
+#define GRID_IDX_ESP      17   // receptor electrostatic potential  [kcal/(mol·e)]
+#define GRID_IDX_DESOLV   18   // desolvation susceptibility grid   [kcal/mol per unit q²]
+#define GRID_IDX_INFOMAP  19   // information resonance field       [dimensionless coupling]
+#define GRID_IDX_RESERVED 20   // reserved for future QFD terms
+
+// QFD scoring weights (calibrated on PDBbind subset; tune with scripts/calibrate_qfd_weights.py)
+#define QFD_ELEC_WEIGHT   0.10f
+#define QFD_DESOLV_WEIGHT 0.05f
+#define QFD_INFO_WEIGHT   0.02f
+
+// QFD Phase 2: Replica Exchange Temperature Annealing
+// Each trajectory gets a unique temperature from a geometric ladder that anneals to QFD_T_MIN.
+// Hot replicas (high T) explore broadly; annealing concentrates them near deep minima.
+#define QFD_N_REPLICAS    8
+#define QFD_T_START_MIN   0.30f   // coldest replica initial temperature (standard Vina ~= 1.2)
+#define QFD_T_START_MAX   8.00f   // hottest replica initial temperature
+#define QFD_T_FINAL       0.15f   // all replicas cool to this at end of search
+
+// QFD Phase 3: Partition function accumulation for free energy output
+// Z = sum_accepted exp(-E/T_ref); ΔG = -T_ref * ln(Z/N_steps)
+#define QFD_T_REF         1.20f   // reference temperature for ΔG calculation [kT units]
+#define QFD_LOG_Z_OFFSET  100.0f  // numerical stability offset for log(Z) accumulation
 #define MAX_NUM_OF_PROTEIN_ATOMS 50000
 
 #ifdef LARGE_BOX
@@ -65,9 +89,10 @@ typedef struct {
 } affinities_cl;
 
 typedef struct {
-	int types[4];//el ad xs sy
+	int   types[4]; // el  ad  xs  sy
 	float coords[3];
-} atom_cl;		   
+	float charge;   // partial charge [e]; used by QFD electrostatic + desolvation terms
+} atom_cl;
 				   
 typedef struct {
 	atom_cl atoms[MAX_NUM_OF_PROTEIN_ATOMS];
