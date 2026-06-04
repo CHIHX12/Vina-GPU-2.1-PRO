@@ -134,12 +134,12 @@ void mutate_conf_cl(const					int				step,
 					const					float*			m_lig_node_origin_gpu,
 					const					float			epsilon_fl,
 					const					float			amplitude,
-					const					int				lig_torsion_size
+					const					int				lig_torsion_size,
+					const					int				flex_torsion_size   // Phase 4: 0 for rigid receptor
 ) {
 
 	int index = step; // global index (among all threads)
 	int which = random_int_map[index];
-	int flex_torsion_size = 0; // FIX? 20210727
 		if (which == 0) {
 			for (int i = 0; i < 3; i++)
 				c->position[i] += amplitude * random_inside_sphere_map[index][i];

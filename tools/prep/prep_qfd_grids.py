@@ -196,6 +196,90 @@ def compute_desolv_grid(atoms, meta, burial_sigma=3.5):
 
 
 # ---------------------------------------------------------------------------
+# Water displacement penalty grid — Phase 3 of QFD
+# ---------------------------------------------------------------------------
+
+def parse_water_positions(path: str) -> list:
+    """
+    Extract crystallographic water oxygen positions from a PDB or PDBQT file.
+
+    Matches:
+      - HETATM lines with residue name HOH, WAT, or H2O
+      - ATOM lines with atom name O in a water residue
+    Returns list of (x, y, z) tuples.
+    """
+    waters = []
+    with open(path) as f:
+        for line in f:
+            rec = line[:6].strip()
+            if rec not in ('ATOM', 'HETATM'):
+                continue
+            resname = line[17:20].strip()
+            if resname not in ('HOH', 'WAT', 'H2O', 'DOD'):
+                continue
+            atom_name = line[12:16].strip()
+            if not atom_name.startswith('O'):
+                continue
+            try:
+                x = float(line[30:38])
+                y = float(line[38:46])
+                z = float(line[46:54])
+            except ValueError:
+                continue
+            waters.append((x, y, z))
+    return waters
+
+
+def compute_water_grid(water_positions: list, meta: dict,
+                       sigma: float = 1.5) -> np.ndarray:
+    """
+    Water displacement penalty grid (QFD Phase 3).
+
+    Places a Gaussian bump at each crystallographic water oxygen:
+      W(r) = exp(-r² / (2σ²))
+    with σ = 1.5 Å (the radius at which the penalty falls to 1/e).
+
+    Interpretation: a ligand heavy atom sitting atop a crystallographic
+    water pays a penalty proportional to W — unless it makes a compensating
+    H-bond (not modelled here; the weight QFD_WATER_WEIGHT=0.03 is light
+    enough that a genuine H-bond displaces the water beneficially).
+
+    Args:
+        water_positions : list of (x, y, z) for crystallographic water oxygens
+        meta            : grid metadata from _make_grid_metadata()
+        sigma           : Gaussian width in Å [default: 1.5]
+
+    Returns:
+        ndarray of shape (mi, mj, mk) in [0, 1]  (normalised so peak = 1)
+    """
+    mi, mj, mk = meta['m_i'], meta['m_j'], meta['m_k']
+    ox, oy, oz = meta['m_init']
+    spacing    = meta['m_factor_inv'][0]
+
+    xs = ox + np.arange(mi) * spacing
+    ys = oy + np.arange(mj) * spacing
+    zs = oz + np.arange(mk) * spacing
+    gx, gy, gz = np.meshgrid(xs, ys, zs, indexing='ij')
+
+    water = np.zeros((mi, mj, mk), dtype=np.float32)
+    inv_2sig2 = 1.0 / (2.0 * sigma ** 2)
+
+    for wx, wy, wz in water_positions:
+        dx = gx - wx
+        dy = gy - wy
+        dz = gz - wz
+        r2 = dx*dx + dy*dy + dz*dz
+        water += np.exp(-r2 * inv_2sig2).astype(np.float32)
+
+    # Normalise to [0, 1] so QFD_WATER_WEIGHT controls absolute scale
+    vmax = water.max()
+    if vmax > 0:
+        water /= vmax
+
+    return water
+
+
+# ---------------------------------------------------------------------------
 # Information resonance (infomap) grid — Phase 4 of QFD
 # ---------------------------------------------------------------------------
 
@@ -358,6 +442,13 @@ def main():
     ap.add_argument('--no_esp',      action='store_true', help='Skip ESP grid')
     ap.add_argument('--no_desolv',   action='store_true', help='Skip desolvation grid')
     ap.add_argument('--no_infomap',  action='store_true', help='Skip infomap grid')
+    ap.add_argument('--no_water',    action='store_true', help='Skip water displacement grid')
+    ap.add_argument('--water_pdb',   default=None,
+                    help='PDB/PDBQT file with crystallographic water positions '
+                         '(HOH/WAT residues). If omitted, waters are extracted '
+                         'from the receptor file itself.')
+    ap.add_argument('--water_sigma', type=float, default=1.5,
+                    help='Gaussian σ for water penalty bump (Å) [default: 1.5]')
     args = ap.parse_args()
 
     print(f"[prep_qfd_grids] Loading receptor: {args.receptor}")
@@ -397,11 +488,23 @@ def main():
         infomap = compute_infomap_grid(atoms, meta, esp=esp)
         _write_qfd_bin(os.path.join(args.output_dir, 'qfd_infomap.bin'), meta, infomap)
 
+    if not args.no_water:
+        water_src = args.water_pdb if args.water_pdb else args.receptor
+        print(f"[prep_qfd_grids] Reading water positions from: {water_src}")
+        water_pos = parse_water_positions(water_src)
+        if not water_pos:
+            print("  No HOH/WAT residues found — skipping water grid.")
+        else:
+            print(f"  {len(water_pos)} crystallographic water(s) found.")
+            water_grid = compute_water_grid(water_pos, meta, sigma=args.water_sigma)
+            _write_qfd_bin(os.path.join(args.output_dir, 'qfd_water.bin'), meta, water_grid)
+
     print("[prep_qfd_grids] Done. Run Vina from the same directory to use QFD grids.")
-    print("  QFD grids active: ESP=%s  DESOLV=%s  INFOMAP=%s" % (
+    print("  QFD grids active: ESP=%s  DESOLV=%s  INFOMAP=%s  WATER=%s" % (
         'yes' if not args.no_esp else 'no',
         'yes' if not args.no_desolv else 'no',
         'yes' if not args.no_infomap else 'no',
+        'yes' if (not args.no_water and (args.water_pdb or True)) else 'no',
     ))
 
 

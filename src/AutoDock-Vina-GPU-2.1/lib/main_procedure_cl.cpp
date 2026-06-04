@@ -463,10 +463,11 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 		}
 		// else: m_i/j/k already 0 from memset
 	}
-	// QFD: optionally load precomputed field grids from CWD (produced by scripts/prep_qfd_grids.py)
+	// QFD: optionally load precomputed field grids from CWD (produced by prep_qfd_grids.py)
 	load_qfd_grid_file("qfd_esp.bin",      &grids_ptr->grids[GRID_IDX_ESP]);
 	load_qfd_grid_file("qfd_desolv.bin",   &grids_ptr->grids[GRID_IDX_DESOLV]);
 	load_qfd_grid_file("qfd_infomap.bin",  &grids_ptr->grids[GRID_IDX_INFOMAP]);
+	load_qfd_grid_file("qfd_water.bin",    &grids_ptr->grids[GRID_IDX_WATER]);    // Phase 3: xtal water penalty
 	size_t grids_size = sizeof(grids_cl);
 
 	// miscellaneous
@@ -1347,10 +1348,11 @@ void main_procedure_cl_dual(
 		}
 		// else: m_i/j/k already 0 from memset
 	}
-	// QFD: optionally load precomputed field grids from CWD (produced by scripts/prep_qfd_grids.py)
+	// QFD: optionally load precomputed field grids from CWD (produced by prep_qfd_grids.py)
 	load_qfd_grid_file("qfd_esp.bin",      &grids_ptr->grids[GRID_IDX_ESP]);
 	load_qfd_grid_file("qfd_desolv.bin",   &grids_ptr->grids[GRID_IDX_DESOLV]);
 	load_qfd_grid_file("qfd_infomap.bin",  &grids_ptr->grids[GRID_IDX_INFOMAP]);
+	load_qfd_grid_file("qfd_water.bin",    &grids_ptr->grids[GRID_IDX_WATER]);    // Phase 3: xtal water penalty
 	mis_ptr->grids_front = grids_front;
 	size_t mis_size    = sizeof(mis_cl);
 	size_t pre_size    = sizeof(pre_cl);

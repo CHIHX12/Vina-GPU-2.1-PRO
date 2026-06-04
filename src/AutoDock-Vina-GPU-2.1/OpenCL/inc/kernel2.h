@@ -10,7 +10,7 @@
 
 //kernel2 macros
 #define MAX_NUM_OF_LIG_TORSION 100
-#define MAX_NUM_OF_FLEX_TORSION 1
+#define MAX_NUM_OF_FLEX_TORSION 12   // Phase 4: up to 12 flexible receptor side-chain torsions
 #define MAX_NUM_OF_RIGID 104  // must be >= MAX_NUM_OF_LIG_TORSION + 1 (torsions + root)
 #define MAX_NUM_OF_ATOMS 272
 #define SIZE_OF_MOLEC_STRUC ((3+4+MAX_NUM_OF_LIG_TORSION+MAX_NUM_OF_FLEX_TORSION+ 1)*sizeof(float) )
@@ -25,7 +25,7 @@
 #define GRID_IDX_ESP      17   // receptor electrostatic potential  [kcal/(mol·e)]
 #define GRID_IDX_DESOLV   18   // desolvation susceptibility grid   [kcal/mol per unit q²]
 #define GRID_IDX_INFOMAP  19   // information resonance field       [dimensionless coupling]
-#define GRID_IDX_RESERVED 20   // reserved for future QFD terms
+#define GRID_IDX_WATER    20   // explicit water displacement grid [kcal/mol]
 
 // QFD scoring weights — calibrated for real Gasteiger charges on ligands
 // w_elec=0.05: at 2Å from Zn with q=-0.19 → -0.95 kcal/mol (gentle guidance)
@@ -39,6 +39,10 @@
 // Per-atom ESP energy soft cap [kcal/mol]: E_out = E_raw/(1+|E_raw|/cap)
 // Smoothly prevents any single atom from dominating ranking; gradient-consistent.
 #define QFD_ATOM_E_CAP    1.5f
+// Phase 3: water displacement penalty weight.
+// E_water = QFD_WATER_WEIGHT * WATER(r): penalises poses that displace
+// crystallographic water molecules without making compensating H-bonds.
+#define QFD_WATER_WEIGHT  0.03f
 
 // QFD Phase 2: Temperature Annealing ladder
 // Each trajectory anneals from T_start → QFD_T_FINAL over search_depth steps.
@@ -259,7 +263,8 @@ typedef struct {
 	int ar_mj;
 	int ar_mk;
 	int grids_front;
-	int use_ad4zn;   // 1 = use AutoDock4Zn Zn coordination parameters; 0 = default
+	int use_ad4zn;          // 1 = use AutoDock4Zn Zn coordination parameters; 0 = default
+	int flex_torsion_size;  // Phase 4: number of flexible receptor torsions (0 = rigid receptor)
 
 
 

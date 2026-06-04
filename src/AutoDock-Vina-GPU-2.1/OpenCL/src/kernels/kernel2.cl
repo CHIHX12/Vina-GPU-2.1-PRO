@@ -112,7 +112,8 @@ void kernel2(
 							m.ligand.rigid.origin[0],
 							mis->epsilon_fl,
 							mis->mutation_amplitude,
-							torsion_size
+							torsion_size,
+							mis->flex_torsion_size   // Phase 4: 0 for rigid receptor
 			);
 			if (rilc_bfgs_enable==1){
 				rilc_bfgs(	&candidate,
@@ -422,7 +423,7 @@ void kernel2_dual(
 					rmaps_a->int_map, rmaps_a->sphere_map, rmaps_a->pi_map,
 					ma.ligand.begin, ma.ligand.end, ma.atoms, &ma.m_coords,
 					ma.ligand.rigid.origin[0], mis->epsilon_fl,
-					mis->mutation_amplitude, torsion_a);
+					mis->mutation_amplitude, torsion_a, mis->flex_torsion_size);
 				DUAL_BFGS(&cand_a, &ga, &ma, pairs_ga, torsion_a);
 				set(&cand_a, &ma.ligand.rigid, &ma.m_coords,
 					ma.atoms, ma.m_num_movable_atoms, mis->epsilon_fl);
@@ -461,7 +462,7 @@ void kernel2_dual(
 					rmaps_b->int_map, rmaps_b->sphere_map, rmaps_b->pi_map,
 					mb.ligand.begin, mb.ligand.end, mb.atoms, &mb.m_coords,
 					mb.ligand.rigid.origin[0], mis->epsilon_fl,
-					mis->mutation_amplitude, torsion_b);
+					mis->mutation_amplitude, torsion_b, mis->flex_torsion_size);
 				DUAL_BFGS(&cand_b, &gb, &mb, pairs_gb, torsion_b);
 				set(&cand_b, &mb.ligand.rigid, &mb.m_coords,
 					mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);

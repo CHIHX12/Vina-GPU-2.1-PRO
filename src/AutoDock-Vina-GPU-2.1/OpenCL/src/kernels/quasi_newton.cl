@@ -266,6 +266,24 @@ float ig_eval_deriv(						output_type_cl*		x,
 		}
 	}
 
+	// --- QFD Phase 3: explicit water displacement penalty ---
+	// Penalises ligand atoms that occupy known crystallographic water positions
+	// without forming compensating H-bonds.  Active when GRID_IDX_WATER loaded.
+	// The water grid value at each point = burial depth of the nearest xtal water.
+	// Coupling is atom-universal (not charge-gated): all heavy atoms pay the penalty.
+	if (grids->grids[GRID_IDX_WATER].m_i > 0) {
+		for (int i = m->ligand.begin; i < m->m_num_movable_atoms; i++) {
+			if (m->atoms[i].types[0] == EL_TYPE_H) continue;  // skip hydrogens
+			float water_deriv[3];
+			float water_e = g_evaluate(&grids->grids[GRID_IDX_WATER],
+			                            m->m_coords.coords[i],
+			                            grids->slope, v, water_deriv, epsilon_fl);
+			e += QFD_WATER_WEIGHT * water_e;
+			for (int j = 0; j < 3; j++)
+				m->minus_forces.coords[i][j] += QFD_WATER_WEIGHT * water_deriv[j];
+		}
+	}
+
 	return e;
 }
 
