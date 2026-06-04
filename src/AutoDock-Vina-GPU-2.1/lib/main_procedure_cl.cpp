@@ -94,6 +94,7 @@ std::vector<output_type> cl_to_vina(output_type_cl result_ptr[],
 		qt q(tmp.orientation[0], tmp.orientation[1], tmp.orientation[2], tmp.orientation[3]);
 		tmp_c.ligands[0].rigid.orientation = q;
 		output_type tmp_vina(tmp_c, tmp.e);
+		tmp_vina.e_gpu = tmp.e;  // save GPU total (Vina+QFD) before CPU re-scoring overwrites .e
 		// torsion
 		for (int j = 0; j < lig_torsion_size; j++)tmp_vina.c.ligands[0].torsions.push_back(tmp.lig_torsion[j]);
 		// coords

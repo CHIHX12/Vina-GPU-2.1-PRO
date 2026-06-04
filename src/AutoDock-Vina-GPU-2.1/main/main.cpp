@@ -21,6 +21,7 @@
 */
 
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <exception>
 #include <vector> // ligand paths
@@ -672,9 +673,36 @@ void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, /
 		log.setf(std::ios::fixed, std::ios::floatfield);
 		log.setf(std::ios::showpoint);
 		/*log << '\n';*/
-		log << "mode |   affinity | dist from best mode\n";
-		log << "     | (kcal/mol) | rmsd l.b.| rmsd u.b.\n";
-		log << "-----+------------+----------+----------\n";
+
+		// --- Consensus ranking: QFD is active only when qfd_esp.bin is present in CWD ---
+		// The GPU ranks poses by (Vina + QFD) total; CPU eval_adjusted gives pure Vina score.
+		// When QFD is active, rQ = GPU rank shows how QFD shifted pose preference vs Vina.
+		// cns = (rank_vina + rQ) / 2 highlights poses that BOTH methods rank highly.
+		bool qfd_active = false;
+		{
+			std::ifstream qfd_check("qfd_esp.bin");
+			qfd_active = qfd_check.good();
+		}
+
+		// Build GPU rank for each final pose (rank by e_gpu ascending = best GPU score = rank 1)
+		std::vector<int> gpu_rank(out_cont.size(), 1);
+		if (qfd_active) {
+			std::vector<std::pair<fl, int>> gpu_sort;
+			VINA_FOR_IN(i, out_cont) gpu_sort.push_back({out_cont[i].e_gpu, (int)i});
+			std::sort(gpu_sort.begin(), gpu_sort.end());
+			for (int r = 0; r < (int)gpu_sort.size(); r++)
+				gpu_rank[gpu_sort[r].second] = r + 1;
+		}
+
+		if (qfd_active) {
+			log << "mode |  affinity | rQ | cns | dist from best mode\n";
+			log << "     | (kcal/mol)|    |     | rmsd l.b.| rmsd u.b.\n";
+			log << "-----+-----------+----+-----+----------+----------\n";
+		} else {
+			log << "mode |   affinity | dist from best mode\n";
+			log << "     | (kcal/mol) | rmsd l.b.| rmsd u.b.\n";
+			log << "-----+------------+----------+----------\n";
+		}
 
 		model best_mode_model = m;
 		if (!out_cont.empty())
@@ -686,13 +714,20 @@ void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, /
 			if (how_many >= num_modes || !not_max(out_cont[i].e) || out_cont[i].e > out_cont[0].e + energy_range) break; // check energy_range sanity FIXME
 			++how_many;
 			log << std::setw(4) << i + 1
-				<< "    " << std::setw(9) << std::setprecision(1) << out_cont[i].e; // intermolecular_energies[i];
+				<< "    " << std::setw(9) << std::setprecision(1) << out_cont[i].e;
+			if (qfd_active) {
+				int rv = (int)i + 1;
+				int rq = gpu_rank[i];
+				fl cns = 0.5f * (rv + rq);
+				log << "  " << std::setw(2) << rq
+				    << "  " << std::setw(4) << std::setprecision(1) << cns;
+			}
 			m.set(out_cont[i].c);
 			const model& r = ref ? ref.get() : best_mode_model;
 			const fl lb = m.rmsd_lower_bound(r);
 			const fl ub = m.rmsd_upper_bound(r);
 			log << "  " << std::setw(9) << std::setprecision(3) << lb
-				<< "  " << std::setw(9) << std::setprecision(3) << ub; // FIXME need user-readable error messages in case of failures
+				<< "  " << std::setw(9) << std::setprecision(3) << ub;
 
 			remarks.push_back(vina_remark(out_cont[i].e, lb, ub));
 			log.endl();
