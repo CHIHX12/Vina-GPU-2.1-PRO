@@ -188,6 +188,61 @@ void kernel2(
 
 				}
 			}
+
+#if BH_ENABLE
+			// --- Basin-Hopping hops ---
+			// For each hop: large random displacement from current accepted conf (tmp),
+			// re-minimise, Metropolis accept at current SA temperature.
+			// Uses map indices offset by (hop+1) from the step's map_index to avoid aliasing.
+			for (int hop = 0; hop < BH_N_HOPS; hop++) {
+				int hop_map = (map_index + hop + 1) % MAX_NUM_OF_RANDOM_MAP;
+
+				output_type_cl hopped = tmp;
+
+				// Large translation: BH_PERTURBATION_ANG * unit sphere vector
+				hopped.position[0] += BH_PERTURBATION_ANG * rmap->sphere_map[hop_map][0];
+				hopped.position[1] += BH_PERTURBATION_ANG * rmap->sphere_map[hop_map][1];
+				hopped.position[2] += BH_PERTURBATION_ANG * rmap->sphere_map[hop_map][2];
+
+				// Randomise one torsion (if any)
+				if (torsion_size > 0) {
+					int t_idx = (rmap->int_map[hop_map] % torsion_size + torsion_size) % torsion_size;
+					hopped.lig_torsion[t_idx] = rmap->pi_map[(hop_map + 1) % MAX_NUM_OF_RANDOM_MAP];
+				}
+
+				// Re-minimise to nearest local minimum
+				if (rilc_bfgs_enable == 1) {
+					rilc_bfgs(&hopped, &g, &m, pairs_g, pre, grids, mis, torsion_size, max_bfgs_steps);
+				} else {
+					bfgs(&hopped, &g, &m, pairs_g, pre, grids, mis, torsion_size, max_bfgs_steps);
+				}
+
+				float hop_n = generate_n(rmap->pi_map, (hop_map + 2) % MAX_NUM_OF_RANDOM_MAP);
+
+				// Metropolis accept at current SA temperature
+				if (metropolis_accept(tmp.e, hopped.e, temperature, hop_n)) {
+					tmp = hopped;
+					set(&tmp, &m.ligand.rigid, &m.m_coords,
+						m.atoms, m.m_num_movable_atoms, mis->epsilon_fl);
+
+					// Promote to global best if improved
+					if (tmp.e < best_e) {
+						if (rilc_bfgs_enable == 1) {
+							rilc_bfgs(&tmp, &g, &m, pairs_g, pre, grids, mis, torsion_size, max_bfgs_steps);
+						} else {
+							bfgs(&tmp, &g, &m, pairs_g, pre, grids, mis, torsion_size, max_bfgs_steps);
+						}
+						if (tmp.e < best_e) {
+							set(&tmp, &m.ligand.rigid, &m.m_coords,
+								m.atoms, m.m_num_movable_atoms, mis->epsilon_fl);
+							best_out = tmp;
+							get_heavy_atom_movable_coords(&best_out, &m, &best_coords);
+							best_e = tmp.e;
+						}
+					}
+				}
+			}
+#endif  // BH_ENABLE
 		}
 
 		// write the best conformation back to CPU
@@ -337,6 +392,12 @@ void kernel2_dual(
 		float e_ll   = eval_lig_lig_cl(&ma, &mb, pre, atu);
 		float cur_combined = tmp_a.e + tmp_b.e + e_ll;
 
+		// SA ladder — same replica assignment as kernel2
+		int   dual_rep_id  = traj_id % QFD_N_REPLICAS;
+		float dual_T_start = QFD_T_START_MIN
+		                     * pow(QFD_T_START_MAX / QFD_T_START_MIN,
+		                           (float)dual_rep_id / (float)(QFD_N_REPLICAS - 1));
+
 		// Track best trajectory
 		float best_combined = cur_combined;
 		output_type_cl      best_out_a = tmp_a,  best_out_b = tmp_b;
@@ -348,6 +409,10 @@ void kernel2_dual(
 		for (int step = 0; step < search_depth; step++) {
 			int map_index = (step + traj_id * search_depth) % MAX_NUM_OF_RANDOM_MAP;
 			float n_rand  = generate_n(rmaps_a->pi_map, map_index);
+
+			// SA temperature: same exponential ladder as kernel2
+			float dual_progress = (float)step / (float)search_depth;
+			float dual_temp     = dual_T_start * pow(QFD_T_FINAL / dual_T_start, dual_progress);
 
 			// 50/50 branch: pi_map >= 0 → mutate A, otherwise mutate B
 			if (rmaps_a->pi_map[map_index] >= 0.0f) {
@@ -365,7 +430,7 @@ void kernel2_dual(
 				float e_ll_new   = eval_lig_lig_cl(&ma, &mb, pre, atu);
 				float new_combined = cand_a.e + tmp_b.e + e_ll_new;
 
-				if (step == 0 || metropolis_accept(cur_combined, new_combined, 1.2f, n_rand)) {
+				if (step == 0 || metropolis_accept(cur_combined, new_combined, dual_temp, n_rand)) {
 					tmp_a = cand_a;
 					cur_combined = new_combined;
 					if (new_combined < best_combined) {
@@ -404,7 +469,7 @@ void kernel2_dual(
 				float e_ll_new   = eval_lig_lig_cl(&ma, &mb, pre, atu);
 				float new_combined = tmp_a.e + cand_b.e + e_ll_new;
 
-				if (step == 0 || metropolis_accept(cur_combined, new_combined, 1.2f, n_rand)) {
+				if (step == 0 || metropolis_accept(cur_combined, new_combined, dual_temp, n_rand)) {
 					tmp_b = cand_b;
 					cur_combined = new_combined;
 					if (new_combined < best_combined) {

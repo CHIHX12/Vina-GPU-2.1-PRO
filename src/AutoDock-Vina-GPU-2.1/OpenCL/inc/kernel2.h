@@ -48,6 +48,15 @@
 #define QFD_T_START_MIN   0.30f   // coldest replica initial temperature
 #define QFD_T_START_MAX   3.00f   // hottest replica (was 8; reduced to keep search directed)
 #define QFD_T_FINAL       0.15f   // all replicas cool to this at end of search
+
+// QFD Phase 2b: Basin-Hopping MC
+// After each accepted MC step, BH_N_HOPS random perturbations are applied to
+// escape local minima.  Each hop: large translation (BH_PERTURBATION_ANG Å) +
+// one random torsion flip, then re-minimise, then Metropolis accept at current
+// SA temperature.  Set BH_ENABLE 0 to compile out BH entirely.
+#define BH_ENABLE            1
+#define BH_N_HOPS            2
+#define BH_PERTURBATION_ANG  1.5f
 #define MAX_NUM_OF_PROTEIN_ATOMS 50000
 
 #ifdef LARGE_BOX
