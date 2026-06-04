@@ -27,23 +27,27 @@
 #define GRID_IDX_INFOMAP  19   // information resonance field       [dimensionless coupling]
 #define GRID_IDX_RESERVED 20   // reserved for future QFD terms
 
-// QFD scoring weights (calibrated on PDBbind subset; tune with scripts/calibrate_qfd_weights.py)
-#define QFD_ELEC_WEIGHT   0.10f
+// QFD scoring weights — calibrated for real Gasteiger charges on ligands
+// w_elec=0.05: at 2Å from Zn with q=-0.19 → -0.95 kcal/mol (gentle guidance)
+// Per-atom soft cap QFD_ATOM_E_CAP=1.5: prevents Mg/strong-field over-attraction
+//   without cap: 2 chelating O (q=-0.5) near Mg → 2×(-0.05×0.5×120) = -6 kcal/mol (too strong)
+//   with cap:    capped at 2×1.5 = -3 kcal/mol max (safer)
+// Tune further with tools/prep/calibrate_qfd_weights.py
+#define QFD_ELEC_WEIGHT   0.05f
 #define QFD_DESOLV_WEIGHT 0.05f
 #define QFD_INFO_WEIGHT   0.02f
+// Per-atom ESP energy soft cap [kcal/mol]: E_out = E_raw/(1+|E_raw|/cap)
+// Smoothly prevents any single atom from dominating ranking; gradient-consistent.
+#define QFD_ATOM_E_CAP    1.5f
 
-// QFD Phase 2: Replica Exchange Temperature Annealing
-// Each trajectory gets a unique temperature from a geometric ladder that anneals to QFD_T_MIN.
-// Hot replicas (high T) explore broadly; annealing concentrates them near deep minima.
+// QFD Phase 2: Temperature Annealing ladder
+// Each trajectory anneals from T_start → QFD_T_FINAL over search_depth steps.
+// T_start is assigned from a geometric ladder: traj_id % QFD_N_REPLICAS → index.
+// Max temp reduced 8→3 to keep search directed (not purely random at start).
 #define QFD_N_REPLICAS    8
-#define QFD_T_START_MIN   0.30f   // coldest replica initial temperature (standard Vina ~= 1.2)
-#define QFD_T_START_MAX   8.00f   // hottest replica initial temperature
+#define QFD_T_START_MIN   0.30f   // coldest replica initial temperature
+#define QFD_T_START_MAX   3.00f   // hottest replica (was 8; reduced to keep search directed)
 #define QFD_T_FINAL       0.15f   // all replicas cool to this at end of search
-
-// QFD Phase 3: Partition function accumulation for free energy output
-// Z = sum_accepted exp(-E/T_ref); ΔG = -T_ref * ln(Z/N_steps)
-#define QFD_T_REF         1.20f   // reference temperature for ΔG calculation [kT units]
-#define QFD_LOG_Z_OFFSET  100.0f  // numerical stability offset for log(Z) accumulation
 #define MAX_NUM_OF_PROTEIN_ATOMS 50000
 
 #ifdef LARGE_BOX

@@ -222,14 +222,19 @@ float ig_eval_deriv(						output_type_cl*		x,
 			if (q == 0.0f) continue;
 
 			// Electrostatic coupling: E_elec = QFD_ELEC_WEIGHT * q * ESP(r)
+			// Soft-saturation cap: E_out = raw/(1+|raw|/cap); deriv scaled by 1/(1+|raw|/cap)²
+			// Prevents Mg/strong-field over-attraction without killing gradient direction.
 			float esp_deriv[3];
 			float esp_e = g_evaluate(&grids->grids[GRID_IDX_ESP],
 			                         m->m_coords.coords[i],
 			                         grids->slope, v, esp_deriv, epsilon_fl);
 			float qw_elec = QFD_ELEC_WEIGHT * q;
-			e += qw_elec * esp_e;
+			float raw_elec = qw_elec * esp_e;
+			float cap_denom = 1.0f + fabs(raw_elec) / QFD_ATOM_E_CAP;
+			e += raw_elec / cap_denom;
+			float cap_scale = 1.0f / (cap_denom * cap_denom);
 			for (int j = 0; j < 3; j++)
-				m->minus_forces.coords[i][j] += qw_elec * esp_deriv[j];
+				m->minus_forces.coords[i][j] += qw_elec * esp_deriv[j] * cap_scale;
 
 			// Desolvation penalty: E_desolv = QFD_DESOLV_WEIGHT * q² * DESOLV(r)
 			float desolv_deriv[3];
@@ -246,8 +251,11 @@ float ig_eval_deriv(						output_type_cl*		x,
 	// --- QFD Phase 1 addendum: information resonance field ---
 	// Adds centre-of-charge coupling to the receptor's information field.
 	// Only active when GRID_IDX_INFOMAP was loaded.
+	// Phase 4 infomap: only polar atoms couple to the orientation-sensitivity field
+	// Threshold 0.12 targets true donors/acceptors (O,N,S polar atoms; skips weak C)
 	if (grids->grids[GRID_IDX_INFOMAP].m_i > 0) {
 		for (int i = 0; i < m->m_num_movable_atoms; i++) {
+			if (fabs(m->atoms[i].charge) < 0.12f) continue;
 			float infomap_deriv[3];
 			float infomap_e = g_evaluate(&grids->grids[GRID_IDX_INFOMAP],
 			                              m->m_coords.coords[i],
