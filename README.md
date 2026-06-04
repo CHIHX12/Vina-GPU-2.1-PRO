@@ -18,12 +18,15 @@ with two key additions: **metal coordination scoring** for metalloenzyme targets
 | Vinardo scoring function (`--scoring vinardo`) | ✗ | ✅ |
 | Per-residue energy decomposition (`--residue_energy_output`) | ✗ | ✅ |
 | Multi-GPU work-stealing dispatch | ✗ | ✅ |
+| **QFD** (ESP+desolv grids, 8-replica annealing, infomap — physics-driven search) | ✗ | ✅ |
+| **Consensus ranking** (`rQ` + `cns` columns in output table) | ✗ | ✅ |
 | PDBbind self-docking — Best RMSD < 2 Å (18,320 targets) | — | **67.1 % (12,291/18,320)** |
 | PDBbind self-docking — Best RMSD < 1 Å (18,320 targets) | — | **44.6 % (8,179/18,320)** |
 | PDBbind self-docking — Best RMSD < 2 Å (1,000-target GPU run) | — | **75.4 % (754/1000)** |
 | PDBbind self-docking — Best RMSD < 1 Å (1,000-target GPU run) | — | **43.6 % (436/1000)** |
 | Metalloenzyme self-docking Best RMSD < 2 Å (19 targets, Vina) | 61 % (11/18) | **95 % (18/19)** |
 | Metalloenzyme self-docking Best RMSD < 2 Å (19 targets, Vinardo) | — | **95 % (18/19)** |
+| Metalloenzyme top-1 < 2 Å (18 targets, 3×, QFD v5, sd=20) | — | **46.3 % (25/54 trials)** |
 | Throughput (1 GPU, sd=32, thread=8000) | 0.50 mol/s | **1.34 mol/s** |
 | Throughput (2 GPU, sd=32, thread=8000) | — | **2.59 mol/s** |
 | Throughput (2 GPU, sd=1,  thread=8000) | — | **27 mol/s** (with `--cpu 4`) |
@@ -396,6 +399,86 @@ Standard pose-recovery benchmark across diverse protein classes.
 †Vina rank-1 varies by run (stochastic search); canonical run (metal_results.tsv): 12/19; LigandScope pipeline run: 11/19.
 
 To reproduce: run `tools/diagnostics/dock_pipeline.sh` on each target in `LigandScope/data/Metal_enzymes/`; apply `LigandScope/scripts/core/rank_poses.py` for ETr=1 re-ranking.
+
+---
+
+## QFD — Quantum Field Docking
+
+QFD integrates physical-field terms directly into the GPU search rather than as post-processing.
+It is fully backward-compatible: when QFD grid files are absent, behaviour is identical to baseline Vina.
+
+### Four phases
+
+| Phase | What it does |
+|-------|-------------|
+| **1 — Field-charge electrostatics** | Precomputed ESP + desolvation grids; each ligand atom couples to receptor field via its partial charge. Per-atom soft cap prevents over-attraction near strong-field metals (Mg²⁺, Zn²⁺). |
+| **2 — Replica exchange annealing** | 8 temperature replicas (T = 0.30 → 3.0 kT). Hot replicas escape local minima; all replicas cool to T_final = 0.15 kT by search end. |
+| **3 — Partition function ΔG** | Accepted MC states accumulate a Boltzmann-weighted partition function; final score blends best-pose energy with ΔG for thermodynamic stability. |
+| **4 — Information resonance** | Infomap grid = α|∇ESP|² + (1−α) cooperative decay (α=0.7). High values where directional binding is critical; polar ligand atoms couple to it. |
+
+### Activating QFD
+
+```bash
+# Step 1 — compute QFD grids (run once per receptor/box)
+python3 tools/prep/prep_qfd_grids.py \
+    --receptor receptor.pdbqt \
+    --center_x X --center_y Y --center_z Z \
+    --size_x SX --size_y SY --size_z SZ \
+    --output_dir /path/to/workdir
+
+# Step 2 — dock from the same directory (grids auto-loaded from CWD)
+cd /path/to/workdir
+./AutoDock-Vina-GPU-2-1 --receptor receptor.pdbqt --ligand ligand.pdbqt \
+    --out out.pdbqt [... usual options ...]
+```
+
+When `qfd_esp.bin` is present in the working directory, the output table gains two extra columns:
+
+```
+mode |  affinity | rQ | cns | dist from best mode
+     | (kcal/mol)|    |     | rmsd l.b.| rmsd u.b.
+-----+-----------+----+-----+----------+----------
+   1         -7.2   1   1.0      0.000      0.000
+   2         -6.9   3   2.5      1.300      1.603   ← Vina #2, QFD #3
+   3         -6.8   2   2.5      1.252      1.435   ← Vina #3, QFD #2
+```
+
+- **rQ** = rank from the QFD-inclusive GPU search (1 = best by QFD)
+- **cns** = (Vina rank + rQ) / 2 — lower is better; highlights poses both methods agree on
+- High `cns` vs mode number (e.g. mode 6, cns=11.5) → Vina and QFD disagree; inspect carefully
+
+### QFD v5 — 18-target metal benchmark (sd=20, thread=8000, 3 repeats)
+
+| Metric | Baseline Vina | QFD v5 |
+|--------|--------------|--------|
+| Top-1 < 2 Å (54 trials) | 20/54 (37.0 %) | **25/54 (46.3 %)** |
+| Best < 2 Å (54 trials)  | —              | **35/54 (64.8 %)** |
+
+Per-target top-1 results (3 repeats each):
+
+| Target | Metal | ok/3 | avg top-1 (Å) | avg best (Å) |
+|--------|-------|------|--------------|-------------|
+| 1A42 | Zn | 3/3 ✅ | 1.40 | 1.05 |
+| 1MMQ | Zn | 3/3 ✅ | 1.10 | 0.88 |
+| 1O86 | Zn | 3/3 ✅ | 1.04 | 0.84 |
+| 1OQ5 | Zn | 3/3 ✅ | 1.30 | 1.12 |
+| 1UZE | Zn | 3/3 ✅ | 0.92 | 0.80 |
+| 2C6N | Zn | 3/3 ✅ | 1.38 | 1.17 |
+| 2OVX | Zn | 3/3 ✅ | 1.24 | 0.97 |
+| 1JAQ | Zn | 2/3 ⚠ | 2.02 | 1.78 |
+| 2W0D | Zn | 1/3 ⚠ | 2.06 | 1.94 |
+| 3L2U | Mg | 1/3 ⚠ | 3.59 | 1.47 |
+| 1BNN | Zn | 0/3 ❌ | 4.36 | 1.47 |
+| 1G52 | Zn | 0/3 ❌ | 5.62 | 4.45 |
+| 1GKC | Zn | 0/3 ❌ | 6.48 | 5.96 |
+| 1YDB | Zn | 0/3 ❌ | 5.05 | 4.88 |
+| 2G1M | Fe | 0/3 ❌ | 3.63 | 2.83 |
+| 3HS4 | Zn | 0/3 ❌ | 4.88 | 4.88 |
+| 3P5A | Zn | 0/3 ❌ | 3.67 | 1.19 |
+| 3S3M | Mg | 0/3 ❌ | 9.11 | 5.35 |
+
+QFD weights (v5): `w_elec=0.05`, `w_desolv=0.05`, `w_info=0.02`, soft cap = 1.5 kcal/mol per atom.
+Calibration: `tools/prep/calibrate_qfd_weights.py`.
 
 ---
 
