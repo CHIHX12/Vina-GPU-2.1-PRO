@@ -12,6 +12,8 @@
 #include <fstream>
 #include <mutex>
 #include <chrono>
+#include <random>
+#include <cmath>
 #include <boost/progress.hpp>
 
 #include "commonMacros.h"
@@ -140,6 +142,44 @@ static bool load_qfd_grid_file(const std::string& path, grid_cl* slot) {
 	return true;
 }
 
+// Replica Exchange: Metropolis swap between adjacent SA replicas.
+// Called after each kernel2 epoch. result_ptrs[li] is the result for ligand li,
+// with thread entries sorted by traj_id. rep_id = traj_id % QFD_N_REPLICAS.
+// T_r = QFD_T_START_MIN * pow(QFD_T_START_MAX/QFD_T_START_MIN, r/(QFD_N_REPLICAS-1))
+static void apply_re_swaps(
+    std::vector<output_type_cl*>& result_ptrs,
+    int num_ligands, int thread, int epoch, std::mt19937& rng_re
+) {
+    auto T_rep = [](int r) -> float {
+        return QFD_T_START_MIN * std::pow(QFD_T_START_MAX / QFD_T_START_MIN,
+                                          (float)r / (float)(QFD_N_REPLICAS - 1));
+    };
+    std::uniform_real_distribution<float> uni(0.0f, 1.0f);
+    // Alternating sweeps: even epoch → pairs (0,1),(2,3),(4,5),(6,7); odd → (1,2),(3,4),(5,6)
+    int start_r = (epoch % 2 == 0) ? 0 : 1;
+    for (int li = 0; li < num_ligands; li++) {
+        if (!result_ptrs[li]) continue;
+        output_type_cl* res = result_ptrs[li];
+        int n_super = thread / QFD_N_REPLICAS;
+        for (int s = 0; s < n_super; s++) {
+            for (int r = start_r; r < QFD_N_REPLICAS - 1; r += 2) {
+                int traj_a = s * QFD_N_REPLICAS + r;
+                int traj_b = s * QFD_N_REPLICAS + r + 1;
+                if (traj_a >= thread || traj_b >= thread) continue;
+                float E_a = res[traj_a].e;
+                float E_b = res[traj_b].e;
+                float T_a = T_rep(r);
+                float T_b = T_rep(r + 1);
+                // RE criterion: Δ = (1/T_b - 1/T_a)(E_a - E_b)
+                float delta = (1.0f / T_b - 1.0f / T_a) * (E_a - E_b);
+                if (delta >= 0.0f || uni(rng_re) < std::exp(delta)) {
+                    std::swap(res[traj_a], res[traj_b]);
+                }
+            }
+        }
+    }
+}
+
 void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalculate& p, const parallel_mc par,
 	const vec& corner1, const vec& corner2, const int seed, std::vector<output_container>& outs, std::string opencl_binary_path,
 	const std::vector<std::vector<std::string>> ligand_names, const int rilc_bfgs,
@@ -152,6 +192,13 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 
 	auto _fn_t0 = std::chrono::steady_clock::now();
 	printf("DIAG GPU%d: main_procedure_cl started  num_ligands=%d\n", gpu_id, (int)ms.size()); fflush(stdout);
+
+	// Replica Exchange rounds (VINA_RE_ROUNDS env var; default 1 = disabled)
+	int re_rounds = 1;
+	const char* re_env = std::getenv("VINA_RE_ROUNDS");
+	if (re_env) re_rounds = std::max(1, std::atoi(re_env));
+	if (re_rounds > 1) printf("DIAG GPU%d: Replica Exchange enabled — %d rounds\n", gpu_id, re_rounds);
+	std::mt19937 rng_re(static_cast<std::mt19937::result_type>(seed ^ 0xDEADBEEF));
 
 	cl_int err;
 	cl_platform_id* platforms;
@@ -431,8 +478,9 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 	//mis_ptr->torsion_size = tmp.c.ligands[0].torsions.size();
 	//mis_ptr->max_bfgs_steps = quasi_newton_par_max_steps;
 	//mis_ptr->search_depth = par.mc.search_depth;
-	mis_ptr->mutation_amplitude = par.mc.mutation_amplitude;
-	mis_ptr->use_ad4zn = use_ad4zn ? 1 : 0;
+	mis_ptr->mutation_amplitude  = par.mc.mutation_amplitude;
+	mis_ptr->use_ad4zn           = use_ad4zn ? 1 : 0;
+	mis_ptr->flex_torsion_size   = 0;  // Phase 4: 0 = rigid receptor; set non-zero when flex receptor is used
 	mis_ptr->total_wi = max_wi_size[0] * max_wi_size[1];
 	mis_ptr->thread = par.mc.thread;
 	// DIAG: print key parameters so we can verify they are correct
@@ -543,10 +591,35 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 	std::vector<ligand_atom_coords_cl*> result_coords_ptrs	(num_ligands, nullptr);
 	std::vector<output_type_cl*>		result_ptrs			(num_ligands, nullptr);
 	std::vector<int>					torsion_sizes		(num_ligands, 0);
+	std::vector<output_type_cl*>		ric_for_re			(num_ligands, nullptr);  // RE: stores result for next epoch
 
+	// Batch-dispatch state — initialized on re_epoch==0, reused across RE epochs
+	int batch_n = 0;
+	cl_kernel k2 = nullptr;
+	cl_mem ric_gpu_k2 = nullptr, m_gpu_k2 = nullptr, rand_gpu_k2 = nullptr;
+	cl_mem result_gpu_k2 = nullptr, result_coords_gpu_k2 = nullptr;
+	cl_mem torsion_gpu_k2 = nullptr, search_depth_gpu_k2 = nullptr, bfgs_steps_gpu_k2 = nullptr;
+	size_t kernel2_global_size[2] = { 512, 32 };
+	size_t kernel2_local_size[2]  = { 16, 2 };
+	double t_upload = 0, t_kernel = 0, t_download = 0, t_cl2vina = 0, t_add2out = 0;
+	int lig_count = 0;
+	std::vector<int> batch_torsion, batch_depth, batch_bfgs;
+
+	for (int re_epoch = 0; re_epoch < re_rounds; re_epoch++) {
+
+        if (re_epoch > 0) {
+            // For subsequent epochs: use RE-swapped result as new ric
+            for (int i = 0; i < num_ligands; i++) {
+                if (ric_for_re[i]) {
+                    ric_ptrs[i] = ric_for_re[i];
+                    ric_for_re[i] = nullptr;
+                }
+            }
+        }
 
 	// Multi-CPU: pre-compute random maps and initial conformations in parallel
 	// This is pure CPU work and independent per ligand — safe to parallelize
+	if (re_epoch == 0) {
 	printf("\nPre-computing ligand data using %d CPU thread(s)...\n", cpu_threads);
 	{
 		const int actual_threads = std::max(1, std::min(cpu_threads, num_ligands));
@@ -715,6 +788,7 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 	       gpu_id,
 	       (par.mc.thread * sizeof(output_type_cl) + sizeof(m_cl) + sizeof(random_maps)) / 1024.0,
 	       (par.mc.thread * (sizeof(output_type_cl) + sizeof(ligand_atom_coords_cl))) / 1024.0); fflush(stdout);
+	} // end if (re_epoch == 0) for CPU prep
 
 /**************************************************************************/
 /***************    Batched work-stealing kernel2 dispatch  ***************/
@@ -727,74 +801,75 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 	// Auto-detect batch_n: fill the GPU's work items with multiple ligands.
 	// Each ligand needs par.mc.thread work items; GPU has CU * 128 cores (NVIDIA).
 	// Clamp to num_ligands so single-ligand runs still work.
-	cl_uint compute_units = 0;
-	err = clGetDeviceInfo(devices[gpu_id], CL_DEVICE_MAX_COMPUTE_UNITS,
-	                      sizeof(cl_uint), &compute_units, NULL); checkErr(err);
-	int batch_n = std::max(1, (int)(compute_units * 128) / par.mc.thread);
-	batch_n = std::min(batch_n, num_ligands);
-	printf("DIAG GPU%d: compute_units=%u  auto batch_n=%d  (thread=%d)\n",
-	       gpu_id, compute_units, batch_n, par.mc.thread); fflush(stdout);
+	if (re_epoch == 0) {
+		cl_uint compute_units = 0;
+		err = clGetDeviceInfo(devices[gpu_id], CL_DEVICE_MAX_COMPUTE_UNITS,
+		                      sizeof(cl_uint), &compute_units, NULL); checkErr(err);
+		batch_n = std::max(1, (int)(compute_units * 128) / par.mc.thread);
+		batch_n = std::min(batch_n, num_ligands);
+		printf("DIAG GPU%d: compute_units=%u  auto batch_n=%d  (thread=%d)\n",
+		       gpu_id, compute_units, batch_n, par.mc.thread); fflush(stdout);
 
-	cl_kernel k2 = clCreateKernel(programs[1], "kernel2", &err); checkErr(err);
+		k2 = clCreateKernel(programs[1], "kernel2", &err); checkErr(err);
 
-	// DIAGNOSTIC: print the runtime kernel arg count so we can detect source/binary mismatch
-	{
-		cl_uint k2_nargs = 0;
-		clGetKernelInfo(k2, CL_KERNEL_NUM_ARGS, sizeof(cl_uint), &k2_nargs, NULL);
-		printf("DIAG GPU%d: kernel2 CL_KERNEL_NUM_ARGS=%u (expect 13)\n", gpu_id, k2_nargs); fflush(stdout);
-	}
+		// DIAGNOSTIC: print the runtime kernel arg count so we can detect source/binary mismatch
+		{
+			cl_uint k2_nargs = 0;
+			clGetKernelInfo(k2, CL_KERNEL_NUM_ARGS, sizeof(cl_uint), &k2_nargs, NULL);
+			printf("DIAG GPU%d: kernel2 CL_KERNEL_NUM_ARGS=%u (expect 13)\n", gpu_id, k2_nargs); fflush(stdout);
+		}
 
-	// GPU buffers sized for batch_n ligands
-	const size_t ric_size_           = (size_t)batch_n * par.mc.thread * sizeof(output_type_cl);
-	const size_t m_size_             = (size_t)batch_n * sizeof(m_cl);
-	const size_t rand_maps_size_     = (size_t)batch_n * sizeof(random_maps);
-	const size_t result_size_        = (size_t)batch_n * par.mc.thread * sizeof(output_type_cl);
-	const size_t result_coords_size_ = (size_t)batch_n * par.mc.thread * sizeof(ligand_atom_coords_cl);
-	const size_t int_arr_size_       = (size_t)batch_n * sizeof(int);
+		// GPU buffers sized for batch_n ligands
+		const size_t ric_size_           = (size_t)batch_n * par.mc.thread * sizeof(output_type_cl);
+		const size_t m_size_             = (size_t)batch_n * sizeof(m_cl);
+		const size_t rand_maps_size_     = (size_t)batch_n * sizeof(random_maps);
+		const size_t result_size_        = (size_t)batch_n * par.mc.thread * sizeof(output_type_cl);
+		const size_t result_coords_size_ = (size_t)batch_n * par.mc.thread * sizeof(ligand_atom_coords_cl);
+		const size_t int_arr_size_       = (size_t)batch_n * sizeof(int);
 
-	cl_mem ric_gpu_k2, m_gpu_k2, rand_gpu_k2, result_gpu_k2, result_coords_gpu_k2;
-	cl_mem torsion_gpu_k2, search_depth_gpu_k2, bfgs_steps_gpu_k2;
-	CreateDeviceBuffer(&ric_gpu_k2,           CL_MEM_READ_ONLY,  ric_size_,           context);
-	CreateDeviceBuffer(&m_gpu_k2,             CL_MEM_READ_WRITE, m_size_,             context);
-	CreateDeviceBuffer(&rand_gpu_k2,          CL_MEM_READ_ONLY,  rand_maps_size_,     context);
-	CreateDeviceBuffer(&result_gpu_k2,        CL_MEM_WRITE_ONLY, result_size_,        context);
-	CreateDeviceBuffer(&result_coords_gpu_k2, CL_MEM_WRITE_ONLY, result_coords_size_, context);
-	CreateDeviceBuffer(&torsion_gpu_k2,       CL_MEM_READ_ONLY,  int_arr_size_,       context);
-	CreateDeviceBuffer(&search_depth_gpu_k2,  CL_MEM_READ_ONLY,  int_arr_size_,       context);
-	CreateDeviceBuffer(&bfgs_steps_gpu_k2,    CL_MEM_READ_ONLY,  int_arr_size_,       context);
+		CreateDeviceBuffer(&ric_gpu_k2,           CL_MEM_READ_ONLY,  ric_size_,           context);
+		CreateDeviceBuffer(&m_gpu_k2,             CL_MEM_READ_WRITE, m_size_,             context);
+		CreateDeviceBuffer(&rand_gpu_k2,          CL_MEM_READ_ONLY,  rand_maps_size_,     context);
+		CreateDeviceBuffer(&result_gpu_k2,        CL_MEM_WRITE_ONLY, result_size_,        context);
+		CreateDeviceBuffer(&result_coords_gpu_k2, CL_MEM_WRITE_ONLY, result_coords_size_, context);
+		CreateDeviceBuffer(&torsion_gpu_k2,       CL_MEM_READ_ONLY,  int_arr_size_,       context);
+		CreateDeviceBuffer(&search_depth_gpu_k2,  CL_MEM_READ_ONLY,  int_arr_size_,       context);
+		CreateDeviceBuffer(&bfgs_steps_gpu_k2,    CL_MEM_READ_ONLY,  int_arr_size_,       context);
 
-	// New kernel arg layout (matches updated kernel2.cl):
-	//   0: ric           1: mg            2: pre (const)   3: grids (const)
-	//   4: rand_maps_arr 5: coords        6: results       7: mis (const)
-	//   8: torsion_sizes 9: search_depths 10: bfgs_steps   11: rilc_bfgs_enable
-	//   12: batch_n  (set per-dispatch because last batch may be smaller)
-	SetKernelArg(k2, 0,  sizeof(cl_mem), &ric_gpu_k2);
-	SetKernelArg(k2, 1,  sizeof(cl_mem), &m_gpu_k2);
-	SetKernelArg(k2, 2,  sizeof(cl_mem), &pre_gpu);
-	SetKernelArg(k2, 3,  sizeof(cl_mem), &grids_gpu);
-	SetKernelArg(k2, 4,  sizeof(cl_mem), &rand_gpu_k2);
-	SetKernelArg(k2, 5,  sizeof(cl_mem), &result_coords_gpu_k2);
-	SetKernelArg(k2, 6,  sizeof(cl_mem), &result_gpu_k2);
-	SetKernelArg(k2, 7,  sizeof(cl_mem), &mis_gpu);
-	SetKernelArg(k2, 8,  sizeof(cl_mem), &torsion_gpu_k2);
-	SetKernelArg(k2, 9,  sizeof(cl_mem), &search_depth_gpu_k2);
-	SetKernelArg(k2, 10, sizeof(cl_mem), &bfgs_steps_gpu_k2);
-	SetKernelArg(k2, 11, sizeof(int),    &rilc_bfgs);
-	// arg 12 (batch_n) set per-dispatch below
+		// New kernel arg layout (matches updated kernel2.cl):
+		//   0: ric           1: mg            2: pre (const)   3: grids (const)
+		//   4: rand_maps_arr 5: coords        6: results       7: mis (const)
+		//   8: torsion_sizes 9: search_depths 10: bfgs_steps   11: rilc_bfgs_enable
+		//   12: batch_n  (set per-dispatch because last batch may be smaller)
+		SetKernelArg(k2, 0,  sizeof(cl_mem), &ric_gpu_k2);
+		SetKernelArg(k2, 1,  sizeof(cl_mem), &m_gpu_k2);
+		SetKernelArg(k2, 2,  sizeof(cl_mem), &pre_gpu);
+		SetKernelArg(k2, 3,  sizeof(cl_mem), &grids_gpu);
+		SetKernelArg(k2, 4,  sizeof(cl_mem), &rand_gpu_k2);
+		SetKernelArg(k2, 5,  sizeof(cl_mem), &result_coords_gpu_k2);
+		SetKernelArg(k2, 6,  sizeof(cl_mem), &result_gpu_k2);
+		SetKernelArg(k2, 7,  sizeof(cl_mem), &mis_gpu);
+		SetKernelArg(k2, 8,  sizeof(cl_mem), &torsion_gpu_k2);
+		SetKernelArg(k2, 9,  sizeof(cl_mem), &search_depth_gpu_k2);
+		SetKernelArg(k2, 10, sizeof(cl_mem), &bfgs_steps_gpu_k2);
+		SetKernelArg(k2, 11, sizeof(int),    &rilc_bfgs);
+		// arg 12 (batch_n) set per-dispatch below
 
-	const size_t kernel2_global_size[2] = { 512, 32 };
-	const size_t kernel2_local_size[2]  = { 16, 2 };
+		batch_torsion.assign(batch_n, 0);
+		batch_depth.assign(batch_n, 0);
+		batch_bfgs.assign(batch_n, 0);
 
-	double t_upload = 0, t_kernel = 0, t_download = 0, t_cl2vina = 0, t_add2out = 0;
-	int lig_count = 0;
+		printf("\nBatched work-stealing kernel2: GPU%d  total_ligands=%d  batch_n=%d\n",
+		       gpu_id, num_ligands, batch_n); fflush(stdout);
+	} // end if (re_epoch == 0) for batch setup
 
-	printf("\nBatched work-stealing kernel2: GPU%d  total_ligands=%d  batch_n=%d\n",
-	       gpu_id, num_ligands, batch_n); fflush(stdout);
-
-	std::vector<int> batch_torsion(batch_n), batch_depth(batch_n), batch_bfgs(batch_n);
-
+	// RE epoch > 0: each GPU iterates its own ligands (those with non-null ric_ptrs)
+	// using a per-thread local counter (global_next_lig is exhausted after epoch 0).
+	std::atomic<int> gpu_local_next{0};
 	int batch_start;
-	while ((batch_start = global_next_lig.fetch_add(batch_n, std::memory_order_relaxed)) < num_ligands) {
+	while ((batch_start = (re_epoch == 0
+	                       ? global_next_lig.fetch_add(batch_n, std::memory_order_relaxed)
+	                       : gpu_local_next  .fetch_add(batch_n, std::memory_order_relaxed))) < num_ligands) {
 		int actual_batch = std::min(batch_n, num_ligands - batch_start);
 
 		// Verify CPU prep succeeded for all ligands in this batch
@@ -842,7 +917,10 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 			int li = batch_start + b;
 			free(rand_maps_ptrs[li]); rand_maps_ptrs[li] = nullptr;
 			free(ric_ptrs[li]);       ric_ptrs[li] = nullptr;
-			free(m_ptrs[li]);         m_ptrs[li] = nullptr;
+			// m_ptrs hold atom topology (static across RE epochs) — keep alive until last epoch
+			if (re_epoch == re_rounds - 1) {
+				free(m_ptrs[li]); m_ptrs[li] = nullptr;
+			}
 		}
 		auto _t_kn0 = std::chrono::steady_clock::now();
 		t_upload += std::chrono::duration<double>(_t_kn0 - _t_up0).count();
@@ -884,33 +962,71 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 			auto _t_a1 = std::chrono::steady_clock::now();
 			t_cl2vina += std::chrono::duration<double>(_t_a1 - _t_a0).count();
 
-			if (result_vina.empty()) {
-				std::cerr << "Warning: no results for ligand " << li << " — skipping.\n";
-			} else {
-				for (int i = 0; i < par.mc.thread; i++) {
-					add_to_output_container(outs[li], result_vina[i],
-					    par.mc.min_rmsd, par.mc.num_saved_mins);
+			if (re_epoch == re_rounds - 1) {
+				// Final epoch: commit to output
+				if (result_vina.empty()) {
+					std::cerr << "Warning: no results for ligand " << li << " — skipping.\n";
+				} else {
+					for (int i = 0; i < par.mc.thread; i++) {
+						add_to_output_container(outs[li], result_vina[i],
+						    par.mc.min_rmsd, par.mc.num_saved_mins);
+					}
 				}
+				free(result_ptrs[li]);        result_ptrs[li] = nullptr;
+			} else {
+				// Intermediate RE epoch: transfer result_ptrs ownership to ric_for_re
+				// for RE swap; result_coords not needed beyond this epoch
+				ric_for_re[li] = result_ptrs[li];
+				result_ptrs[li] = nullptr;
 			}
 			auto _t_a2 = std::chrono::steady_clock::now();
 			t_add2out += std::chrono::duration<double>(_t_a2 - _t_a1).count();
 
-			free(result_ptrs[li]);        result_ptrs[li] = nullptr;
 			free(result_coords_ptrs[li]); result_coords_ptrs[li] = nullptr;
 		}
 		lig_count += actual_batch;
 	}
 
-	printf("DIAG GPU%d: processed %d ligands — upload=%.2fs  kernel(wait)=%.2fs  download=%.2fs  cl2vina=%.2fs  add2out=%.2fs\n",
-	       gpu_id, lig_count, t_upload, t_kernel, t_download, t_cl2vina, t_add2out); fflush(stdout);
+	printf("DIAG GPU%d: RE epoch %d done — %d ligands  upload=%.2fs  kernel=%.2fs  dl=%.2fs  conv=%.2fs\n",
+	       gpu_id, re_epoch, lig_count, t_upload, t_kernel, t_download, t_cl2vina); fflush(stdout);
 
-	// Free any CPU buffers for ligands that were stolen by the other GPU.
+	// RE post-epoch: apply Metropolis swaps, regenerate rand_maps + result buffers
+	if (re_epoch < re_rounds - 1) {
+		apply_re_swaps(ric_for_re, num_ligands, par.mc.thread, re_epoch, rng_re);
+
+		rng local_re_gen(static_cast<rng::result_type>(seed + (re_epoch + 1) * 31337));
+		for (int i = 0; i < num_ligands; i++) {
+			if (!ric_for_re[i]) continue;  // not this GPU's ligand
+			// Fresh random maps for diversity in next epoch
+			rand_maps_ptrs[i] = (random_maps*)malloc(sizeof(random_maps));
+			random_maps* rmp = rand_maps_ptrs[i];
+			for (int k = 0; k < MAX_NUM_OF_RANDOM_MAP; k++) {
+				rmp->int_map[k] = random_int(0, std::max(1, (int)torsion_sizes[i]), local_re_gen);
+				rmp->pi_map[k]  = random_fl(-pi, pi, local_re_gen);
+			}
+			for (int k = 0; k < MAX_NUM_OF_RANDOM_MAP; k++) {
+				vec rc = random_inside_sphere(local_re_gen);
+				for (int j = 0; j < 3; j++) rmp->sphere_map[k][j] = rc[j];
+			}
+			// Fresh result buffers
+			result_coords_ptrs[i] = (ligand_atom_coords_cl*)malloc(par.mc.thread * sizeof(ligand_atom_coords_cl));
+			result_ptrs[i]        = (output_type_cl*)malloc(par.mc.thread * sizeof(output_type_cl));
+		}
+		gpu_local_next.store(0, std::memory_order_relaxed);
+		t_upload = 0; t_kernel = 0; t_download = 0; t_cl2vina = 0; t_add2out = 0;
+		lig_count = 0;
+	}
+
+	} // end for (re_epoch)
+
+	// Free any CPU buffers for ligands that were stolen by the other GPU (or leaked).
 	for (int i = 0; i < num_ligands; i++) {
 		if (rand_maps_ptrs[i])     { free(rand_maps_ptrs[i]);     rand_maps_ptrs[i] = nullptr; }
 		if (ric_ptrs[i])           { free(ric_ptrs[i]);           ric_ptrs[i] = nullptr; }
 		if (m_ptrs[i])             { free(m_ptrs[i]);             m_ptrs[i] = nullptr; }
 		if (result_ptrs[i])        { free(result_ptrs[i]);        result_ptrs[i] = nullptr; }
 		if (result_coords_ptrs[i]) { free(result_coords_ptrs[i]); result_coords_ptrs[i] = nullptr; }
+		if (ric_for_re[i])         { free(ric_for_re[i]);         ric_for_re[i] = nullptr; }
 	}
 
 	// Cleanup batched-dispatch resources
@@ -1151,9 +1267,10 @@ void main_procedure_cl_dual(
 	mis_ptr->epsilon_fl       = epsilon_fl;
 	mis_ptr->cutoff_sqr       = cutoff_sqr;
 	mis_ptr->max_fl           = max_fl;
-	mis_ptr->mutation_amplitude = par.mc.mutation_amplitude;
-	mis_ptr->use_ad4zn        = use_ad4zn ? 1 : 0;
-	mis_ptr->total_wi         = max_wi_size[0] * max_wi_size[1];
+	mis_ptr->mutation_amplitude  = par.mc.mutation_amplitude;
+	mis_ptr->use_ad4zn           = use_ad4zn ? 1 : 0;
+	mis_ptr->flex_torsion_size   = 0;  // Phase 4: rigid receptor default
+	mis_ptr->total_wi            = max_wi_size[0] * max_wi_size[1];
 	mis_ptr->thread           = par.mc.thread;
 	mis_ptr->ar_mi            = ig.m_data.m_i;
 	mis_ptr->ar_mj            = ig.m_data.m_j;
