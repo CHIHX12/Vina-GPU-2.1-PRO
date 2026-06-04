@@ -142,6 +142,62 @@ static bool load_qfd_grid_file(const std::string& path, grid_cl* slot) {
 	return true;
 }
 
+// LS metal coordination rescoring (Part A).
+// Constants mirror kernel2.h — defined here so they're available in C++ code.
+static const float LS_METAL_R_OPT_CPP  = 2.10f; // optimal coordination distance [Å]
+static const float LS_METAL_SIGMA_CPP  = 0.20f; // tight Gaussian width [Å]
+static const float LS_METAL_CUTOFF_CPP = 5.0f;  // per-metal search radius [Å]
+
+// AD type range for metals: Mg=13 .. Hg=31 (see atom_constants.h)
+static bool is_receptor_metal(sz ad_type) {
+    return ad_type >= 13 && ad_type < 32;
+}
+
+// Collect receptor metal atom positions from model's grid_atoms.
+static std::vector<std::array<float,3>> collect_receptor_metals(const model& m) {
+    std::vector<std::array<float,3>> metals;
+    for (sz i = 0; i < m.grid_atoms.size(); i++) {
+        if (is_receptor_metal(m.grid_atoms[i].ad)) {
+            metals.push_back({(float)m.grid_atoms[i].coords[0],
+                              (float)m.grid_atoms[i].coords[1],
+                              (float)m.grid_atoms[i].coords[2]});
+        }
+    }
+    return metals;
+}
+
+// Apply LS metal coordination bonus to all poses in-place.
+// For each pose: e_ls = sum_metals sum_ligAtoms G(dist; r_opt, sigma)
+// pose.e is adjusted: pose.e -= weight * e_ls  (lower e = better, bonus lowers e)
+static void apply_ls_metal_scores(
+    std::vector<output_type>& poses,
+    const std::vector<std::array<float,3>>& metals,
+    float weight)
+{
+    if (metals.empty() || weight == 0.0f) return;
+    const float cutoff2   = LS_METAL_CUTOFF_CPP * LS_METAL_CUTOFF_CPP;
+    const float inv2sig2  = 1.0f / (2.0f * LS_METAL_SIGMA_CPP * LS_METAL_SIGMA_CPP);
+    for (auto& pose : poses) {
+        float bonus = 0.0f;
+        for (const auto& metal : metals) {
+            float mx = metal[0], my = metal[1], mz = metal[2];
+            for (const auto& coord : pose.coords) {
+                float dx = (float)coord[0] - mx;
+                float dy = (float)coord[1] - my;
+                float dz = (float)coord[2] - mz;
+                float r2 = dx*dx + dy*dy + dz*dz;
+                if (r2 < cutoff2) {
+                    float r  = std::sqrt(r2);
+                    float dr = r - LS_METAL_R_OPT_CPP;
+                    bonus += std::exp(-dr * dr * inv2sig2);
+                }
+            }
+        }
+        pose.e_ls  = bonus;           // raw coordination score (positive = good)
+        pose.e    -= weight * bonus;  // subtract from energy (lower = better)
+    }
+}
+
 // Replica Exchange: Metropolis swap between adjacent SA replicas.
 // Called after each kernel2 epoch. result_ptrs[li] is the result for ligand li,
 // with thread entries sorted by traj_id. rep_id = traj_id % QFD_N_REPLICAS.
@@ -375,6 +431,17 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 	rng generator(static_cast<rng::result_type>(seed));
 	model m = ms[0];
 
+	// LS metal rescoring: extract receptor metal positions once (shared for all ligands in VS batch)
+	auto receptor_metals = collect_receptor_metals(m);
+	float ls_metal_weight = 0.30f;
+	{
+		const char* env = std::getenv("VINA_LS_METAL_WEIGHT");
+		if (env) ls_metal_weight = (float)std::atof(env);
+	}
+	if (!receptor_metals.empty())
+		printf("QFD LS: %zu receptor metal(s) found (weight=%.3f)\n",
+		       receptor_metals.size(), ls_metal_weight);
+
 	// Preparing protein atoms related data
 	pa_cl* pa_ptr = (pa_cl*)malloc(sizeof(pa_cl));
 	if(MAX_NUM_OF_PROTEIN_ATOMS <= m.grid_atoms.size()){throw std::runtime_error("pocket too large!");}
@@ -468,6 +535,7 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 	load_qfd_grid_file("qfd_desolv.bin",   &grids_ptr->grids[GRID_IDX_DESOLV]);
 	load_qfd_grid_file("qfd_infomap.bin",  &grids_ptr->grids[GRID_IDX_INFOMAP]);
 	load_qfd_grid_file("qfd_water.bin",    &grids_ptr->grids[GRID_IDX_WATER]);    // Phase 3: xtal water penalty
+	load_qfd_grid_file("qfd_pipi.bin",     &grids_ptr->grids[GRID_IDX_PIPI]);     // Phase 5: pi-pi aromatic stacking
 	size_t grids_size = sizeof(grids_cl);
 
 	// miscellaneous
@@ -960,6 +1028,8 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 			std::vector<output_type> result_vina = cl_to_vina(
 			    result_ptrs[li], result_coords_ptrs[li],
 			    par.mc.thread, torsion_sizes[li]);
+			// LS metal rescoring: adjust .e before add_to_output_container sorts
+			apply_ls_metal_scores(result_vina, receptor_metals, ls_metal_weight);
 			auto _t_a1 = std::chrono::steady_clock::now();
 			t_cl2vina += std::chrono::duration<double>(_t_a1 - _t_a0).count();
 
@@ -1290,6 +1360,17 @@ void main_procedure_cl_dual(
 		for (int j = 0; j < 3; j++) pa_ptr->atoms[i].coords[j] = ma.grid_atoms[i].coords.data[j];
 	}
 
+	// LS metal rescoring for dual mode
+	auto dual_receptor_metals = collect_receptor_metals(ma);
+	float dual_ls_metal_weight = 0.30f;
+	{
+		const char* env = std::getenv("VINA_LS_METAL_WEIGHT");
+		if (env) dual_ls_metal_weight = (float)std::atof(env);
+	}
+	if (!dual_receptor_metals.empty())
+		printf("QFD LS (dual): %zu receptor metal(s) found (weight=%.3f)\n",
+		       dual_receptor_metals.size(), dual_ls_metal_weight);
+
 	// Precalculate LUT
 	pre_cl* pre_ptr = (pre_cl*)malloc(sizeof(pre_cl));
 	pre_ptr->m_cutoff_sqr = p.cutoff_sqr();
@@ -1353,6 +1434,7 @@ void main_procedure_cl_dual(
 	load_qfd_grid_file("qfd_desolv.bin",   &grids_ptr->grids[GRID_IDX_DESOLV]);
 	load_qfd_grid_file("qfd_infomap.bin",  &grids_ptr->grids[GRID_IDX_INFOMAP]);
 	load_qfd_grid_file("qfd_water.bin",    &grids_ptr->grids[GRID_IDX_WATER]);    // Phase 3: xtal water penalty
+	load_qfd_grid_file("qfd_pipi.bin",     &grids_ptr->grids[GRID_IDX_PIPI]);     // Phase 5: pi-pi aromatic stacking
 	mis_ptr->grids_front = grids_front;
 	size_t mis_size    = sizeof(mis_cl);
 	size_t pre_size    = sizeof(pre_cl);
@@ -1704,6 +1786,9 @@ void main_procedure_cl_dual(
 	auto t_cv0 = std::chrono::steady_clock::now();
 	std::vector<output_type> vina_a = cl_to_vina(results_a, coords_a, thread, torsion_a);
 	std::vector<output_type> vina_b = cl_to_vina(results_b, coords_b, thread, torsion_b);
+	// LS metal rescoring: adjust .e before fast_topk sorts
+	apply_ls_metal_scores(vina_a, dual_receptor_metals, dual_ls_metal_weight);
+	apply_ls_metal_scores(vina_b, dual_receptor_metals, dual_ls_metal_weight);
 	auto t_cv1 = std::chrono::steady_clock::now();
 
 	// Sort by energy, keep top num_saved_mins poses (fast O(N log N) instead of O(N*K*atoms))

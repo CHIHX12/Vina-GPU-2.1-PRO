@@ -284,6 +284,22 @@ float ig_eval_deriv(						output_type_cl*		x,
 		}
 	}
 
+	// --- QFD Phase 5: π-π aromatic stacking grid ---
+	// Rewards aromatic ligand atoms (AD type 'A', types[1]==AD_TYPE_A) near receptor
+	// aromatic ring centres.  Active when qfd_pipi.bin is loaded.
+	if (grids->grids[GRID_IDX_PIPI].m_i > 0) {
+		for (int i = m->ligand.begin; i < m->m_num_movable_atoms; i++) {
+			if (m->atoms[i].types[1] != AD_TYPE_A) continue;  // aromatic C only
+			float pipi_deriv[3];
+			float pipi_e = g_evaluate(&grids->grids[GRID_IDX_PIPI],
+			                          m->m_coords.coords[i],
+			                          grids->slope, v, pipi_deriv, epsilon_fl);
+			e += QFD_PIPI_WEIGHT * pipi_e;
+			for (int j = 0; j < 3; j++)
+				m->minus_forces.coords[i][j] += QFD_PIPI_WEIGHT * pipi_deriv[j];
+		}
+	}
+
 	return e;
 }
 

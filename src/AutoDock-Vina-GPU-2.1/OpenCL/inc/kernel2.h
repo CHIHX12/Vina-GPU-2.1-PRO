@@ -19,30 +19,33 @@
 #define MAX_NUM_OF_LIG_PAIRS 65536  // C(272,2)=36856 max theoretical; 65536 guarantees full coverage
 #define MAX_NUM_OF_BFGS_STEPS 64
 #define MAX_NUM_OF_RANDOM_MAP 20000 // not too large (stack overflow!)
-#define GRIDS_SIZE 21
+#define GRIDS_SIZE 22
 
-// QFD (Quantum Field Docking) grid indices — slots 17-20 appended after standard atom-type grids
+// QFD (Quantum Field Docking) grid indices — slots 17-21 appended after standard atom-type grids
 #define GRID_IDX_ESP      17   // receptor electrostatic potential  [kcal/(mol·e)]
 #define GRID_IDX_DESOLV   18   // desolvation susceptibility grid   [kcal/mol per unit q²]
 #define GRID_IDX_INFOMAP  19   // information resonance field       [dimensionless coupling]
-#define GRID_IDX_WATER    20   // explicit water displacement grid [kcal/mol]
+#define GRID_IDX_WATER    20   // explicit water displacement grid  [kcal/mol]
+#define GRID_IDX_PIPI     21   // aromatic ring proximity grid      [dimensionless]
 
 // QFD scoring weights — calibrated for real Gasteiger charges on ligands
-// w_elec=0.05: at 2Å from Zn with q=-0.19 → -0.95 kcal/mol (gentle guidance)
-// Per-atom soft cap QFD_ATOM_E_CAP=1.5: prevents Mg/strong-field over-attraction
-//   without cap: 2 chelating O (q=-0.5) near Mg → 2×(-0.05×0.5×120) = -6 kcal/mol (too strong)
-//   with cap:    capped at 2×1.5 = -3 kcal/mol max (safer)
-// Tune further with tools/prep/calibrate_qfd_weights.py
 #define QFD_ELEC_WEIGHT   0.05f
 #define QFD_DESOLV_WEIGHT 0.05f
 #define QFD_INFO_WEIGHT   0.02f
 // Per-atom ESP energy soft cap [kcal/mol]: E_out = E_raw/(1+|E_raw|/cap)
-// Smoothly prevents any single atom from dominating ranking; gradient-consistent.
 #define QFD_ATOM_E_CAP    1.5f
 // Phase 3: water displacement penalty weight.
-// E_water = QFD_WATER_WEIGHT * WATER(r): penalises poses that displace
-// crystallographic water molecules without making compensating H-bonds.
 #define QFD_WATER_WEIGHT  0.03f
+// Phase 5: π-π aromatic stacking grid weight.
+// Rewards aromatic ligand atoms (AD_TYPE_A) near receptor ring centres.
+#define QFD_PIPI_WEIGHT   0.015f
+// AD atom type index for aromatic carbon (consistent with atom_constants.h AD_TYPE_A=1)
+#define AD_TYPE_A         1
+// LS metal rescoring: tight Gaussian well for C++ post-docking reranking
+// σ=0.20 Å selects only true N/O/S coordination bonds (r≈2.1Å); C atoms at ≥2.5Å ≈ 0
+#define LS_METAL_R_OPT    2.10f  // optimal coordination distance [Å]
+#define LS_METAL_SIGMA    0.20f  // Gaussian width [Å] — tight to exclude C
+#define LS_METAL_CUTOFF   5.0f  // per-metal search radius [Å]
 
 // QFD Phase 2: Temperature Annealing ladder
 // Each trajectory anneals from T_start → QFD_T_FINAL over search_depth steps.

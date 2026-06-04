@@ -2,10 +2,12 @@
 """
 prep_qfd_grids.py — Compute QFD (Quantum Field Docking) receptor field grids.
 
-Produces three binary grid files in the current working directory:
+Produces up to five binary grid files in the current working directory:
   qfd_esp.bin      — electrostatic potential field  [kcal/(mol·e)]
   qfd_desolv.bin   — desolvation susceptibility     [kcal/mol per e²]
   qfd_infomap.bin  — information resonance field    [dimensionless]
+  qfd_water.bin    — crystallographic water penalty [dimensionless, 0-1]
+  qfd_pipi.bin     — π-π aromatic stacking field    [dimensionless, 0-1]
 
 Binary format (read by main_procedure_cl.cpp::load_qfd_grid_file):
   int[3]   : m_i, m_j, m_k
@@ -280,6 +282,120 @@ def compute_water_grid(water_positions: list, meta: dict,
 
 
 # ---------------------------------------------------------------------------
+# π-π aromatic stacking grid — Phase 5 of QFD
+# ---------------------------------------------------------------------------
+
+# Aromatic ring atom sets per residue type.
+# Each entry is a list of atom names whose centroid defines the ring centre.
+_AROMATIC_RING_ATOMS = {
+    'PHE': [['CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ']],
+    'TYR': [['CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ']],
+    'TRP': [
+        ['CG', 'CD1', 'NE1', 'CE2', 'CD2'],           # pyrrole ring (5-member)
+        ['CD2', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2'],   # benzene ring (6-member)
+    ],
+    'HIS': [['CG', 'ND1', 'CD2', 'CE1', 'NE2']],
+}
+
+
+def find_aromatic_ring_centers(path: str) -> list:
+    """
+    Parse a PDB or PDBQT file and return ring-centre coordinates for
+    PHE, TYR, TRP, and HIS residues.
+
+    Returns:
+        List of (x, y, z) tuples — one per aromatic ring found.
+    """
+    # Collect atoms by (chain, resseq, resname) → {atom_name: (x, y, z)}
+    residues: dict = {}
+    with open(path) as f:
+        for line in f:
+            rec = line[:6].strip()
+            if rec not in ('ATOM', 'HETATM'):
+                continue
+            resname = line[17:20].strip().upper()
+            if resname not in _AROMATIC_RING_ATOMS:
+                continue
+            atom_name = line[12:16].strip()
+            chain = line[21]
+            try:
+                resseq = int(line[22:26])
+            except ValueError:
+                continue
+            try:
+                x = float(line[30:38])
+                y = float(line[38:46])
+                z = float(line[46:54])
+            except ValueError:
+                continue
+            key = (chain, resseq, resname)
+            if key not in residues:
+                residues[key] = {}
+            residues[key][atom_name] = (x, y, z)
+
+    centers = []
+    for (chain, resseq, resname), atoms in residues.items():
+        for ring_atoms in _AROMATIC_RING_ATOMS[resname]:
+            coords_found = [atoms[a] for a in ring_atoms if a in atoms]
+            if len(coords_found) < len(ring_atoms) // 2 + 1:
+                continue  # skip if fewer than half the ring atoms are present
+            cx = sum(c[0] for c in coords_found) / len(coords_found)
+            cy = sum(c[1] for c in coords_found) / len(coords_found)
+            cz = sum(c[2] for c in coords_found) / len(coords_found)
+            centers.append((cx, cy, cz))
+
+    return centers
+
+
+def compute_pipi_grid(ring_centers: list, meta: dict,
+                      sigma: float = 2.5) -> np.ndarray:
+    """
+    π-π aromatic stacking grid (QFD Phase 5).
+
+    Places a Gaussian attraction well at each receptor aromatic ring centre:
+      P(r) = exp(-r² / (2σ²))
+    with σ = 2.5 Å — wide enough to reward stacking approach from ~4–5 Å.
+
+    Interpretation: a ligand aromatic atom (AD type A = aromatic carbon) near
+    a receptor ring centre gains a stacking bonus proportional to P(r).
+    The GPU kernel evaluates this grid only for atoms with types[1] == AD_TYPE_A.
+
+    Args:
+        ring_centers : list of (x, y, z) ring centroid coordinates
+        meta         : grid metadata from _make_grid_metadata()
+        sigma        : Gaussian width in Å [default: 2.5]
+
+    Returns:
+        ndarray of shape (mi, mj, mk) in [0, 1]  (normalised so peak = 1)
+    """
+    mi, mj, mk = meta['m_i'], meta['m_j'], meta['m_k']
+    ox, oy, oz = meta['m_init']
+    spacing    = meta['m_factor_inv'][0]
+
+    xs = ox + np.arange(mi) * spacing
+    ys = oy + np.arange(mj) * spacing
+    zs = oz + np.arange(mk) * spacing
+    gx, gy, gz = np.meshgrid(xs, ys, zs, indexing='ij')
+
+    pipi = np.zeros((mi, mj, mk), dtype=np.float32)
+    inv_2sig2 = 1.0 / (2.0 * sigma ** 2)
+
+    for rx, ry, rz in ring_centers:
+        dx = gx - rx
+        dy = gy - ry
+        dz = gz - rz
+        r2 = dx*dx + dy*dy + dz*dz
+        pipi += np.exp(-r2 * inv_2sig2).astype(np.float32)
+
+    # Normalise to [0, 1] so QFD_PIPI_WEIGHT controls absolute scale
+    vmax = pipi.max()
+    if vmax > 0:
+        pipi /= vmax
+
+    return pipi
+
+
+# ---------------------------------------------------------------------------
 # Information resonance (infomap) grid — Phase 4 of QFD
 # ---------------------------------------------------------------------------
 
@@ -449,6 +565,13 @@ def main():
                          'from the receptor file itself.')
     ap.add_argument('--water_sigma', type=float, default=1.5,
                     help='Gaussian σ for water penalty bump (Å) [default: 1.5]')
+    ap.add_argument('--no_pipi',     action='store_true',
+                    help='Skip π-π aromatic stacking grid (Phase 5)')
+    ap.add_argument('--pipi_sigma',  type=float, default=2.5,
+                    help='Gaussian σ for π-π ring attraction well (Å) [default: 2.5]')
+    ap.add_argument('--pipi_pdb',    default=None,
+                    help='PDB/PDBQT file to read aromatic ring centres from. '
+                         'If omitted, ring centres are extracted from the receptor file.')
     args = ap.parse_args()
 
     print(f"[prep_qfd_grids] Loading receptor: {args.receptor}")
@@ -499,12 +622,27 @@ def main():
             water_grid = compute_water_grid(water_pos, meta, sigma=args.water_sigma)
             _write_qfd_bin(os.path.join(args.output_dir, 'qfd_water.bin'), meta, water_grid)
 
+    pipi_written = False
+    if not args.no_pipi:
+        pipi_src = args.pipi_pdb if args.pipi_pdb else args.receptor
+        print(f"[prep_qfd_grids] Reading aromatic ring centres from: {pipi_src}")
+        ring_centers = find_aromatic_ring_centers(pipi_src)
+        if not ring_centers:
+            print("  No PHE/TYR/TRP/HIS residues found — skipping π-π grid.")
+        else:
+            print(f"  {len(ring_centers)} aromatic ring centre(s) found "
+                  f"(σ={args.pipi_sigma:.2f} Å).")
+            pipi_grid = compute_pipi_grid(ring_centers, meta, sigma=args.pipi_sigma)
+            _write_qfd_bin(os.path.join(args.output_dir, 'qfd_pipi.bin'), meta, pipi_grid)
+            pipi_written = True
+
     print("[prep_qfd_grids] Done. Run Vina from the same directory to use QFD grids.")
-    print("  QFD grids active: ESP=%s  DESOLV=%s  INFOMAP=%s  WATER=%s" % (
+    print("  QFD grids active: ESP=%s  DESOLV=%s  INFOMAP=%s  WATER=%s  PIPI=%s" % (
         'yes' if not args.no_esp else 'no',
         'yes' if not args.no_desolv else 'no',
         'yes' if not args.no_infomap else 'no',
         'yes' if (not args.no_water and (args.water_pdb or True)) else 'no',
+        'yes' if pipi_written else 'no',
     ))
 
 

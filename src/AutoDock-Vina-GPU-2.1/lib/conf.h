@@ -711,8 +711,9 @@ struct output_type {
 	conf c;
 	fl e;
 	fl e_gpu;  // GPU-scored total energy (Vina+QFD); 0 if from CPU path
+	fl e_ls;   // LS metal coordination bonus (negative = good; added to e during sort)
 	vecv coords;
-	output_type(const conf& c_, fl e_) : c(c_), e(e_), e_gpu(0) {}
+	output_type(const conf& c_, fl e_) : c(c_), e(e_), e_gpu(0), e_ls(0) {}
 };
 
 typedef boost::ptr_vector<output_type> output_container;   //output_type�ṹ������
