@@ -9,6 +9,8 @@ src/AutoDock-Vina-GPU-2.1/AutoDock-Vina-GPU-2-1
 # Compiled OpenCL kernel binaries (machine-specific, regenerated on first run)
 Kernel1_Opt.bin
 Kernel2_Opt.bin
+src/AutoDock-Vina-GPU-2.1/Kernel1_Opt.bin
+src/AutoDock-Vina-GPU-2.1/Kernel2_Opt.bin
 
 # Build artifacts
 *.o
