@@ -201,7 +201,8 @@ def process_entry(args: Tuple) -> Dict:
             f"opencl_binary_path = {VINA_DIR}",
             f"gpu_id             = {gpu_id}",
         ]))
-        env = {**os.environ, "VINA_GPU_HOME": str(VINA_DIR)}
+        env = {**os.environ, "VINA_GPU_HOME": str(VINA_DIR),
+               "VINA_LS_METAL_WEIGHT": "0"}  # pipi grid only; LS metal neutral on PL
         try:
             r = subprocess.run(
                 [str(VINA_BIN), "--config", str(cfg_qfd)],
