@@ -167,7 +167,8 @@ static std::vector<std::array<float,3>> collect_receptor_metals(const model& m) 
 }
 
 // Apply LS metal coordination bonus to all poses in-place.
-// For each pose: e_ls = sum_metals sum_ligAtoms G(dist; r_opt, sigma)
+// Scoring: sum_metals max_ligAtoms G(dist; r_opt, sigma)
+//   — max-per-metal prevents multi-atom accumulation on wrong poses
 // pose.e is adjusted: pose.e -= weight * e_ls  (lower e = better, bonus lowers e)
 static void apply_ls_metal_scores(
     std::vector<output_type>& poses,
@@ -181,6 +182,7 @@ static void apply_ls_metal_scores(
         float bonus = 0.0f;
         for (const auto& metal : metals) {
             float mx = metal[0], my = metal[1], mz = metal[2];
+            float best_g = 0.0f;   // best single-atom G for this metal
             for (const auto& coord : pose.coords) {
                 float dx = (float)coord[0] - mx;
                 float dy = (float)coord[1] - my;
@@ -189,9 +191,11 @@ static void apply_ls_metal_scores(
                 if (r2 < cutoff2) {
                     float r  = std::sqrt(r2);
                     float dr = r - LS_METAL_R_OPT_CPP;
-                    bonus += std::exp(-dr * dr * inv2sig2);
+                    float g  = std::exp(-dr * dr * inv2sig2);
+                    if (g > best_g) best_g = g;
                 }
             }
+            bonus += best_g;   // one coordination bond per metal
         }
         pose.e_ls  = bonus;           // raw coordination score (positive = good)
         pose.e    -= weight * bonus;  // subtract from energy (lower = better)
