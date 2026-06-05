@@ -202,6 +202,120 @@ static void apply_ls_metal_scores(
     }
 }
 
+// ── QFD pipi grid: built directly from receptor aromatic carbons ────────────
+// Eliminates the need to run prep_qfd_grids.py before docking.
+// AD_TYPE_A = 1 (aromatic carbon, see atom_constants.h).
+// Matches the Python formula in prep_qfd_grids.py compute_pipi_grid().
+static const float PIPI_SIGMA_CPP   = 2.5f;  // Gaussian width [Å]
+static const float PIPI_SPACING_CPP = 1.0f;  // grid spacing [Å]
+
+static bool compute_pipi_grid_from_receptor(
+    const model& m,
+    const grid& ref_grid,   // any initialized Vina atom-type grid (box reference)
+    grid_cl* slot)
+{
+    // Collect aromatic carbon positions (AD_TYPE_A = 1)
+    std::vector<std::array<float,3>> aroms;
+    for (sz i = 0; i < m.grid_atoms.size(); i++) {
+        if (m.grid_atoms[i].ad == 1) {  // AD_TYPE_A
+            aroms.push_back({(float)m.grid_atoms[i].coords[0],
+                             (float)m.grid_atoms[i].coords[1],
+                             (float)m.grid_atoms[i].coords[2]});
+        }
+    }
+    if (aroms.empty()) return false;
+
+    // Derive box centre and size from the reference Vina grid
+    const float bs  = (float)ref_grid.m_factor_inv[0];          // base Vina spacing [Å]
+    const float bmi = (float)ref_grid.m_data.dim0() - 1.0f;
+    const float bmj = (float)ref_grid.m_data.dim1() - 1.0f;
+    const float bmk = (float)ref_grid.m_data.dim2() - 1.0f;
+    if (bmi <= 0.0f || bmj <= 0.0f || bmk <= 0.0f) return false;
+
+    const float cx = (float)ref_grid.m_init[0] + bmi * 0.5f * bs;
+    const float cy = (float)ref_grid.m_init[1] + bmj * 0.5f * bs;
+    const float cz = (float)ref_grid.m_init[2] + bmk * 0.5f * bs;
+    const float sx = bmi * bs;
+    const float sy = bmj * bs;
+    const float sz = bmk * bs;
+
+    // QFD pipi grid at PIPI_SPACING_CPP = 1.0 Å
+    const float sp = PIPI_SPACING_CPP;
+    int mi = (int)std::round(sx / sp) + 1;
+    int mj = (int)std::round(sy / sp) + 1;
+    int mk = (int)std::round(sz / sp) + 1;
+    if (mi > MAX_NUM_OF_GRID_MI) mi = MAX_NUM_OF_GRID_MI;
+    if (mj > MAX_NUM_OF_GRID_MJ) mj = MAX_NUM_OF_GRID_MJ;
+    if (mk > MAX_NUM_OF_GRID_MK) mk = MAX_NUM_OF_GRID_MK;
+
+    // Grid origin (lower-left corner centred on the box)
+    const float ox = cx - (mi - 1) * 0.5f * sp;
+    const float oy = cy - (mj - 1) * 0.5f * sp;
+    const float oz = cz - (mk - 1) * 0.5f * sp;
+
+    // Raw Gaussian sum: P(r) = Σ_aroms exp(-r²/(2σ²))
+    const float inv_2sig2 = 1.0f / (2.0f * PIPI_SIGMA_CPP * PIPI_SIGMA_CPP);
+    std::vector<float> raw((size_t)mi * mj * mk, 0.0f);
+
+    for (int i = 0; i < mi; i++) {
+        const float gx = ox + i * sp;
+        for (int j = 0; j < mj; j++) {
+            const float gy = oy + j * sp;
+            for (int k = 0; k < mk; k++) {
+                const float gz = oz + k * sp;
+                float v = 0.0f;
+                for (const auto& a : aroms) {
+                    const float dx = gx - a[0], dy = gy - a[1], dz = gz - a[2];
+                    v += std::exp(-(dx*dx + dy*dy + dz*dz) * inv_2sig2);
+                }
+                raw[(size_t)(i * mj + j) * mk + k] = v;
+            }
+        }
+    }
+
+    // Normalize to [0, 1]  (QFD_PIPI_WEIGHT controls absolute scale)
+    const float vmax = *std::max_element(raw.begin(), raw.end());
+    if (vmax <= 0.0f) return false;
+    for (auto& v : raw) v /= vmax;
+
+    // Pack into Vina's trilinear corner format: 8 corner values per voxel
+    auto vget = [&](int i, int j, int k) -> float {
+        i = std::max(0, std::min(mi - 1, i));
+        j = std::max(0, std::min(mj - 1, j));
+        k = std::max(0, std::min(mk - 1, k));
+        return raw[(size_t)(i * mj + j) * mk + k];
+    };
+    for (int i = 0; i < mi; i++) {
+        for (int j = 0; j < mj; j++) {
+            for (int k = 0; k < mk; k++) {
+                const size_t base = ((size_t)(i * mj + j) * mk + k) * 8;
+                slot->m_data[base+0] = vget(i,   j,   k  );
+                slot->m_data[base+1] = vget(i+1, j,   k  );
+                slot->m_data[base+2] = vget(i,   j+1, k  );
+                slot->m_data[base+3] = vget(i+1, j+1, k  );
+                slot->m_data[base+4] = vget(i,   j,   k+1);
+                slot->m_data[base+5] = vget(i+1, j,   k+1);
+                slot->m_data[base+6] = vget(i,   j+1, k+1);
+                slot->m_data[base+7] = vget(i+1, j+1, k+1);
+            }
+        }
+    }
+
+    // Fill grid_cl metadata
+    slot->m_i = mi; slot->m_j = mj; slot->m_k = mk;
+    slot->m_init[0] = ox; slot->m_init[1] = oy; slot->m_init[2] = oz;
+    const float inv_sp = 1.0f / sp;
+    slot->m_factor[0]         = slot->m_factor[1]         = slot->m_factor[2]         = inv_sp;
+    slot->m_dim_fl_minus_1[0] = (float)(mi - 1);
+    slot->m_dim_fl_minus_1[1] = (float)(mj - 1);
+    slot->m_dim_fl_minus_1[2] = (float)(mk - 1);
+    slot->m_factor_inv[0]     = slot->m_factor_inv[1]     = slot->m_factor_inv[2]     = sp;
+
+    printf("QFD pipi: built from %zu aromatic C atoms  dims=%d×%d×%d\n",
+           aroms.size(), mi, mj, mk);
+    return true;
+}
+
 // Replica Exchange: Metropolis swap between adjacent SA replicas.
 // Called after each kernel2 epoch. result_ptrs[li] is the result for ligand li,
 // with thread entries sorted by traj_id. rep_id = traj_id % QFD_N_REPLICAS.
@@ -539,7 +653,9 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 	load_qfd_grid_file("qfd_desolv.bin",   &grids_ptr->grids[GRID_IDX_DESOLV]);
 	load_qfd_grid_file("qfd_infomap.bin",  &grids_ptr->grids[GRID_IDX_INFOMAP]);
 	load_qfd_grid_file("qfd_water.bin",    &grids_ptr->grids[GRID_IDX_WATER]);    // Phase 3: xtal water penalty
-	load_qfd_grid_file("qfd_pipi.bin",     &grids_ptr->grids[GRID_IDX_PIPI]);     // Phase 5: pi-pi aromatic stacking
+	// Phase 5: pipi — load from file if available, else compute from receptor (always active)
+	if (!load_qfd_grid_file("qfd_pipi.bin", &grids_ptr->grids[GRID_IDX_PIPI]))
+	    compute_pipi_grid_from_receptor(m, g, &grids_ptr->grids[GRID_IDX_PIPI]);
 	size_t grids_size = sizeof(grids_cl);
 
 	// miscellaneous
@@ -1438,7 +1554,9 @@ void main_procedure_cl_dual(
 	load_qfd_grid_file("qfd_desolv.bin",   &grids_ptr->grids[GRID_IDX_DESOLV]);
 	load_qfd_grid_file("qfd_infomap.bin",  &grids_ptr->grids[GRID_IDX_INFOMAP]);
 	load_qfd_grid_file("qfd_water.bin",    &grids_ptr->grids[GRID_IDX_WATER]);    // Phase 3: xtal water penalty
-	load_qfd_grid_file("qfd_pipi.bin",     &grids_ptr->grids[GRID_IDX_PIPI]);     // Phase 5: pi-pi aromatic stacking
+	// Phase 5: pipi — load from file if available, else compute from receptor (always active)
+	if (!load_qfd_grid_file("qfd_pipi.bin", &grids_ptr->grids[GRID_IDX_PIPI]))
+	    compute_pipi_grid_from_receptor(ma, g, &grids_ptr->grids[GRID_IDX_PIPI]);
 	mis_ptr->grids_front = grids_front;
 	size_t mis_size    = sizeof(mis_cl);
 	size_t pre_size    = sizeof(pre_cl);
