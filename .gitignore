@@ -35,3 +35,27 @@ ligandscope_validation/results/
 ligandscope_validation/*.cfg
 ligandscope_validation/*.log
 .omo/
+
+# QFD grids — generated at runtime from prep_qfd_grids.py
+qfd_*.bin
+
+# Benchmark runtime scratch
+benchmark/phase5_metal/
+benchmark/10metal/out/
+benchmark/10dual/out/
+benchmark/metal_revalidation/
+
+# AMBER/ANTECHAMBER scratch files
+ANTECHAMBER_*.AC
+ANTECHAMBER_*.AC0
+ATOMTYPE.INF
+sqm.in
+sqm.out
+sqm.pdb
+leap.log
+mdinfo
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+**/*.pyo

@@ -37,8 +37,8 @@ set -euo pipefail
 
 # ── 工具路徑（從此腳本位置自動推算）─────────────────────────────────────────
 _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-_VINA_DIR="$(dirname "$_SCRIPT_DIR")"
-_VINA_BIN="$_VINA_DIR/src/AutoDock-Vina-GPU-2.1/AutoDock-Vina-GPU-2-1"
+_VINA_DIR="$(dirname "$(dirname "$_SCRIPT_DIR")")"
+_VINA_BIN="$_VINA_DIR/AutoDock-Vina-GPU-2-1"
 _SMILES_PY="$_SCRIPT_DIR/smiles_to_pdbqt.py"
 
 # ── 預設值 ───────────────────────────────────────────────────────────────────

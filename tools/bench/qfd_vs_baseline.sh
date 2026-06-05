@@ -4,7 +4,8 @@
 
 set -euo pipefail
 
-export VINA_GPU_HOME="/home/cycheng/Vina-GPU-2.1/src/AutoDock-Vina-GPU-2.1"
+export VINA_GPU_HOME="/home/cycheng/Vina-GPU-2.1"
+export VINA_LS_METAL_WEIGHT=0  # pipi grid alone is optimal (Phase 5 benchmark 2026-06-05)
 METAL_DIR="/home/cycheng/LigandScope/data/Metal_enzymes"
 VINA="/home/cycheng/Vina-GPU-2.1/AutoDock-Vina-GPU-2-1"
 PREP_QFD="/home/cycheng/Vina-GPU-2.1/tools/prep/prep_qfd_grids.py"
@@ -71,9 +72,9 @@ opencl_binary_path = $OCL_CACHE
 center_x = $CENTER_X
 center_y = $CENTER_Y
 center_z = $CENTER_Z
-size_x   = 22
-size_y   = 22
-size_z   = 22
+size_x   = 25
+size_y   = 25
+size_z   = 25
 thread   = 8000
 search_depth = 20
 EOF
@@ -82,7 +83,7 @@ EOF
             python3 "$PREP_QFD" \
                 --receptor "$WORK/receptor.pdbqt" \
                 --center_x "$CENTER_X" --center_y "$CENTER_Y" --center_z "$CENTER_Z" \
-                --size_x 22 --size_y 22 --size_z 22 \
+                --size_x 25 --size_y 25 --size_z 25 \
                 --output_dir "$WORK" 2>/dev/null
         fi
 

@@ -4,6 +4,8 @@ BIN=/home/cycheng/Vina-GPU-2.1/AutoDock-Vina-GPU-2-1
 METAL=/home/cycheng/LigandScope/data/Metal_enzymes
 OUTDIR=/home/cycheng/Vina-GPU-2.1/benchmark/metal_revalidation
 BIN_PATH=/home/cycheng/Vina-GPU-2.1
+export VINA_GPU_HOME=$BIN_PATH
+export VINA_LS_METAL_WEIGHT=0  # pipi grid alone is optimal (Phase 5 benchmark 2026-06-05)
 
 declare -A CX=([1A42]=-4.14 [1BNN]=-3.98 [1G52]=-4.32 [1GKC]=65.61
                [1JAQ]=27.22 [1MMQ]=49.47 [1O86]=40.55 [1OQ5]=17.48
@@ -34,8 +36,8 @@ echo "Target  ms    best_affinity"
 for T in "${TARGETS[@]}"; do
     t_start=$(date +%s%N)
     $BIN \
-      --receptor $METAL/${T}_receptor.pdbqt \
-      --ligand   $METAL/${LIG[$T]}.pdbqt \
+      --receptor $METAL/${T}/${T}_receptor.pdbqt \
+      --ligand   $METAL/${T}/${LIG[$T]}.pdbqt \
       --out      $OUTDIR/${T}_out.pdbqt \
       --opencl_binary_path $BIN_PATH \
       --center_x ${CX[$T]} --center_y ${CY[$T]} --center_z ${CZ[$T]} \

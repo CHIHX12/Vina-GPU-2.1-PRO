@@ -1,10 +1,12 @@
 #!/bin/bash
-# Benchmark: 10 metal-coordinated targets (AD4Zn scoring)
+# Benchmark: 10 metal-coordinated targets (AD4Zn + QFD pipi scoring)
 set -e
-BIN=/home/cycheng/Vina-GPU-2.1/src/AutoDock-Vina-GPU-2.1/AutoDock-Vina-GPU-2-1
+BIN=/home/cycheng/Vina-GPU-2.1/AutoDock-Vina-GPU-2-1
 METAL=/home/cycheng/LigandScope/data/Metal_enzymes
 BIN_PATH=/home/cycheng/Vina-GPU-2.1
 OUTDIR=/home/cycheng/Vina-GPU-2.1/benchmark/10metal/out
+export VINA_GPU_HOME=$BIN_PATH
+export VINA_LS_METAL_WEIGHT=0  # pipi grid alone is optimal (Phase 5 benchmark 2026-06-05)
 
 declare -A CX=( [1A42]=-4.1  [1BNN]=-4.0  [1G52]=-4.3  [1GKC]=65.6
                 [1JAQ]=27.2  [1MMQ]=49.5  [1O86]=40.6  [1OQ5]=17.5
@@ -26,8 +28,8 @@ echo "=== 10 Metal Targets Benchmark (AD4Zn) ==="
 TOTAL_START=$(date +%s%N)
 
 for T in "${TARGETS[@]}"; do
-    REC=$METAL/${T}_receptor.pdbqt
-    LG=$METAL/${LIG[$T]}.pdbqt
+    REC=$METAL/${T}/${T}_receptor.pdbqt
+    LG=$METAL/${T}/${LIG[$T]}.pdbqt
     OUT=$OUTDIR/${T}_out.pdbqt
 
     printf "  %-6s  " "$T"
@@ -39,7 +41,7 @@ for T in "${TARGETS[@]}"; do
          --center_x ${CX[$T]} --center_y ${CY[$T]} --center_z ${CZ[$T]} \
          --size_x 25 --size_y 25 --size_z 25 \
          --thread 8000 --search_depth 20 --num_modes 9 \
-         --ad4zn 1 --gpu_id 0 2>&1 | grep -E "DIAG|AutoDock|Affinity|mode 1"
+         --ad4zn --gpu_id 0 2>&1 | grep -E "DIAG|AutoDock|Affinity|mode 1"
     END=$(date +%s%N)
     echo "  → $T wall: $(( (END-START)/1000000 ))ms"
 done

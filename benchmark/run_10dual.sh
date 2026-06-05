@@ -1,7 +1,8 @@
 #!/bin/bash
 # Benchmark: 10 dual-ligand pairs against 2bm2
 set -e
-BIN=/home/cycheng/Vina-GPU-2.1/src/AutoDock-Vina-GPU-2.1/AutoDock-Vina-GPU-2-1
+BIN=/home/cycheng/Vina-GPU-2.1/AutoDock-Vina-GPU-2-1
+export VINA_GPU_HOME=/home/cycheng/Vina-GPU-2.1
 REC=/home/cycheng/Vina-GPU-2.1/src/AutoDock-Vina-GPU-2.1/input_file_example/2bm2_protein.pdbqt
 LDIR=/home/cycheng/Vina-GPU-2.1/src/AutoDock-Vina-GPU-2.1/test
 BIN_PATH=/home/cycheng/Vina-GPU-2.1

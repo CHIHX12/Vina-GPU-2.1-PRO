@@ -23,7 +23,7 @@ _BIN="$CONDA_PREFIX/bin"
 
 # ── Vina-GPU 2.1 binary ────────────────────────────────────────────────────
 _VINA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export VINA_BIN="$_VINA_DIR/src/AutoDock-Vina-GPU-2.1/AutoDock-Vina-GPU-2-1"
+export VINA_BIN="$_VINA_DIR/AutoDock-Vina-GPU-2-1"
 export VINA_OCL="$_VINA_DIR"
 alias vina-gpu="$VINA_BIN --opencl_binary_path $VINA_OCL"
 
