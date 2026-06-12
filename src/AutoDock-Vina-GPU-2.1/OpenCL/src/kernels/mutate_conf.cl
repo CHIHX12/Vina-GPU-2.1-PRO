@@ -1,20 +1,30 @@
 void quaternion_increment(float* q, const float* rotation, float epsilon_fl);
 void normalize_angle(float* x);
 
-void output_type_cl_increment(output_type_cl* x, const change_cl* c, float factor, float epsilon_fl, int lig_torsion_size) {
+void output_type_cl_increment(output_type_cl* x, const change_cl* c, float factor, float epsilon_fl, int tcount) {
+	// tcount packs (lig_torsion_size | flex_torsion_size<<16); raw lig size ⇒ flex=0 (Stage 3).
+	int lig_torsion_size  = tcount & 0xFFFF;
+	int flex_torsion_size = (tcount >> 16) & 0xFFFF;
 	// position increment
 	for (int k = 0; k < 3; k++) x->position[k] += factor * c->position[k];
 	// orientation increment
 	float rotation[3];
 	for (int k = 0; k < 3; k++) rotation[k] = factor * c->orientation[k];
 	quaternion_increment(x->orientation, rotation, epsilon_fl);
-	
-	// torsion increment
+
+	// torsion increment (ligand)
 	for (int k = 0; k < lig_torsion_size; k++) {
 		float tmp = factor * c->lig_torsion[k];
 		normalize_angle(&tmp);
 		x->lig_torsion[k] += tmp;
 		normalize_angle(&(x->lig_torsion[k]));
+	}
+	// torsion increment (flex side chains) — Stage 3: BFGS moves sidechains
+	for (int k = 0; k < flex_torsion_size; k++) {
+		float tmp = factor * c->flex_torsion[k];
+		normalize_angle(&tmp);
+		x->flex_torsion[k] += tmp;
+		normalize_angle(&(x->flex_torsion[k]));
 	}
 }
 

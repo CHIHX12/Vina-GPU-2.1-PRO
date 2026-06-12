@@ -61,6 +61,9 @@ void kernel2(
 		int torsion_size  = torsion_sizes_arr[lig_id];
 		int search_depth  = search_depths_arr[lig_id];
 		int max_bfgs_steps = bfgs_steps_arr[lig_id];
+		// Stage 3: packed torsion dims (lig | flex<<16) for bfgs/rilc_bfgs index+dimension handling.
+		// mutate_conf_cl below still gets the RAW torsion_size + flex size separately.
+		int tcount = (torsion_size & 0xFFFF) | ((mis->flex_torsion_size & 0xFFFF) << 16);
 
 		// Base offsets for this ligand's data
 		int base = lig_id * mis->thread;
@@ -77,7 +80,9 @@ void kernel2(
 		m.ligand.begin = mg[lig_id].ligand.begin;
 		m.ligand.end   = mg[lig_id].ligand.end;
 		m.ligand.rigid = mg[lig_id].ligand.rigid;
+		m.flex_rigid   = mg[lig_id].flex_rigid;   // Stage 1: flex forest (num_nodes==0 ⇒ dormant)
 		__global const lig_pairs_cl* pairs_g = &mg[lig_id].ligand.pairs;
+		__global const other_pairs_cl* other_g = &mg[lig_id].other_pairs;  // Stage 2 (num_pairs==0 ⇒ no-op)
 
 		float best_e = INFINITY;
 		output_type_cl best_out;
@@ -120,10 +125,11 @@ void kernel2(
 						&g,
 						&m,
 						pairs_g,
+						other_g,
 						pre,
 						grids,
 						mis,
-						torsion_size,
+						tcount,
 						max_bfgs_steps
 				);
 			}else{
@@ -131,15 +137,21 @@ void kernel2(
 						&g,
 						&m,
 						pairs_g,
+						other_g,
 						pre,
 						grids,
 						mis,
-						torsion_size,
+						tcount,
 						max_bfgs_steps
 				);
 			}
 
-			float n = generate_n(rmap->pi_map, map_index);
+			// Decorrelate the Metropolis acceptance draw from the mutation RNG.
+			// map_index feeds mutate_conf_cl (torsion value = pi_map[map_index]); reusing the
+			// same entry for n made acceptance a deterministic function of the chosen torsion
+			// (uphill moves to extreme angles were always rejected), breaking detailed balance.
+			int accept_index = (map_index + MAX_NUM_OF_RANDOM_MAP / 2) % MAX_NUM_OF_RANDOM_MAP;
+			float n = generate_n(rmap->pi_map, accept_index);
 
 			// QFD temperature: anneal exponentially from T_start → QFD_T_FINAL
 			float progress    = (float)step / (float)search_depth;
@@ -151,6 +163,7 @@ void kernel2(
 
 				set(&tmp, &m.ligand.rigid, &m.m_coords,
 					m.atoms, m.m_num_movable_atoms, mis->epsilon_fl);
+				set_flex(&tmp, &m.flex_rigid, &m.m_coords, m.atoms, mis->epsilon_fl);
 
 				if (tmp.e < best_e) {
 					if (rilc_bfgs_enable==1){
@@ -158,10 +171,11 @@ void kernel2(
 								&g,
 								&m,
 								pairs_g,
+								other_g,
 								pre,
 								grids,
 								mis,
-								torsion_size,
+								tcount,
 								max_bfgs_steps
 						);
 					}else{
@@ -169,10 +183,11 @@ void kernel2(
 								&g,
 								&m,
 								pairs_g,
+								other_g,
 								pre,
 								grids,
 								mis,
-								torsion_size,
+								tcount,
 								max_bfgs_steps
 						);
 					}
@@ -213,9 +228,9 @@ void kernel2(
 
 				// Re-minimise to nearest local minimum
 				if (rilc_bfgs_enable == 1) {
-					rilc_bfgs(&hopped, &g, &m, pairs_g, pre, grids, mis, torsion_size, max_bfgs_steps);
+					rilc_bfgs(&hopped, &g, &m, pairs_g, other_g, pre, grids, mis, tcount, max_bfgs_steps);
 				} else {
-					bfgs(&hopped, &g, &m, pairs_g, pre, grids, mis, torsion_size, max_bfgs_steps);
+					bfgs(&hopped, &g, &m, pairs_g, other_g, pre, grids, mis, tcount, max_bfgs_steps);
 				}
 
 				float hop_n = generate_n(rmap->pi_map, (hop_map + 2) % MAX_NUM_OF_RANDOM_MAP);
@@ -229,9 +244,9 @@ void kernel2(
 					// Promote to global best if improved
 					if (tmp.e < best_e) {
 						if (rilc_bfgs_enable == 1) {
-							rilc_bfgs(&tmp, &g, &m, pairs_g, pre, grids, mis, torsion_size, max_bfgs_steps);
+							rilc_bfgs(&tmp, &g, &m, pairs_g, other_g, pre, grids, mis, tcount, max_bfgs_steps);
 						} else {
-							bfgs(&tmp, &g, &m, pairs_g, pre, grids, mis, torsion_size, max_bfgs_steps);
+							bfgs(&tmp, &g, &m, pairs_g, other_g, pre, grids, mis, tcount, max_bfgs_steps);
 						}
 						if (tmp.e < best_e) {
 							set(&tmp, &m.ligand.rigid, &m.m_coords,
@@ -298,13 +313,13 @@ float eval_lig_lig_cl(
 	return e;
 }
 
-// Macro: run bfgs or rilc_bfgs depending on rilc flag
-#define DUAL_BFGS(x, g, m, pg, torsion) \
+// Macro: run bfgs or rilc_bfgs depending on rilc flag (og = other_pairs, empty for dual = no flex)
+#define DUAL_BFGS(x, g, m, pg, og, torsion) \
 	do { \
 		if (rilc_bfgs_enable == 1) \
-			rilc_bfgs((x), (g), (m), (pg), pre, grids, mis, (torsion), max_bfgs_steps); \
+			rilc_bfgs((x), (g), (m), (pg), (og), pre, grids, mis, (torsion), max_bfgs_steps); \
 		else \
-			bfgs((x), (g), (m), (pg), pre, grids, mis, (torsion), max_bfgs_steps); \
+			bfgs((x), (g), (m), (pg), (og), pre, grids, mis, (torsion), max_bfgs_steps); \
 	} while(0)
 
 __kernel
@@ -362,6 +377,7 @@ void kernel2_dual(
 		ma.ligand.end   = mg_a[lig_id].ligand.end;
 		ma.ligand.rigid = mg_a[lig_id].ligand.rigid;
 		__global const lig_pairs_cl* pairs_ga = &mg_a[lig_id].ligand.pairs;
+		__global const other_pairs_cl* other_ga = &mg_a[lig_id].other_pairs;  // empty (dual = no flex)
 
 		m_cl_private mb;
 		mb.m_num_movable_atoms = mg_b[lig_id].m_num_movable_atoms;
@@ -373,6 +389,7 @@ void kernel2_dual(
 		mb.ligand.end   = mg_b[lig_id].ligand.end;
 		mb.ligand.rigid = mg_b[lig_id].ligand.rigid;
 		__global const lig_pairs_cl* pairs_gb = &mg_b[lig_id].ligand.pairs;
+		__global const other_pairs_cl* other_gb = &mg_b[lig_id].other_pairs;  // empty (dual = no flex)
 
 		// Initial conformations for this trajectory
 		output_type_cl tmp_a = ric_a[base + traj_id];
@@ -385,9 +402,9 @@ void kernel2_dual(
 		set(&tmp_b, &mb.ligand.rigid, &mb.m_coords, mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 
 		// Quick initial minimization for both
-		DUAL_BFGS(&tmp_a, &ga, &ma, pairs_ga, torsion_a);
+		DUAL_BFGS(&tmp_a, &ga, &ma, pairs_ga, other_ga, torsion_a);
 		set(&tmp_a, &ma.ligand.rigid, &ma.m_coords, ma.atoms, ma.m_num_movable_atoms, mis->epsilon_fl);
-		DUAL_BFGS(&tmp_b, &gb, &mb, pairs_gb, torsion_b);
+		DUAL_BFGS(&tmp_b, &gb, &mb, pairs_gb, other_gb, torsion_b);
 		set(&tmp_b, &mb.ligand.rigid, &mb.m_coords, mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 
 		float e_ll   = eval_lig_lig_cl(&ma, &mb, pre, atu);
@@ -424,7 +441,7 @@ void kernel2_dual(
 					ma.ligand.begin, ma.ligand.end, ma.atoms, &ma.m_coords,
 					ma.ligand.rigid.origin[0], mis->epsilon_fl,
 					mis->mutation_amplitude, torsion_a, mis->flex_torsion_size);
-				DUAL_BFGS(&cand_a, &ga, &ma, pairs_ga, torsion_a);
+				DUAL_BFGS(&cand_a, &ga, &ma, pairs_ga, other_ga, torsion_a);
 				set(&cand_a, &ma.ligand.rigid, &ma.m_coords,
 					ma.atoms, ma.m_num_movable_atoms, mis->epsilon_fl);
 
@@ -436,7 +453,7 @@ void kernel2_dual(
 					cur_combined = new_combined;
 					if (new_combined < best_combined) {
 						// Extra refinement on the new best
-						DUAL_BFGS(&tmp_a, &ga, &ma, pairs_ga, torsion_a);
+						DUAL_BFGS(&tmp_a, &ga, &ma, pairs_ga, other_ga, torsion_a);
 						set(&tmp_a, &ma.ligand.rigid, &ma.m_coords,
 							ma.atoms, ma.m_num_movable_atoms, mis->epsilon_fl);
 						float e_ll2 = eval_lig_lig_cl(&ma, &mb, pre, atu);
@@ -463,7 +480,7 @@ void kernel2_dual(
 					mb.ligand.begin, mb.ligand.end, mb.atoms, &mb.m_coords,
 					mb.ligand.rigid.origin[0], mis->epsilon_fl,
 					mis->mutation_amplitude, torsion_b, mis->flex_torsion_size);
-				DUAL_BFGS(&cand_b, &gb, &mb, pairs_gb, torsion_b);
+				DUAL_BFGS(&cand_b, &gb, &mb, pairs_gb, other_gb, torsion_b);
 				set(&cand_b, &mb.ligand.rigid, &mb.m_coords,
 					mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 
@@ -474,7 +491,7 @@ void kernel2_dual(
 					tmp_b = cand_b;
 					cur_combined = new_combined;
 					if (new_combined < best_combined) {
-						DUAL_BFGS(&tmp_b, &gb, &mb, pairs_gb, torsion_b);
+						DUAL_BFGS(&tmp_b, &gb, &mb, pairs_gb, other_gb, torsion_b);
 						set(&tmp_b, &mb.ligand.rigid, &mb.m_coords,
 							mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 						float e_ll2 = eval_lig_lig_cl(&ma, &mb, pre, atu);

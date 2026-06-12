@@ -447,6 +447,57 @@ void set(	const				output_type_cl* x,
 	//************** end branches_set_conf **************//
 }
 
+// Stage 1: flexible side-chain forward kinematics.
+// Walks the flex forest (anchors before their children, depth-first). Anchor nodes
+// (parent < 0) keep their FIXED input frame; torsion nodes rotate about `axis` by
+// flex_torsion[torsion_idx], exactly like set()'s branch loop. Writes lab coords for
+// flex atoms into m_coords at their atom_range indices. No-op when num_nodes == 0.
+void set_flex(	const				output_type_cl*	x,
+								flex_rigid_cl*	flex,
+								m_coords_cl*	m_coords_gpu,
+				const				atom_cl*		atoms,
+				const				float			epsilon_fl
+) {
+	for (int n = 0; n < flex->num_nodes; n++) {
+		int par = flex->parent[n];
+		float torsion = x->flex_torsion[flex->torsion_idx[n]];
+		float tmp[4];
+		if (par < 0) {
+			// first_segment (residue root): FIXED origin + FIXED axis (loaded from CPU);
+			// parent orientation is identity, so orientation_q = angle_to_quaternion(axis, torsion).
+			float root_axis[3] = { flex->axis[n][0], flex->axis[n][1], flex->axis[n][2] };
+			angle_to_quaternion2(tmp, root_axis, torsion);
+			quaternion_normalize_approx(tmp, epsilon_fl);
+			// origin[n] stays at its fixed loaded value.
+		} else {
+			// child segment: derive origin/axis from parent, rotate by its flex torsion
+			local_to_lab(			flex->origin[n],
+									flex->origin[par],
+									flex->relative_origin[n],
+									flex->orientation_m[par]);
+			local_to_lab_direction(	flex->axis[n],
+									flex->relative_axis[n],
+									flex->orientation_m[par]);
+			float parent_q[4] = {	flex->orientation_q[par][0],
+									flex->orientation_q[par][1],
+									flex->orientation_q[par][2],
+									flex->orientation_q[par][3] };
+			float current_axis[3] = { flex->axis[n][0], flex->axis[n][1], flex->axis[n][2] };
+			angle_to_quaternion2(tmp, current_axis, torsion);
+			angle_to_quaternion_multi(tmp, parent_q);
+			quaternion_normalize_approx(tmp, epsilon_fl);
+		}
+		for (int i = 0; i < 4; i++) flex->orientation_q[n][i] = tmp[i];
+		quaternion_to_r3(flex->orientation_q[n], flex->orientation_m[n]);
+
+		int begin = flex->atom_range[n][0];
+		int end   = flex->atom_range[n][1];
+		for (int i = begin; i < end; i++) {
+			local_to_lab(m_coords_gpu->coords[i], flex->origin[n], &atoms[i].coords[0], flex->orientation_m[n]);
+		}
+	}
+}
+
 void p_eval_deriv(						float*		out,
 										int			type_pair_index,
 										float		r2,
@@ -481,17 +532,21 @@ inline void curl(float* e, float* deriv, float v, const float epsilon_fl) {
 	}
 }
 
+// Raw-array form so it serves BOTH ligand intra-pairs and flex other_pairs (Stage 2).
 float eval_interacting_pairs_deriv(			const __global	pre_cl*			pre,
 									const				float			v,
-									const __global		lig_pairs_cl*   pairs,
+									const				int				num_pairs,
+									const __global		int*			tpi,
+									const __global		int*			pa,
+									const __global		int*			pb,
 									const			 	m_coords_cl*	m_coords,
 														m_minus_forces* minus_forces,
 									const				float			epsilon_fl
 ) {
 	float e = 0;
 
-	for (int i = 0; i < pairs->num_pairs; i++) {
-		const int ip[3] = { pairs->type_pair_index[i], pairs->a[i] ,pairs->b[i] };
+	for (int i = 0; i < num_pairs; i++) {
+		const int ip[3] = { tpi[i], pa[i], pb[i] };
 		float coords_b[3] = { m_coords->coords[ip[2]][0], m_coords->coords[ip[2]][1], m_coords->coords[ip[2]][2] };
 		float coords_a[3] = { m_coords->coords[ip[1]][0], m_coords->coords[ip[1]][1], m_coords->coords[ip[1]][2] };
 		float r[3] = { coords_b[0] - coords_a[0], coords_b[1] - coords_a[1] ,coords_b[2] - coords_a[2] };
@@ -589,17 +644,76 @@ void POT_deriv(	const					m_minus_forces* minus_forces,
 	for (int k = 0; k < num_torsion; k++) g->lig_torsion[k] = torsion_derivative[k + 1];// no meaning for node 0
 }
 
+// Stage 3: flex side-chain torsion gradients. Mirrors POT_deriv but over the flex forest
+// (uses parent[] instead of children_map; DFS order ⇒ parent index < child index, so
+// accumulating high→low into the parent gathers each subtree's force/torque). Every flex node
+// has a torsion (first_segment rotates about its fixed axis too), so all get a gradient.
+// Writes g->flex_torsion[torsion_idx]. No-op when num_nodes==0 (rigid).
+void POT_deriv_flex(	const	m_minus_forces*	minus_forces,
+						const	flex_rigid_cl*	flex,
+						const	m_coords_cl*	m_coords,
+								change_cl*		g
+) {
+	int N = flex->num_nodes;
+	if (N <= 0) return;
+	float pos_d[MAX_NUM_OF_FLEX_RIGID][3];
+	float ori_d[MAX_NUM_OF_FLEX_RIGID][3];
+	for (int i = 0; i < N; i++) {
+		int begin = flex->atom_range[i][0];
+		int end   = flex->atom_range[i][1];
+		float pd[3] = {0,0,0};
+		float od[3] = {0,0,0};
+		for (int j = begin; j < end; j++) {
+			for (int k = 0; k < 3; k++) pd[k] += minus_forces->coords[j][k];
+			float tmp1[3] = {	m_coords->coords[j][0] - flex->origin[i][0],
+								m_coords->coords[j][1] - flex->origin[i][1],
+								m_coords->coords[j][2] - flex->origin[i][2] };
+			float tmp2[3] = {	minus_forces->coords[j][0],
+								minus_forces->coords[j][1],
+								minus_forces->coords[j][2] };
+			float tmp3[3];
+			product(tmp3, tmp1, tmp2);
+			for (int k = 0; k < 3; k++) od[k] += tmp3[k];
+		}
+		for (int k = 0; k < 3; k++) { pos_d[i][k] = pd[k]; ori_d[i][k] = od[k]; }
+	}
+	// gather each subtree's contribution into its parent (children have higher index)
+	for (int i = N - 1; i >= 0; i--) {
+		int p = flex->parent[i];
+		if (p >= 0) {
+			float origin_temp[3] = {	flex->origin[i][0] - flex->origin[p][0],
+										flex->origin[i][1] - flex->origin[p][1],
+										flex->origin[i][2] - flex->origin[p][2] };
+			float product_out[3];
+			product(product_out, origin_temp, pos_d[i]);
+			for (int k = 0; k < 3; k++) {
+				pos_d[p][k] += pos_d[i][k];
+				ori_d[p][k] += ori_d[i][k] + product_out[k];
+			}
+		}
+	}
+	for (int i = 0; i < N; i++) {
+		float sum = 0;
+		for (int k = 0; k < 3; k++) sum += ori_d[i][k] * flex->axis[i][k];
+		g->flex_torsion[flex->torsion_idx[i]] = sum;
+	}
+}
+
 
 float m_eval_deriv(						output_type_cl*			c,
 										change_cl*				g,
 										m_cl_private*			m,
 						const __global	lig_pairs_cl*			pairs_g,
+						const __global	other_pairs_cl*			other_g,
 							const __global	pre_cl*				pre,
 							const __global	grids_cl*			grids,
 					const	__global	float*					v,
 					const				float					epsilon_fl
 ) {
 	set(c, &m->ligand.rigid, &m->m_coords, m->atoms, m->m_num_movable_atoms, epsilon_fl);
+	// Stage 2: update flexible side-chain coords from the current conf BEFORE scoring,
+	// so other_pairs (ligand↔flex, flex↔flex) and the flex↔receptor grid term are current.
+	set_flex(c, &m->flex_rigid, &m->m_coords, m->atoms, epsilon_fl);
 
 	float e = ig_eval_deriv(	c,
 								g,
@@ -609,36 +723,55 @@ float m_eval_deriv(						output_type_cl*			c,
 								epsilon_fl
 							);
 
-	e += eval_interacting_pairs_deriv(	pre,
-										v[0],
-										pairs_g,
+	e += eval_interacting_pairs_deriv(	pre, v[0],
+										pairs_g->num_pairs, pairs_g->type_pair_index, pairs_g->a, pairs_g->b,
+										&m->m_coords,
+										&m->minus_forces,
+										epsilon_fl
+									);
+
+	// Stage 2: ligand↔side-chain + side-chain↔side-chain energy (no-op when num_pairs==0)
+	e += eval_interacting_pairs_deriv(	pre, v[0],
+										other_g->num_pairs, other_g->type_pair_index, other_g->a, other_g->b,
 										&m->m_coords,
 										&m->minus_forces,
 										epsilon_fl
 									);
 
 	POT_deriv(&m->minus_forces, &m->ligand.rigid, &m->m_coords, g);
+	// Stage 3: flex side-chain torsion gradients (no-op when no flex)
+	POT_deriv_flex(&m->minus_forces, &m->flex_rigid, &m->m_coords, g);
 
 	return e;
 }
 
 
-// Only support one ligand, no flex !
-inline float find_change_index_read(const change_cl* g, int index, int lig_torsion_size) {
+// Stage 3: `tcount` packs torsion sizes as (lig_torsion_size | flex_torsion_size<<16).
+// Backward compatible: a raw lig_torsion_size has zero high bits ⇒ flex=0 (rigid/dual unaffected).
+// Change vector layout: position[3], orientation[3], lig_torsion[lig], flex_torsion[flex].
+inline float find_change_index_read(const change_cl* g, int index, int tcount) {
+	int lig_torsion_size = tcount & 0xFFFF;
+	int flex_torsion_size = (tcount >> 16) & 0xFFFF;
 	if (index < 3)return g->position[index];
 	index -= 3;
 	if (index < 3)return g->orientation[index];
 	index -= 3;
 	if (index < lig_torsion_size)return g->lig_torsion[index]; /* assert removed */
+	index -= lig_torsion_size;
+	if (index < flex_torsion_size)return g->flex_torsion[index];
 	return -1;
 }
 
-inline void find_change_index_write(change_cl* g, int index, float data, int lig_torsion_size) {
+inline void find_change_index_write(change_cl* g, int index, float data, int tcount) {
+	int lig_torsion_size = tcount & 0xFFFF;
+	int flex_torsion_size = (tcount >> 16) & 0xFFFF;
 	if (index < 3) { g->position[index] = data; return; }
 	index -= 3;
 	if (index < 3) { g->orientation[index] = data; return; }
 	index -= 3;
 	if (index < lig_torsion_size) { g->lig_torsion[index] = data; return; } /* assert removed */
+	index -= lig_torsion_size;
+	if (index < flex_torsion_size) { g->flex_torsion[index] = data; return; }
 }
 
 void minus_mat_vec_product(	const		matrix*		h,
@@ -698,6 +831,7 @@ inline float to_norm(const change_cl* in, const int n, const int torsion_size)
 
 inline int line_search_lewisoverton(				m_cl_private*	m_cl_gpu,
 							const __global	lig_pairs_cl*	pairs_g,
+							const __global	other_pairs_cl*	other_g,
 											const __global 	pre_cl* 		p_cl_gpu,
 											const __global 	grids_cl* 		ig_cl_gpu,
 														int 			n,
@@ -742,6 +876,7 @@ inline int line_search_lewisoverton(				m_cl_private*	m_cl_gpu,
 			g,
 			m_cl_gpu,
 			pairs_g,
+			other_g,
 			p_cl_gpu,
 			ig_cl_gpu,
 			hunt_cap,
@@ -786,6 +921,7 @@ inline int line_search_lewisoverton(				m_cl_private*	m_cl_gpu,
 
 float line_search(					 	m_cl_private*		m,
 						const __global	lig_pairs_cl*		pairs_g,
+						const __global	other_pairs_cl*		other_g,
 							const __global	pre_cl*				pre,
 							const __global	grids_cl*			grids,
 										int					n,
@@ -817,6 +953,7 @@ float line_search(					 	m_cl_private*		m,
 							g_new,
 							m,
 							pairs_g,
+							other_g,
 							pre,
 							grids,
 							hunt_cap,
@@ -852,7 +989,7 @@ bool bfgs_update(			matrix*			h,
 	minus_mat_vec_product(h, y, &minus_hy, torsion_size);
 	const float yhy = -scalar_product(y, &minus_hy, h->dim, torsion_size);
 	const float r = 1 / (alpha * yp);
-	const int n = 6 + torsion_size;
+	const int n = 6 + (torsion_size & 0xFFFF) + ((torsion_size >> 16) & 0xFFFF);  // Stage 3: unpack lig|flex
 	int s = torsion_size;
 	for (int i = 0; i < n; i++) {
 		for (int j = i; j < n; j++) {
@@ -871,6 +1008,7 @@ void rilc_bfgs(				output_type_cl* 	x,
 						change_cl* 			g,
 						m_cl_private*		m_cl_gpu,
 			const __global	lig_pairs_cl*		pairs_g,
+			const __global	other_pairs_cl*		other_g,
 			const __global	pre_cl* 			p_cl_gpu,
 			const __global	grids_cl* 			ig_cl_gpu,
 	const	__global	mis_cl*				mis,
@@ -879,7 +1017,7 @@ void rilc_bfgs(				output_type_cl* 	x,
 )
 {
 
-	int n = 3 + 3 + torsion_size; // the dimensions of matirx
+	int n = 6 + (torsion_size & 0xFFFF) + ((torsion_size >> 16) & 0xFFFF); // Stage 3: unpack lig|flex dims
 
 	// rilc_bfgs init
 	int k, ls;
@@ -900,6 +1038,7 @@ void rilc_bfgs(				output_type_cl* 	x,
 						g,
 						m_cl_gpu,
 						pairs_g,
+						other_g,
 						p_cl_gpu,
 						ig_cl_gpu,
 						mis->hunt_cap,
@@ -935,6 +1074,7 @@ void rilc_bfgs(				output_type_cl* 	x,
 
 			ls = line_search_lewisoverton(m_cl_gpu,
 				pairs_g,
+				other_g,
 				p_cl_gpu,
 				ig_cl_gpu,
 				n,
@@ -1061,6 +1201,7 @@ void bfgs(					output_type_cl*			x,
 								change_cl*			g,
 								m_cl_private*		m,
 					const __global	lig_pairs_cl*	pairs_g,
+					const __global	other_pairs_cl*	other_g,
 					const __global	pre_cl*				pre,
 					const __global	grids_cl*			grids,
 			const	__global	mis_cl*				mis,
@@ -1068,8 +1209,8 @@ void bfgs(					output_type_cl*			x,
 			const				int					max_bfgs_steps
 )
 {
-	int lig_torsion_size = torsion_size;
-	int n = 3 + 3 + lig_torsion_size; // the dimensions of matirx
+	int lig_torsion_size = torsion_size;  // packed (lig|flex<<16) when called from single-ligand kernel
+	int n = 6 + (torsion_size & 0xFFFF) + ((torsion_size >> 16) & 0xFFFF); // Stage 3: unpack lig|flex dims
 
 	matrix h;
 	matrix_init(&h, n, 0);
@@ -1082,6 +1223,7 @@ void bfgs(					output_type_cl*			x,
 								g,
 								m,
 								pairs_g,
+								other_g,
 								pre,
 								grids,
 								mis->hunt_cap,
@@ -1102,6 +1244,7 @@ void bfgs(					output_type_cl*			x,
 
 		const float alpha = line_search(	m,
 											pairs_g,
+											other_g,
 											pre,
 											grids,
 											n,

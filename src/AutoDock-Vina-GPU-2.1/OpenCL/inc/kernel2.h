@@ -10,8 +10,11 @@
 
 //kernel2 macros
 #define MAX_NUM_OF_LIG_TORSION 100
-#define MAX_NUM_OF_FLEX_TORSION 12   // Phase 4: up to 12 flexible receptor side-chain torsions
+#define MAX_NUM_OF_FLEX_TORSION 32   // flexible receptor side-chain torsions (raised 12→32 for larger flex sets)
 #define MAX_NUM_OF_RIGID 104  // must be >= MAX_NUM_OF_LIG_TORSION + 1 (torsions + root)
+// Flex forward-kinematics forest: one anchor node per flexible residue + one node per flex
+// torsion. Generous cap so a few residues (each with several rotatable bonds) fit.
+#define MAX_NUM_OF_FLEX_RIGID 48  // anchors + torsion nodes across all flexible side chains (raised 24→48)
 #define MAX_NUM_OF_ATOMS 272
 #define SIZE_OF_MOLEC_STRUC ((3+4+MAX_NUM_OF_LIG_TORSION+MAX_NUM_OF_FLEX_TORSION+ 1)*sizeof(float) )
 #define SIZE_OF_CHANGE_STRUC ((3+3+MAX_NUM_OF_LIG_TORSION+MAX_NUM_OF_FLEX_TORSION + 1)*sizeof(float))
@@ -166,12 +169,43 @@ typedef struct { // depth-first order
 	
 } rigid_cl;
 
+// Flexible side-chain forward-kinematics forest (Stage 1).
+// Compact analogue of rigid_cl: a flat list of nodes in depth-first order.
+// Anchor nodes (one per flexible residue) have parent < 0 and a FIXED frame
+// (origin/orientation loaded from input, never recomputed). Torsion nodes have a
+// valid parent and rotate about `axis` by flex_torsion[torsion_idx].
+// origin/orientation_m/orientation_q/axis are MUTABLE (recomputed each conf);
+// parent/torsion_idx/atom_range/relative_axis/relative_origin are CONSTANT.
+typedef struct {
+	int   num_nodes;                               // total flex nodes (anchors + torsion nodes)
+	int   parent        [MAX_NUM_OF_FLEX_RIGID];   // -1 for anchor root nodes
+	int   torsion_idx   [MAX_NUM_OF_FLEX_RIGID];   // index into flex_torsion[]; -1 for anchors
+	int   atom_range    [MAX_NUM_OF_FLEX_RIGID][2];// [begin,end) into the movable-atom array
+	float origin        [MAX_NUM_OF_FLEX_RIGID][3];
+	float orientation_m [MAX_NUM_OF_FLEX_RIGID][9];
+	float orientation_q [MAX_NUM_OF_FLEX_RIGID][4];
+	float axis          [MAX_NUM_OF_FLEX_RIGID][3];
+	float relative_axis   [MAX_NUM_OF_FLEX_RIGID][3];
+	float relative_origin [MAX_NUM_OF_FLEX_RIGID][3];
+} flex_rigid_cl;
+
 typedef struct {
 	int num_pairs;
 	int type_pair_index	[MAX_NUM_OF_LIG_PAIRS];
 	int a				[MAX_NUM_OF_LIG_PAIRS];
 	int b				[MAX_NUM_OF_LIG_PAIRS];
 } lig_pairs_cl;
+
+// Stage 2: ligand↔side-chain and side-chain↔side-chain interaction pairs (model.other_pairs).
+// Same layout as lig_pairs_cl; atom indices a,b reference the full movable-atom array (ligand+flex).
+// Lives only in the GLOBAL m_cl (accessed via __global ptr), never in the private copy.
+#define MAX_NUM_OF_OTHER_PAIRS 16384
+typedef struct {
+	int num_pairs;
+	int type_pair_index	[MAX_NUM_OF_OTHER_PAIRS];
+	int a				[MAX_NUM_OF_OTHER_PAIRS];
+	int b				[MAX_NUM_OF_OTHER_PAIRS];
+} other_pairs_cl;
 
 typedef struct {
 	int begin;
@@ -200,6 +234,8 @@ typedef struct {
 	m_coords_cl m_coords;
 	m_minus_forces minus_forces;
 	ligand_cl ligand;
+	flex_rigid_cl flex_rigid;   // Stage 1: flexible side-chain forest (empty when num_nodes==0)
+	other_pairs_cl other_pairs; // Stage 2: ligand↔flex + flex↔flex pairs (num_pairs==0 when rigid)
 } m_cl;
 
 // In-kernel private copy of m_cl — excludes lig_pairs_cl to fit GPU private memory.
@@ -211,6 +247,7 @@ typedef struct {
 	m_coords_cl m_coords;
 	m_minus_forces minus_forces;
 	ligand_private_cl ligand;
+	flex_rigid_cl flex_rigid;   // Stage 1: ~3 KB, small enough for the private copy
 } m_cl_private;
 
 typedef struct {
