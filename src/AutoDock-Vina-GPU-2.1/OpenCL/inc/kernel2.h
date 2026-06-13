@@ -24,6 +24,10 @@
 // them as MAX_HESSIAN_MATRIX_SIZE wasted ~38 KB each of per-work-item private memory (doubled in
 // the dual kernel). MAX_CONF_DIM is the correct size.
 #define MAX_CONF_DIM (6 + MAX_NUM_OF_LIG_TORSION + MAX_NUM_OF_FLEX_TORSION + 2)
+// Algorithm options (flexible-ligand search improvements).
+// ROTAMER_BIAS: snap mutated torsions toward staggered rotamers (-60/+60/180 deg)+jitter,
+//   since sp3 single bonds prefer staggered — shrinks the effective torsional search space.
+#define ROTAMER_BIAS 1
 #define MAX_NUM_OF_LIG_PAIRS 65536  // C(272,2)=36856 max theoretical; 65536 guarantees full coverage
 #define MAX_NUM_OF_BFGS_STEPS 64
 #define MAX_NUM_OF_RANDOM_MAP 20000 // not too large (stack overflow!)

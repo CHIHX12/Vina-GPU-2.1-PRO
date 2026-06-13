@@ -132,6 +132,18 @@ float gyration_radius(				int				m_lig_begin,
 	return (counter > 0) ? sqrt(acc / counter) : 0;
 }
 
+// Bias a torsion toward the nearest staggered rotamer (-60/+60/180 deg) with a small
+// jitter. sp3 single bonds strongly prefer staggered conformers; biasing here shrinks the
+// effective torsional search space, helping flexible ligands. BFGS then refines off-rotamer.
+float rotamer_snap(float uni_angle, float jitter_pm1) {
+	float cand[4] = { -1.0471976f, 1.0471976f, 3.1415927f, -3.1415927f }; // -60,+60,+180,-180 deg
+	float best = cand[0]; float bd = fabs(uni_angle - cand[0]);
+	for (int t = 1; t < 4; t++) { float dd = fabs(uni_angle - cand[t]); if (dd < bd) { bd = dd; best = cand[t]; } }
+	float a = best + 0.26f * jitter_pm1;   // ~±15 deg jitter
+	normalize_angle(&a);
+	return a;
+}
+
 void mutate_conf_cl(const					int				step,
 											output_type_cl*	c,
 							__global const	int*			random_int_map,
@@ -166,7 +178,14 @@ void mutate_conf_cl(const					int				step,
 			return;
 		}
 		--which;
-		if (which < lig_torsion_size) { c->lig_torsion[which] = random_fl_pi_map[index]; return; }
+		if (which < lig_torsion_size) {
+#if ROTAMER_BIAS
+			c->lig_torsion[which] = rotamer_snap(random_fl_pi_map[index], random_inside_sphere_map[index][1]);
+#else
+			c->lig_torsion[which] = random_fl_pi_map[index];
+#endif
+			return;
+		}
 		which -= lig_torsion_size;
 
 	if (flex_torsion_size != 0) {
