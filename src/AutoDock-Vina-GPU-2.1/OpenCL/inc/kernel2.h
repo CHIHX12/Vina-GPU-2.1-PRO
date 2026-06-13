@@ -19,6 +19,11 @@
 #define SIZE_OF_MOLEC_STRUC ((3+4+MAX_NUM_OF_LIG_TORSION+MAX_NUM_OF_FLEX_TORSION+ 1)*sizeof(float) )
 #define SIZE_OF_CHANGE_STRUC ((3+3+MAX_NUM_OF_LIG_TORSION+MAX_NUM_OF_FLEX_TORSION + 1)*sizeof(float))
 #define MAX_HESSIAN_MATRIX_SIZE ((6 +  MAX_NUM_OF_LIG_TORSION + MAX_NUM_OF_FLEX_TORSION)*(6 +  MAX_NUM_OF_LIG_TORSION + MAX_NUM_OF_FLEX_TORSION + 1) / 2)
+// Conformation-vector dimension n = position(3)+orientation(3)+lig_torsion+flex_torsion.
+// L-BFGS history vectors (lm_s, lm_y) are indexed over n, NOT the packed-matrix size — sizing
+// them as MAX_HESSIAN_MATRIX_SIZE wasted ~38 KB each of per-work-item private memory (doubled in
+// the dual kernel). MAX_CONF_DIM is the correct size.
+#define MAX_CONF_DIM (6 + MAX_NUM_OF_LIG_TORSION + MAX_NUM_OF_FLEX_TORSION + 2)
 #define MAX_NUM_OF_LIG_PAIRS 65536  // C(272,2)=36856 max theoretical; 65536 guarantees full coverage
 #define MAX_NUM_OF_BFGS_STEPS 64
 #define MAX_NUM_OF_RANDOM_MAP 20000 // not too large (stack overflow!)
@@ -154,7 +159,9 @@ typedef struct  { // namely change_struc
 
 typedef struct { // depth-first order
 	int		num_children;
-	bool	children_map	[MAX_NUM_OF_RIGID][MAX_NUM_OF_RIGID]; // chidren_map[i][j] = true if node i's child is node j
+	// children_map removed (was bool[104][104] ~= 10.8 KB of per-work-item private memory):
+	// node i's children are exactly { j>=1 : parent[j]==i }, derived on the fly in POT_deriv.
+	// Shrinks rigid_cl -> m_cl_private; critical for the dual kernel (holds 2x m_cl_private).
 	int		parent			[MAX_NUM_OF_RIGID]; // every node has only 1 parent node
 	
 	int		atom_range		[MAX_NUM_OF_RIGID][2];

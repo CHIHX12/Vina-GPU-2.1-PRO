@@ -966,13 +966,7 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 						ts.store_node(m_ligand.children[ci], m_ptr->ligand.rigid);
 					}
 					m_ptr->ligand.rigid.num_children = ts.start_index;
-					for (int ri = 0; ri < MAX_NUM_OF_RIGID; ri++)
-						for (int rj = 0; rj < MAX_NUM_OF_RIGID; rj++)
-							m_ptr->ligand.rigid.children_map[ri][rj] = false;
-					for (int ri = 1; ri < m_ptr->ligand.rigid.num_children + 1; ri++) {
-						int par_idx = m_ptr->ligand.rigid.parent[ri];
-						m_ptr->ligand.rigid.children_map[par_idx][ri] = true;
-					}
+					m_ptr->ligand.rigid.parent[0] = -1;  // root has no parent (children derived from parent[])
 
 					// ───── Stage 1: populate flexible side-chain forest from mi.flex ─────
 					// Each residue (heterotree<first_segment>) → one root node (parent=-1,
@@ -1854,13 +1848,7 @@ void main_procedure_cl_dual(
 		} ts;
 		for (int ci = 0; ci < (int)m_lig.children.size(); ci++) { ts.parent_index = 0; ts.store_node(m_lig.children[ci], m_ptr->ligand.rigid); }
 		m_ptr->ligand.rigid.num_children = ts.start_index;
-		for (int ri = 0; ri < MAX_NUM_OF_RIGID; ri++)
-			for (int rj = 0; rj < MAX_NUM_OF_RIGID; rj++)
-				m_ptr->ligand.rigid.children_map[ri][rj] = false;
-		for (int ri = 1; ri < m_ptr->ligand.rigid.num_children + 1; ri++) {
-			int par_idx = m_ptr->ligand.rigid.parent[ri];
-			m_ptr->ligand.rigid.children_map[par_idx][ri] = true;
-		}
+		m_ptr->ligand.rigid.parent[0] = -1;  // root has no parent (children derived from parent[])
 		m_ptr->m_num_movable_atoms = m.num_movable_atoms();
 	};
 
@@ -1987,6 +1975,14 @@ void main_procedure_cl_dual(
 		cl_uint k2d_nargs = 0;
 		clGetKernelInfo(k2d, CL_KERNEL_NUM_ARGS, sizeof(cl_uint), &k2d_nargs, NULL);
 		printf("DIAG GPU%d: kernel2_dual CL_KERNEL_NUM_ARGS=%u (expect 19)\n", gpu_id, k2d_nargs); fflush(stdout);
+		size_t k2d_wgs = 0; cl_ulong k2d_priv = 0, k2d_local = 0;
+		cl_device_id k2d_dev = NULL;
+		clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE, sizeof(cl_device_id), &k2d_dev, NULL);
+		clGetKernelWorkGroupInfo(k2d, k2d_dev, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &k2d_wgs, NULL);
+		clGetKernelWorkGroupInfo(k2d, k2d_dev, CL_KERNEL_PRIVATE_MEM_SIZE, sizeof(cl_ulong), &k2d_priv, NULL);
+		clGetKernelWorkGroupInfo(k2d, k2d_dev, CL_KERNEL_LOCAL_MEM_SIZE, sizeof(cl_ulong), &k2d_local, NULL);
+		printf("DIAG GPU%d: kernel2_dual max_wgs=%zu  private_mem=%llu bytes  local_mem=%llu bytes\n",
+		       gpu_id, k2d_wgs, (unsigned long long)k2d_priv, (unsigned long long)k2d_local); fflush(stdout);
 	}
 
 	// kernel2_dual args:
@@ -2015,10 +2011,15 @@ void main_procedure_cl_dual(
 	SetKernelArg(k2d, 17, sizeof(int),    &rilc_bfgs);
 	SetKernelArg(k2d, 18, sizeof(int),    &batch_n_dual);
 
-	// RTX 6000 Ada: 142 SMs × 128 threads/group = 18176 total work items.
-	// 128 threads/group = 4 warps — fills each SM with one group.
-	// 18176 / 128 = 142 groups exactly.
-	const size_t k2d_global[2] = { 18176, 1 };
+	// Work-item count is decoupled from trajectory count: the kernel strides
+	// (gll += total_wi) over all `thread` trajectories, so each WI handles
+	// thread/total_wi of them. The dual kernel holds 2× m_cl_private + 2× Hessian
+	// in private memory per WI (~150 KB), so 18176 WIs requested ~2.7 GB of private
+	// memory → CL_OUT_OF_HOST_MEMORY. 4096 WIs (32 groups) keeps that ~600 MB and
+	// fully covers the trajectories. (Single-ligand kernel is unaffected.)
+	size_t dual_wi = 4096;
+	if (const char* e = getenv("VINA_DUAL_WI")) { int v = atoi(e); if (v >= 128) dual_wi = ((v + 127) / 128) * 128; }
+	const size_t k2d_global[2] = { dual_wi, 1 };
 	const size_t k2d_local[2]  = { 128, 1 };
 
 	{

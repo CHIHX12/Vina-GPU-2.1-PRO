@@ -607,9 +607,9 @@ void POT_deriv(	const					m_minus_forces* minus_forces,
 	// position_derivative 
 	for (int i = num_rigid - 1; i >= 0; i--) {// from bottom to top
 		for (int k = 0; k < 3; k++)position_derivative[i][k] = position_derivative_tmp[i][k]; // self
-		// looking for chidren node
-		for (int j = 0; j < num_rigid; j++) {
-			if (lig_rigid_gpu->children_map[i][j] == true) {
+		// looking for children node: j is a child of i iff parent[j]==i (j>=1; root has no parent)
+		for (int j = 1; j < num_rigid; j++) {
+			if (lig_rigid_gpu->parent[j] == i) {
 				for (int k = 0; k < 3; k++)position_derivative[i][k] += position_derivative[j][k]; // self+children node
 			}
 		}
@@ -618,9 +618,9 @@ void POT_deriv(	const					m_minus_forces* minus_forces,
 	// orientation_derivetive
 	for (int i = num_rigid - 1; i >= 0; i--) { // from bottom to top
 		for (int k = 0; k < 3; k++)orientation_derivative[i][k] = orientation_derivative_tmp[i][k]; // self
-		// looking for chidren node
-		for (int j = 0; j < num_rigid; j++) {
-			if (lig_rigid_gpu->children_map[i][j] == true) { // self + children node + product
+		// looking for children node: j is a child of i iff parent[j]==i (j>=1; root has no parent)
+		for (int j = 1; j < num_rigid; j++) {
+			if (lig_rigid_gpu->parent[j] == i) { // self + children node + product
 				for (int k = 0; k < 3; k++)orientation_derivative[i][k] += orientation_derivative[j][k];
 				float product_out[3];
 				float origin_temp[3] = {	lig_rigid_gpu->origin[j][0] - lig_rigid_gpu->origin[i][0],
@@ -1031,8 +1031,8 @@ void rilc_bfgs(				output_type_cl* 	x,
 
 
 	float lm_alpha = 0;
-	float lm_s[MAX_HESSIAN_MATRIX_SIZE] = { 0 };
-	float lm_y[MAX_HESSIAN_MATRIX_SIZE] = { 0 };
+	float lm_s[MAX_CONF_DIM] = { 0 };   // L-BFGS history vector, indexed over conf dim n (not n^2/2)
+	float lm_y[MAX_CONF_DIM] = { 0 };
 	float lm_ys = 0;
 	fx = m_eval_deriv(	x,
 						g,
