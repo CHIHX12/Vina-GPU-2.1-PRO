@@ -1,0 +1,5 @@
+=== 1U72 : 1U72: ligA=NDP(chain A, 48 heavy, 34 tors)  ligB=MTX(chain A, 33 heavy, 18 tors)  centroid_gap=13.6A  box=(24,26,31)
+ligand    GPU best CPU1.2.7 best
+ligA          1.26          0.76
+ligB          1.43          1.15
+inter-ligand (GPU best poses): clashes<2A=38  contacts<4A=170  -> COMPETITIVE (overlap/clash, same site)

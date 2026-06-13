@@ -1,0 +1,5 @@
+=== 1DF7 : 1DF7: ligA=NDP(chain A, 48 heavy, 34 tors)  ligB=MTX(chain A, 33 heavy, 18 tors)  centroid_gap=14.9A  box=(26,35,26)
+ligand    GPU best CPU1.2.7 best
+ligA          1.85          0.61
+ligB          4.42          0.80
+inter-ligand (GPU best poses): clashes<2A=31  contacts<4A=109  -> COMPETITIVE (overlap/clash, same site)

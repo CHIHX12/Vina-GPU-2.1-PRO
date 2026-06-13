@@ -1,0 +1,1 @@
+1DF7: ligA=NDP(chain A, 48 heavy, 34 tors)  ligB=MTX(chain A, 33 heavy, 18 tors)  centroid_gap=14.9A  box=(26,35,26)

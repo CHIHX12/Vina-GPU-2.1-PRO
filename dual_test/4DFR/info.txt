@@ -1,0 +1,1 @@
+4DFR: ligA=MTX(chain A, 33 heavy, 18 tors)  ligB=MTX(chain B, 33 heavy, 22 tors)  centroid_gap=18.8A  box=(18,25,36)

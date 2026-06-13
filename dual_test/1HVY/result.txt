@@ -1,0 +1,5 @@
+=== 1HVY : 1HVY: ligA=D16(chain C, 32 heavy, 18 tors)  ligB=UMP(chain C, 20 heavy, 10 tors)  centroid_gap=8.5A  box=(19,26,19)
+ligand    GPU best CPU1.2.7 best
+ligA          9.86          5.41
+ligB          0.92          2.37
+inter-ligand (GPU best poses): clashes<2A=55  contacts<4A=185  -> COMPETITIVE (overlap/clash, same site)

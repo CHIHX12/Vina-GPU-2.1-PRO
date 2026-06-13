@@ -1,0 +1,11 @@
+# Candidate two-ligand co-crystal structures (ternary complexes / two ligands in one pocket).
+# The prepare script auto-verifies each by finding the 2 closest drug-like ligands.
+# Columns: PDB_ID  note
+1RX2  E.coli DHFR + NADP(NAP) + folate(FOL) — cofactor+substrate ternary (flexible)
+1U72  human DHFR + methotrexate(MTX) + NADPH(NDP) — inhibitor+cofactor ternary
+1HVY  thymidylate synthase + dUMP(UMP) + antifolate(D16)
+3EQH  MEK1 + ATP-analog + allosteric inhibitor — orthosteric+allosteric
+1DF7  DHFR ternary
+2P16  fragment cocktail candidate
+1OYT  thrombin (control: usually single ligand)
+4DFR  DHFR + 2x MTX in SEPARATE chains (negative control: not co-binding)

@@ -1,0 +1,1 @@
+1HVY: ligA=D16(chain C, 32 heavy, 18 tors)  ligB=UMP(chain C, 20 heavy, 10 tors)  centroid_gap=8.5A  box=(19,26,19)

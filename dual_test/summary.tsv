@@ -1,0 +1,11 @@
+PDB	ligand	tors	GPU_best	CPU127_best
+1DF7	ligA=NDP 34 tors 		1.85	0.61
+1DF7	ligB=MTX 18 tors 		4.42	0.80
+1HVY	ligA=D16 18 tors 		9.86	5.41
+1HVY	ligB=UMP 10 tors 		0.92	2.37
+1RX2	ligA=FOL 18 tors 		5.76	0.81
+1RX2	ligB=NAP 32 tors 		1.00	0.60
+1U72	ligA=NDP 34 tors 		1.26	0.76
+1U72	ligB=MTX 18 tors 		1.43	1.15
+3EQH	ligA=5BM 26 tors 		2.61	6.73
+3EQH	ligB=ADP 18 tors 		0.99	0.40

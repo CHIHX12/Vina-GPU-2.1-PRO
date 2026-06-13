@@ -1,0 +1,1 @@
+3EQH: ligA=5BM(chain A, 26 heavy, 26 tors)  ligB=ADP(chain A, 27 heavy, 18 tors)  centroid_gap=10.4A  box=(23,26,16)

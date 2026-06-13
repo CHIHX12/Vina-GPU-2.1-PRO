@@ -1,0 +1,1 @@
+1RX2: ligA=FOL(chain A, 32 heavy, 18 tors)  ligB=NAP(chain A, 48 heavy, 32 tors)  centroid_gap=14.5A  box=(24,33,25)

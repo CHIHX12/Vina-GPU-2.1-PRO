@@ -1,0 +1,1 @@
+1U72: ligA=NDP(chain A, 48 heavy, 34 tors)  ligB=MTX(chain A, 33 heavy, 18 tors)  centroid_gap=13.6A  box=(24,26,31)

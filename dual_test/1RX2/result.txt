@@ -1,0 +1,5 @@
+=== 1RX2 : 1RX2: ligA=FOL(chain A, 32 heavy, 18 tors)  ligB=NAP(chain A, 48 heavy, 32 tors)  centroid_gap=14.5A  box=(24,33,25)
+ligand    GPU best CPU1.2.7 best
+ligA          5.76          0.81
+ligB          1.00          0.60
+inter-ligand (GPU best poses): clashes<2A=57  contacts<4A=223  -> COMPETITIVE (overlap/clash, same site)

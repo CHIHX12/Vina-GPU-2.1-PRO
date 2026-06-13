@@ -1,0 +1,5 @@
+=== 3EQH : 3EQH: ligA=5BM(chain A, 26 heavy, 26 tors)  ligB=ADP(chain A, 27 heavy, 18 tors)  centroid_gap=10.4A  box=(23,26,16)
+ligand    GPU best CPU1.2.7 best
+ligA          2.61          6.73
+ligB          0.99          0.40
+inter-ligand (GPU best poses): clashes<2A=0  contacts<4A=0  -> INDEPENDENT (separate regions)
