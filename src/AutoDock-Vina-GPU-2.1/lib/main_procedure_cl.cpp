@@ -366,6 +366,49 @@ static void apply_re_swaps(
     }
 }
 
+// Differential-evolution inter-trajectory exchange (algorithm A, gated by VINA_DE).
+// Between Replica-Exchange epochs, recombine the population of `thread` confs so good
+// torsion sub-solutions found by different trajectories get combined (DE/rand/1/bin on
+// position + ligand torsions). The next epoch's MC+BFGS refines the DE-seeded starts.
+// Light elitism: the single best trajectory is preserved. Addresses the "8000 independent
+// trajectories" waste; helps SAMPLING-limited ligands (not scoring-limited ones).
+static void apply_de_exchange(
+    std::vector<output_type_cl*>& result_ptrs, const std::vector<int>& torsion_sizes,
+    int num_ligands, int thread, std::mt19937& rng
+) {
+    const float F = 0.6f, CR = 0.9f;
+    std::uniform_real_distribution<float> uni(0.0f, 1.0f);
+    std::uniform_int_distribution<int> pick(0, thread - 1);
+    for (int li = 0; li < num_ligands; li++) {
+        output_type_cl* res = result_ptrs[li];
+        if (!res || thread < 4) continue;
+        int nt = (li < (int)torsion_sizes.size()) ? torsion_sizes[li] : 0;
+        int best = 0;
+        for (int i = 1; i < thread; i++) if (res[i].e < res[best].e) best = i;
+        std::vector<output_type_cl> trial(res, res + thread);
+        for (int i = 0; i < thread; i++) {
+            if (i == best) continue;                       // elitism: keep global best
+            int r1, r2, r3;
+            do { r1 = pick(rng); } while (r1 == i);
+            do { r2 = pick(rng); } while (r2 == i || r2 == r1);
+            do { r3 = pick(rng); } while (r3 == i || r3 == r1 || r3 == r2);
+            output_type_cl t = res[i];
+            for (int k = 0; k < 3; k++)
+                if (uni(rng) < CR) t.position[k] = res[r1].position[k] + F * (res[r2].position[k] - res[r3].position[k]);
+            for (int k = 0; k < nt; k++)
+                if (uni(rng) < CR) {
+                    float v = res[r1].lig_torsion[k] + F * (res[r2].lig_torsion[k] - res[r3].lig_torsion[k]);
+                    while (v >  (float)M_PI) v -= 2.0f * (float)M_PI;
+                    while (v < -(float)M_PI) v += 2.0f * (float)M_PI;
+                    t.lig_torsion[k] = v;
+                }
+            if (uni(rng) < CR) for (int k = 0; k < 4; k++) t.orientation[k] = res[r1].orientation[k];
+            trial[i] = t;
+        }
+        for (int i = 0; i < thread; i++) res[i] = trial[i];
+    }
+}
+
 void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalculate& p, const parallel_mc par,
 	const vec& corner1, const vec& corner2, const int seed, std::vector<output_container>& outs, std::string opencl_binary_path,
 	const std::vector<std::vector<std::string>> ligand_names, const int rilc_bfgs,
@@ -1312,6 +1355,12 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 	// RE post-epoch: apply Metropolis swaps, regenerate rand_maps + result buffers
 	if (re_epoch < re_rounds - 1) {
 		apply_re_swaps(ric_for_re, num_ligands, par.mc.thread, re_epoch, rng_re);
+		// Algorithm A: differential-evolution inter-trajectory exchange (gated by VINA_DE)
+		if (std::getenv("VINA_DE")) {
+			static std::mt19937 de_rng(static_cast<unsigned>(seed + 90001));
+			apply_de_exchange(ric_for_re, torsion_sizes, num_ligands, par.mc.thread, de_rng);
+			if (re_epoch == 0) printf("DIAG GPU%d: DE inter-trajectory exchange enabled\n", gpu_id);
+		}
 
 		rng local_re_gen(static_cast<rng::result_type>(seed + (re_epoch + 1) * 31337));
 		for (int i = 0; i < num_ligands; i++) {
