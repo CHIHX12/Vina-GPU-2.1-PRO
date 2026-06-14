@@ -1,0 +1,39 @@
+REMARK  5 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: N_1  and  CA_2 
+REMARK       I    between atoms: N_1  and  C1_11 
+REMARK    2  A    between atoms: CA_2  and  C_3 
+REMARK    3  A    between atoms: CA_2  and  CB_10 
+REMARK    4  A    between atoms: C1_11  and  O2_13 
+REMARK    5  A    between atoms: O2_13  and  C3_15 
+ROOT
+ATOM      1  N   TCO d   1      74.006  -9.577 134.866  0.00  0.00    -0.326 N 
+ATOM      2  C1  TCO d   1      73.260  -9.859 135.996  0.00  0.00     0.361 C 
+ATOM      3  O1  TCO d   1      73.223 -10.960 136.570  0.00  0.00    -0.238 OA
+ATOM      4  H   TCO d   1      74.113  -8.497 134.686  0.00  0.00     0.165 HD
+ENDROOT
+BRANCH   1   5
+ATOM      5  CA  TCO d   1      74.642 -10.564 133.923  0.00  0.00     0.152 C 
+BRANCH   5   6
+ATOM      6  C   TCO d   1      76.059 -10.047 133.499  0.00  0.00     0.256 C 
+ATOM      7  O   TCO d   1      77.153 -10.614 133.679  0.00  0.00    -0.305 OA
+ENDBRANCH   5   6
+BRANCH   5   8
+ATOM      8  CB  TCO d   1      73.697 -10.695 132.651  0.00  0.00     0.015 C 
+ATOM      9  CG2 TCO d   1      73.445 -12.148 132.231  0.00  0.00     0.007 C 
+ATOM     10  CD2 TCO d   1      72.994 -12.400 130.775  0.00  0.00     0.000 C 
+ATOM     11  CE  TCO d   1      72.204 -11.204 130.201  0.00  0.00     0.000 C 
+ATOM     12  CD1 TCO d   1      73.062  -9.934 130.185  0.00  0.00     0.000 C 
+ATOM     13  CG1 TCO d   1      73.948  -9.726 131.444  0.00  0.00     0.007 C 
+ENDBRANCH   5   8
+ENDBRANCH   1   5
+BRANCH   2  14
+ATOM     14  O2  TCO d   1      72.515  -8.754 136.441  0.00  0.00    -0.294 OA
+BRANCH  14  15
+ATOM     15  C3  TCO d   1      71.871  -8.567 137.743  0.00  0.00     0.061 C 
+ATOM     16  C4  TCO d   1      71.270  -7.131 137.690  0.00  0.00     0.046 C 
+ATOM     17  C6  TCO d   1      72.925  -8.541 138.870  0.00  0.00     0.046 C 
+ATOM     18  C5  TCO d   1      70.739  -9.604 137.935  0.00  0.00     0.046 C 
+ENDBRANCH  14  15
+ENDBRANCH   2  14
+TORSDOF 5
