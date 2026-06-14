@@ -422,7 +422,8 @@ void dual_procedure(
 	const scoring_function& sf = wt;
 
 	auto write_output = [&](model& m, output_container& out_cont,
-	                        non_cache& nc, const std::string& out_name, bool gpu_mode) {
+	                        non_cache& nc, const std::string& out_name, bool gpu_mode,
+	                        bool preserve_pairing) {
 		if (out_cont.empty()) {
 			std::cerr << "No poses found for " << out_name << '\n';
 			return;
@@ -433,14 +434,21 @@ void dual_procedure(
 				refine_structure(m, prec, nc, out_cont[i], authentic_v, 50);
 		}
 #endif
-		out_cont.sort();
+		// Dual co-docking: out_a[k]/out_b[k] are a CO-DOCKED PAIR, already ordered best-first by
+		// the per-trajectory COMBINED energy (which includes the steric exclusion that keeps the
+		// two ligands apart). Independently sorting/clustering each ligand by its OWN energy here
+		// would re-pair best-A with best-B from DIFFERENT trajectories → they overlap. So preserve
+		// the incoming order for the dual case; only re-score for display.
+		if (!preserve_pairing) out_cont.sort();
 		const fl best_intra = m.eval_intramolecular(prec, authentic_v, out_cont[0].c);
 		VINA_FOR_IN(i, out_cont)
 			if (not_max(out_cont[i].e))
 				out_cont[i].e = m.eval_adjusted(sf, prec, nc,
 				                                authentic_v, out_cont[i].c, best_intra);
-		out_cont.sort();
-		out_cont = remove_redundant(out_cont, 1.0);
+		if (!preserve_pairing) {
+			out_cont.sort();
+			out_cont = remove_redundant(out_cont, 1.0);
+		}
 
 		sz how_many = 0;
 		std::vector<std::string> remarks;
@@ -469,8 +477,9 @@ void dual_procedure(
 	};
 
 	const bool gpu_mode = (thread > 0);
-	write_output(ma, out_a, nc_a, out_a_name, gpu_mode);
-	write_output(mb, out_b, nc_b, out_b_name, gpu_mode);
+	// GPU dual ranks pairs by combined energy → preserve that paired order when writing.
+	write_output(ma, out_a, nc_a, out_a_name, gpu_mode, /*preserve_pairing=*/gpu_mode);
+	write_output(mb, out_b, nc_b, out_b_name, gpu_mode, /*preserve_pairing=*/gpu_mode);
 }
 
 void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, // m is non-const (FIXME?)
@@ -923,7 +932,7 @@ Thank you!\n";
 			    "CPU threads for parallel ligand prep: integer or 'all'")
 			("batch_size", value<int>(&batch_size)->default_value(batch_size),
 			    "number of ligands dispatched simultaneously to each GPU (default 32)")
-			("ligand2", value<std::string>(&ligand2_name), "second ligand for co-docking (PDBQT); activates CPU dual-ligand mode")
+			("ligand2", value<std::string>(&ligand2_name), "second ligand for co-docking (PDBQT); runs GPU dual-ligand mode (kernel2_dual) when --thread > 0, CPU dual otherwise. Both ligands are docked together and output as a co-docked pair; requires --out2")
 			("out2", value<std::string>(&out2_name), "output poses for second ligand (PDBQT; required when --ligand2 is given)")
 			("ref", value<std::string>(), "reference / co-crystal ligand PDBQT: auto-computes box center and size (ligand extent + 10 A margin)")
 			("ad4zn", bool_switch(&ad4zn_mode), "use AutoDock4Zn calibrated Zn coordination parameters (GPU mode)")

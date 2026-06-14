@@ -10,7 +10,7 @@ RMSD < 2 Å vs the crystal pose = the docking correctly reproduced the experimen
 |---|-----------|-----------|---------------|----------------|--------|
 | 1 | single ligand | 5ofu (drug-like) | `--ligand` | **0.26 Å** | ✅ core, reliable |
 | 2 | metal | 1A42 (Zn / carbonic anhydrase) | `--ligand` | **1.18 Å** | ✅ core, reliable |
-| 3 | dual co-docking | 1RX2 (NADP + folate ternary) | `--ligand A --ligand2 B` | NAP **1.73**, FOL ~6–13 | ⚠ beta; works, flexible cofactors hard |
+| 3 | dual co-docking | 1RX2 (NADP + folate ternary) | `--ligand A --ligand2 B` | NAP 1.73 | ✅ fixed 2026-06-14 — no clash (3.1 Å sep, matches CPU) |
 | 4 | flexible receptor | 1q6k (induced fit) | `--receptor rigid --flex flex` | **2.95 Å** (rigid 6.9) | ⚠ beta; helps induced-fit |
 
 ## Exact commands (each test folder is self-contained)
@@ -21,7 +21,7 @@ AutoDock-Vina-GPU-2-1 \
   --receptor receptor.pdbqt --ligand ligand.pdbqt --out out.pdbqt \
   --opencl_binary_path /home/cycheng/Vina-GPU-2.1 \
   --center_x <X> --center_y <Y> --center_z <Z> --size_x <SX> --size_y <SY> --size_z <SZ> \
-  --thread 8000 --search_depth 20 --gpu_id 0
+  --thread 8000 --search_depth 64 --gpu_id 0
 ```
 (box values are in each folder's `box.txt`.)
 
@@ -35,10 +35,16 @@ AutoDock-Vina-GPU-2-1 \
   --receptor receptor.pdbqt --ligand ligandA.pdbqt --ligand2 ligandB.pdbqt \
   --out outA.pdbqt --out2 outB.pdbqt \
   --opencl_binary_path /home/cycheng/Vina-GPU-2.1 \
-  --center_x <X> ... --size_x <SX> ... --thread 8000 --search_depth 20 --gpu_id 0
+  --center_x <X> ... --size_x <SX> ... --thread 8000 --search_depth 64 --gpu_id 0
 ```
 Both ligands are docked simultaneously with an explicit ligand–ligand interaction term
 (for synergy vs competition studies; see ../dual_test/ for the full validation + analysis).
+
+**Synergy-vs-competition experiment:** `bash 03_dual/compare_solo_vs_codock.sh <gpu_id>` docks
+A alone, B alone, and A+B together, then prints an energy comparison (`analyze_codock.py`) that
+reads out cooperative / mild / competitive. Swap in any pair via env vars
+(`RECEPTOR=… LIGA=… LIGB=… BOX=… bash compare_solo_vs_codock.sh 0`). The verdict is a methodology
+aid — validate against known cases and check the penalty is stable over a few seeds.
 
 ### 4. Flexible receptor  (`04_flex/`)
 ```bash
@@ -49,8 +55,22 @@ python3 tools/prep/prep_flex_receptor.py --receptor receptor.pdbqt \
 AutoDock-Vina-GPU-2-1 \
   --receptor receptor_rigid.pdbqt --flex receptor_flex.pdbqt --ligand ligand.pdbqt \
   --out out.pdbqt --opencl_binary_path /home/cycheng/Vina-GPU-2.1 \
-  --center_x <X> ... --thread 8000 --search_depth 20 --gpu_id 0
+  --center_x <X> ... --thread 8000 --search_depth 64 --gpu_id 0
 ```
+
+## GPU dual co-docking — FIXED (2026-06-14)
+Earlier the two ligands clashed (1RX2: 105 inter-ligand clashes, 0.51 Å). Root cause was a
+multi-stage **pairing break** (best-A and best-B were taken from different MC trajectories at three
+separate stages) plus a **scoring-direction** issue (Vina's lig–lig term is net-attractive even at
+overlap, so it rewarded stacking). Fixes:
+1. The kernel emits a per-trajectory **combined** energy; A/B are output as a **co-docked pair**
+   ranked by it (cl_to_vina order preserved through `fast_topk` and through `write_output`).
+2. An explicit **steric-exclusion penalty** (heavy–heavy, uncapped quadratic below 2.6 Å) is added
+   to the combined energy so interpenetration is rejected while contact (~3 Å) is allowed.
+3. Each ligand's BFGS now feels the partner (partner atoms appended + inter-ligand `other_pairs`),
+   and `flex_rigid.num_nodes` is zeroed in the dual private copy (was uninitialised → `set_flex`
+   corrupted coords).
+Verified 1RX2: **0 clashes, 3.1 Å separation — matches CPU Vina 1.2.7.** GPU dual is usable again.
 
 ## Accuracy summary (honest)
 - **Single + metal docking = standard AutoDock Vina accuracy** (~42–50 % top-1 RMSD<2 Å on

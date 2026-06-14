@@ -1958,11 +1958,66 @@ void main_procedure_cl_dual(
 	m_cl* mg_b = (m_cl*)malloc(sizeof(m_cl));
 	fill_m_cl(mb, mg_b);
 
+	// ───── Dual coupling fix (2026-06-14): make the two ligands feel each other ─────
+	// Bug: kernel2_dual optimised A and B with INDEPENDENT BFGS, so both collapsed onto
+	// the same site and clashed (the ligand–ligand term was only in the Metropolis accept,
+	// not in the gradient). Fix: append the PARTNER ligand's movable atoms into each
+	// ligand's coord array (beyond its movable range, so set() never moves them) and build
+	// inter-ligand interaction pairs in `other_pairs`. m_eval_deriv already evaluates
+	// other_pairs with FORCES, so the A↔B repulsion now enters each ligand's BFGS gradient
+	// (block-coordinate descent: A optimised vs fixed B, B vs fixed A, alternating).
+	{
+		const atom_type::t atu_t = p.atom_typing_used();
+		const sz n_at = num_atom_types(atu_t);
+		const int na = (int)ma.num_movable_atoms();
+		const int nb = (int)mb.num_movable_atoms();
+		if (na + nb > MAX_NUM_OF_ATOMS)
+			throw std::runtime_error("dual: na+nb exceeds MAX_NUM_OF_ATOMS (raise it)");
+		if ((long long)na * nb > MAX_NUM_OF_OTHER_PAIRS)
+			throw std::runtime_error("dual: too many inter-ligand pairs (raise MAX_NUM_OF_OTHER_PAIRS)");
+
+		// Append B's movable atoms into A's arrays at [na, na+nb); A's into B's at [nb, nb+na).
+		// (Types are static; coords get refreshed every BFGS step by the kernel's SYNC.)
+		for (int j = 0; j < nb; j++) {
+			mg_a->atoms[na + j] = mg_b->atoms[j];
+			for (int d = 0; d < 3; d++) mg_a->m_coords.coords[na + j][d] = mg_b->m_coords.coords[j][d];
+		}
+		for (int i = 0; i < na; i++) {
+			mg_b->atoms[nb + i] = mg_a->atoms[i];
+			for (int d = 0; d < 3; d++) mg_b->m_coords.coords[nb + i][d] = mg_a->m_coords.coords[i][d];
+		}
+
+		// Inter-ligand pairs (skip atoms unassigned in this typing, mirroring eval_lig_lig).
+		int np = 0;
+		for (int i = 0; i < na; i++) {
+			sz t1 = ma.atoms[i].get(atu_t);
+			if (t1 >= n_at) continue;
+			for (int j = 0; j < nb; j++) {
+				sz t2 = mb.atoms[j].get(atu_t);
+				if (t2 >= n_at) continue;
+				int tpi = (int)get_type_pair_index(atu_t, ma.atoms[i], mb.atoms[j]);
+				mg_a->other_pairs.type_pair_index[np] = tpi;  // A view: A atom i ↔ appended B atom (na+j)
+				mg_a->other_pairs.a[np] = i;
+				mg_a->other_pairs.b[np] = na + j;
+				mg_b->other_pairs.type_pair_index[np] = tpi;  // B view: B atom j ↔ appended A atom (nb+i)
+				mg_b->other_pairs.a[np] = j;
+				mg_b->other_pairs.b[np] = nb + i;
+				np++;
+			}
+		}
+		mg_a->other_pairs.num_pairs = np;
+		mg_b->other_pairs.num_pairs = np;
+		printf("Dual coupling: %d inter-ligand pairs (A=%d atoms, B=%d atoms) -> ligands now repel in BFGS\n",
+		       np, na, nb);
+		fflush(stdout);
+	}
+
 	// Result buffers
 	output_type_cl*        results_a = (output_type_cl*)malloc(thread * sizeof(output_type_cl));
 	output_type_cl*        results_b = (output_type_cl*)malloc(thread * sizeof(output_type_cl));
 	ligand_atom_coords_cl* coords_a  = (ligand_atom_coords_cl*)malloc(thread * sizeof(ligand_atom_coords_cl));
 	ligand_atom_coords_cl* coords_b  = (ligand_atom_coords_cl*)malloc(thread * sizeof(ligand_atom_coords_cl));
+	float*                 combined  = (float*)malloc(thread * sizeof(float));  // per-traj combined E for PAIRED ranking
 
 	/**** Allocate GPU buffers for kernel2_dual ****/
 	const size_t ric_sz    = (size_t)thread * sizeof(output_type_cl);
@@ -1979,7 +2034,9 @@ void main_procedure_cl_dual(
 	cl_mem coords_a_gpu,  coords_b_gpu;
 	cl_mem torsion_a_gpu, torsion_b_gpu;
 	cl_mem search_depth_gpu, bfgs_steps_gpu;
+	cl_mem combined_gpu;
 
+	CreateDeviceBuffer(&combined_gpu,    CL_MEM_WRITE_ONLY, (size_t)thread * sizeof(float), context);
 	CreateDeviceBuffer(&ric_a_gpu,       CL_MEM_READ_ONLY,  ric_sz,    context);
 	CreateDeviceBuffer(&ric_b_gpu,       CL_MEM_READ_ONLY,  ric_sz,    context);
 	CreateDeviceBuffer(&mg_a_gpu,        CL_MEM_READ_WRITE, m_sz,      context);
@@ -2023,7 +2080,7 @@ void main_procedure_cl_dual(
 	{
 		cl_uint k2d_nargs = 0;
 		clGetKernelInfo(k2d, CL_KERNEL_NUM_ARGS, sizeof(cl_uint), &k2d_nargs, NULL);
-		printf("DIAG GPU%d: kernel2_dual CL_KERNEL_NUM_ARGS=%u (expect 19)\n", gpu_id, k2d_nargs); fflush(stdout);
+		printf("DIAG GPU%d: kernel2_dual CL_KERNEL_NUM_ARGS=%u (expect 20)\n", gpu_id, k2d_nargs); fflush(stdout);
 		size_t k2d_wgs = 0; cl_ulong k2d_priv = 0, k2d_local = 0;
 		cl_device_id k2d_dev = NULL;
 		clGetCommandQueueInfo(queue, CL_QUEUE_DEVICE, sizeof(cl_device_id), &k2d_dev, NULL);
@@ -2059,6 +2116,7 @@ void main_procedure_cl_dual(
 	SetKernelArg(k2d, 16, sizeof(cl_mem), &bfgs_steps_gpu);
 	SetKernelArg(k2d, 17, sizeof(int),    &rilc_bfgs);
 	SetKernelArg(k2d, 18, sizeof(int),    &batch_n_dual);
+	SetKernelArg(k2d, 19, sizeof(cl_mem), &combined_gpu);
 
 	// Work-item count is decoupled from trajectory count: the kernel strides
 	// (gll += total_wi) over all `thread` trajectories, so each WI handles
@@ -2088,6 +2146,7 @@ void main_procedure_cl_dual(
 	err = clEnqueueReadBuffer(queue, results_b_gpu, false, 0, res_sz,    results_b, 0, NULL, NULL); checkErr(err);
 	err = clEnqueueReadBuffer(queue, coords_a_gpu,  false, 0, coords_sz, coords_a,  0, NULL, NULL); checkErr(err);
 	err = clEnqueueReadBuffer(queue, coords_b_gpu,  false, 0, coords_sz, coords_b,  0, NULL, NULL); checkErr(err);
+	err = clEnqueueReadBuffer(queue, combined_gpu,  false, 0, (size_t)thread*sizeof(float), combined, 0, NULL, NULL); checkErr(err);
 	clFinish(queue);
 
 	// Convert GPU results → Vina format, then fast top-K by energy (skip O(thread×K×atoms) RMSD loop)
@@ -2099,26 +2158,32 @@ void main_procedure_cl_dual(
 	apply_ls_metal_scores(vina_b, dual_receptor_metals, dual_ls_metal_weight);
 	auto t_cv1 = std::chrono::steady_clock::now();
 
-	// Sort by energy, keep top num_saved_mins poses (fast O(N log N) instead of O(N*K*atoms))
-	auto fast_topk = [&](std::vector<output_type>& v, output_container& out, int K) {
-		std::sort(v.begin(), v.end(), [](const output_type& a, const output_type& b){ return a.e < b.e; });
+	// PAIRED ranking (dual coupling fix): A and B from the SAME trajectory must be output
+	// together, ranked by the per-trajectory COMBINED energy. Sorting each ligand independently
+	// (the old behaviour) tore the pair apart — best-A and best-B came from different trajectories
+	// and overlapped. cl_to_vina preserves trajectory order, so vina_a[i]/vina_b[i] are a pair.
+	{
+		const int K = par.mc.num_saved_mins;
+		std::vector<int> order(thread);
+		std::iota(order.begin(), order.end(), 0);
+		std::sort(order.begin(), order.end(),
+		          [&](int x, int y){ return combined[x] < combined[y]; });
 		int cnt = 0;
-		for (auto& pose : v) {
+		for (int oi : order) {
 			if (cnt >= K) break;
-			if (!not_max(pose.e)) continue;
-			out.push_back(new output_type(pose)); // ptr_vector requires heap allocation
+			if (!not_max(vina_a[oi].e) || !not_max(vina_b[oi].e)) continue;
+			out_a.push_back(new output_type(vina_a[oi]));
+			out_b.push_back(new output_type(vina_b[oi]));
 			++cnt;
 		}
-	};
-	fast_topk(vina_a, out_a, par.mc.num_saved_mins);
-	fast_topk(vina_b, out_b, par.mc.num_saved_mins);
+	}
 	auto t_cv2 = std::chrono::steady_clock::now();
 	printf("DIAG GPU%d: cl_to_vina=%.1fms  topK=%.1fms\n", gpu_id,
 	       std::chrono::duration<double,std::milli>(t_cv1-t_cv0).count(),
 	       std::chrono::duration<double,std::milli>(t_cv2-t_cv1).count()); fflush(stdout);
 
 	// Cleanup
-	free(results_a); free(results_b); free(coords_a); free(coords_b);
+	free(results_a); free(results_b); free(coords_a); free(coords_b); free(combined);
 	free(mis_ptr); free(pre_ptr);
 
 	err = clReleaseKernel(k2d);                    checkErr(err);
@@ -2132,6 +2197,7 @@ void main_procedure_cl_dual(
 	err = clReleaseMemObject(results_b_gpu);       checkErr(err);
 	err = clReleaseMemObject(coords_a_gpu);        checkErr(err);
 	err = clReleaseMemObject(coords_b_gpu);        checkErr(err);
+	err = clReleaseMemObject(combined_gpu);        checkErr(err);
 	err = clReleaseMemObject(torsion_a_gpu);       checkErr(err);
 	err = clReleaseMemObject(torsion_b_gpu);       checkErr(err);
 	err = clReleaseMemObject(search_depth_gpu);    checkErr(err);

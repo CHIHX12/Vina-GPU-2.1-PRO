@@ -68,6 +68,20 @@
 #define QFD_T_START_MAX   3.00f   // hottest replica (was 8; reduced to keep search directed)
 #define QFD_T_FINAL       0.15f   // all replicas cool to this at end of search
 
+// Dual co-docking weight on Vina's (net-attractive) ligand-ligand interaction. Kept at 1
+// (natural). Separation is enforced by an explicit STERIC-exclusion penalty instead, because
+// Vina's pairwise lig-lig score is net-attractive even at overlap (gauss/hydrophobic outweigh
+// the curl-capped repulsion), so simply up-weighting it REWARDS stacking.
+#define QFD_LIGLIG_W      1.0f
+
+// Steric exclusion between the two ligands: an uncapped quadratic penalty for every inter-atom
+// pair closer than QFD_CLASH_THR. Dominates at true overlap so interpenetration is rejected,
+// while contact at ~the threshold costs ~0 — ligands end up adjacent (like CPU Vina ~3 Å), not
+// fused. Added inside eval_lig_lig_cl so all dual combined-energy/Metropolis checks see it.
+#define QFD_CLASH_THR     2.6f
+#define QFD_CLASH_THR2    (QFD_CLASH_THR * QFD_CLASH_THR)
+#define QFD_CLASH_W       40.0f
+
 // QFD Phase 2b: Basin-Hopping MC
 // After each accepted MC step, BH_N_HOPS random perturbations are applied to
 // escape local minima.  Each hop: large translation (BH_PERTURBATION_ANG Å) +

@@ -292,16 +292,24 @@ float eval_lig_lig_cl(
 	float e = 0.0f;
 	int n = k2_nat(atu);
 	for (int i = 0; i < ma->m_num_movable_atoms; i++) {
-		int t1 = ma->atoms[i].types[atu];
-		if (t1 >= n) continue;
+		int  t1 = ma->atoms[i].types[atu];
+		bool aH = (ma->atoms[i].types[0] == EL_TYPE_H);
 		for (int j = 0; j < mb->m_num_movable_atoms; j++) {
-			int t2 = mb->atoms[j].types[atu];
-			if (t2 >= n) continue;
+			int  t2 = mb->atoms[j].types[atu];
 			float dx = ma->m_coords.coords[i][0] - mb->m_coords.coords[j][0];
 			float dy = ma->m_coords.coords[i][1] - mb->m_coords.coords[j][1];
 			float dz = ma->m_coords.coords[i][2] - mb->m_coords.coords[j][2];
 			float r2 = dx*dx + dy*dy + dz*dz;
-			if (r2 < pre->m_cutoff_sqr) {
+			// Steric exclusion (heavy–heavy): uncapped quadratic, dominates at overlap.
+			// Vina's own lig–lig term is net-attractive even when atoms interpenetrate, so
+			// this is what actually keeps the two ligands from fusing.
+			bool bH = (mb->atoms[j].types[0] == EL_TYPE_H);
+			if (!aH && !bH && r2 < QFD_CLASH_THR2) {
+				float o = QFD_CLASH_THR - sqrt(r2);
+				e += QFD_CLASH_W * o * o;
+			}
+			// Vina pairwise interaction (typed atoms only)
+			if (t1 < n && t2 < n && r2 < pre->m_cutoff_sqr) {
 				int ti = (t1 <= t2) ? t1 : t2;
 				int tj = (t1 <= t2) ? t2 : t1;
 				int tpi = ti + tj*(tj+1)/2;
@@ -349,7 +357,8 @@ void kernel2_dual(
 	const __global int*                search_depths_arr,
 	const __global int*                bfgs_steps_arr,
 	const           int                rilc_bfgs_enable,
-	const           int                batch_n
+	const           int                batch_n,
+	      __global  float*             combined_out   // per-trajectory combined energy (for paired ranking)
 ) {
 	int gl = get_global_linear_id();
 	int total_wi = get_global_size(0) * get_global_size(1);
@@ -376,8 +385,9 @@ void kernel2_dual(
 		ma.ligand.begin = mg_a[lig_id].ligand.begin;
 		ma.ligand.end   = mg_a[lig_id].ligand.end;
 		ma.ligand.rigid = mg_a[lig_id].ligand.rigid;
+		ma.flex_rigid.num_nodes = 0;  // dual = no flex receptor; MUST zero or set_flex reads garbage and corrupts m_coords
 		__global const lig_pairs_cl* pairs_ga = &mg_a[lig_id].ligand.pairs;
-		__global const other_pairs_cl* other_ga = &mg_a[lig_id].other_pairs;  // empty (dual = no flex)
+		__global const other_pairs_cl* other_ga = &mg_a[lig_id].other_pairs;  // A↔B inter-ligand pairs (host-built)
 
 		m_cl_private mb;
 		mb.m_num_movable_atoms = mg_b[lig_id].m_num_movable_atoms;
@@ -388,8 +398,24 @@ void kernel2_dual(
 		mb.ligand.begin = mg_b[lig_id].ligand.begin;
 		mb.ligand.end   = mg_b[lig_id].ligand.end;
 		mb.ligand.rigid = mg_b[lig_id].ligand.rigid;
+		mb.flex_rigid.num_nodes = 0;  // dual = no flex receptor; MUST zero or set_flex reads garbage and corrupts m_coords
 		__global const lig_pairs_cl* pairs_gb = &mg_b[lig_id].ligand.pairs;
-		__global const other_pairs_cl* other_gb = &mg_b[lig_id].other_pairs;  // empty (dual = no flex)
+		__global const other_pairs_cl* other_gb = &mg_b[lig_id].other_pairs;  // A↔B inter-ligand pairs (host-built)
+
+		// Dual coupling: the partner ligand's movable atoms live in the appended coord
+		// slots [n.., n+partner). SYNC refreshes them with the partner's CURRENT coords
+		// right before a BFGS so other_pairs (and thus the gradient) sees where it really is.
+		// set() only moves [0,n) movable atoms, so the partner stays fixed during the opt.
+		int na_dual = ma.m_num_movable_atoms;
+		int nb_dual = mb.m_num_movable_atoms;
+		#define SYNC_B_INTO_A() do { for (int _j = 0; _j < nb_dual; _j++) { \
+			ma.m_coords.coords[na_dual + _j][0] = mb.m_coords.coords[_j][0]; \
+			ma.m_coords.coords[na_dual + _j][1] = mb.m_coords.coords[_j][1]; \
+			ma.m_coords.coords[na_dual + _j][2] = mb.m_coords.coords[_j][2]; } } while (0)
+		#define SYNC_A_INTO_B() do { for (int _i = 0; _i < na_dual; _i++) { \
+			mb.m_coords.coords[nb_dual + _i][0] = ma.m_coords.coords[_i][0]; \
+			mb.m_coords.coords[nb_dual + _i][1] = ma.m_coords.coords[_i][1]; \
+			mb.m_coords.coords[nb_dual + _i][2] = ma.m_coords.coords[_i][2]; } } while (0)
 
 		// Initial conformations for this trajectory
 		output_type_cl tmp_a = ric_a[base + traj_id];
@@ -401,14 +427,19 @@ void kernel2_dual(
 		set(&tmp_a, &ma.ligand.rigid, &ma.m_coords, ma.atoms, ma.m_num_movable_atoms, mis->epsilon_fl);
 		set(&tmp_b, &mb.ligand.rigid, &mb.m_coords, mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 
-		// Quick initial minimization for both
+		// Quick initial minimization for both — each ligand optimised against the partner
+		// (synced into its appended slots) so the A↔B repulsion is felt in the gradient.
+		// After each BFGS, strip the inter-ligand energy so tmp.e stays the ligand's SELF
+		// energy (the combined adds e_ll once below — avoids double counting).
+		SYNC_B_INTO_A();
 		DUAL_BFGS(&tmp_a, &ga, &ma, pairs_ga, other_ga, torsion_a);
 		set(&tmp_a, &ma.ligand.rigid, &ma.m_coords, ma.atoms, ma.m_num_movable_atoms, mis->epsilon_fl);
+		SYNC_A_INTO_B();
 		DUAL_BFGS(&tmp_b, &gb, &mb, pairs_gb, other_gb, torsion_b);
 		set(&tmp_b, &mb.ligand.rigid, &mb.m_coords, mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 
 		float e_ll   = eval_lig_lig_cl(&ma, &mb, pre, atu);
-		float cur_combined = tmp_a.e + tmp_b.e + e_ll;
+		float cur_combined = tmp_a.e + tmp_b.e + QFD_LIGLIG_W * e_ll;
 
 		// SA ladder — same replica assignment as kernel2
 		int   dual_rep_id  = traj_id % QFD_N_REPLICAS;
@@ -441,23 +472,25 @@ void kernel2_dual(
 					ma.ligand.begin, ma.ligand.end, ma.atoms, &ma.m_coords,
 					ma.ligand.rigid.origin[0], mis->epsilon_fl,
 					mis->mutation_amplitude, torsion_a, mis->flex_torsion_size);
+				SYNC_B_INTO_A();
 				DUAL_BFGS(&cand_a, &ga, &ma, pairs_ga, other_ga, torsion_a);
 				set(&cand_a, &ma.ligand.rigid, &ma.m_coords,
 					ma.atoms, ma.m_num_movable_atoms, mis->epsilon_fl);
 
 				float e_ll_new   = eval_lig_lig_cl(&ma, &mb, pre, atu);
-				float new_combined = cand_a.e + tmp_b.e + e_ll_new;
+				float new_combined = cand_a.e + tmp_b.e + QFD_LIGLIG_W * e_ll_new;
 
 				if (step == 0 || metropolis_accept(cur_combined, new_combined, dual_temp, n_rand)) {
 					tmp_a = cand_a;
 					cur_combined = new_combined;
 					if (new_combined < best_combined) {
 						// Extra refinement on the new best
+						SYNC_B_INTO_A();
 						DUAL_BFGS(&tmp_a, &ga, &ma, pairs_ga, other_ga, torsion_a);
 						set(&tmp_a, &ma.ligand.rigid, &ma.m_coords,
 							ma.atoms, ma.m_num_movable_atoms, mis->epsilon_fl);
 						float e_ll2 = eval_lig_lig_cl(&ma, &mb, pre, atu);
-						float refined = tmp_a.e + tmp_b.e + e_ll2;
+						float refined = tmp_a.e + tmp_b.e + QFD_LIGLIG_W * e_ll2;
 						if (refined < best_combined) {
 							best_combined = refined;
 							best_out_a = tmp_a; best_out_b = tmp_b;
@@ -480,22 +513,24 @@ void kernel2_dual(
 					mb.ligand.begin, mb.ligand.end, mb.atoms, &mb.m_coords,
 					mb.ligand.rigid.origin[0], mis->epsilon_fl,
 					mis->mutation_amplitude, torsion_b, mis->flex_torsion_size);
+				SYNC_A_INTO_B();
 				DUAL_BFGS(&cand_b, &gb, &mb, pairs_gb, other_gb, torsion_b);
 				set(&cand_b, &mb.ligand.rigid, &mb.m_coords,
 					mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 
 				float e_ll_new   = eval_lig_lig_cl(&ma, &mb, pre, atu);
-				float new_combined = tmp_a.e + cand_b.e + e_ll_new;
+				float new_combined = tmp_a.e + cand_b.e + QFD_LIGLIG_W * e_ll_new;
 
 				if (step == 0 || metropolis_accept(cur_combined, new_combined, dual_temp, n_rand)) {
 					tmp_b = cand_b;
 					cur_combined = new_combined;
 					if (new_combined < best_combined) {
+						SYNC_A_INTO_B();
 						DUAL_BFGS(&tmp_b, &gb, &mb, pairs_gb, other_gb, torsion_b);
 						set(&tmp_b, &mb.ligand.rigid, &mb.m_coords,
 							mb.atoms, mb.m_num_movable_atoms, mis->epsilon_fl);
 						float e_ll2 = eval_lig_lig_cl(&ma, &mb, pre, atu);
-						float refined = tmp_a.e + tmp_b.e + e_ll2;
+						float refined = tmp_a.e + tmp_b.e + QFD_LIGLIG_W * e_ll2;
 						if (refined < best_combined) {
 							best_combined = refined;
 							best_out_a = tmp_a; best_out_b = tmp_b;
@@ -516,6 +551,9 @@ void kernel2_dual(
 		results_b[base + traj_id] = best_out_b;
 		coords_a[base  + traj_id] = best_coords_a;
 		coords_b[base  + traj_id] = best_coords_b;
+		combined_out[base + traj_id] = best_combined;   // rank A/B as a PAIR by this
 	}
 }
 #undef DUAL_BFGS
+#undef SYNC_B_INTO_A
+#undef SYNC_A_INTO_B
