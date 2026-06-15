@@ -25,6 +25,7 @@
 #include <iomanip>
 #include <stdio.h>
 #include <map>
+#include <cstdlib>
 #include "qfd_grids.h"
 #include "ls_metal.h"
 #include "cl_common.h"
@@ -182,6 +183,18 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 	int lig_count = 0;
 	std::vector<int> batch_torsion, batch_depth, batch_bfgs;
 
+	// Cavity-biased initial placement (opt-in VINA_CAVITY_INIT=1): seed a fraction of MC trajectories
+	// inside the pocket instead of uniformly across the box — attacks the sampling ceiling for large ligands.
+	std::vector<std::array<float,3>> cav_pocket_pts;
+	float cav_init_frac = 0.0f;
+	if (std::getenv("VINA_CAVITY_INIT") && std::atoi(std::getenv("VINA_CAVITY_INIT")) != 0) {
+		cav_pocket_pts = cavity_pocket_points(m, g);
+		cav_init_frac = 0.4f;
+		if (const char* fe = std::getenv("VINA_CAVITY_INIT_FRAC")) cav_init_frac = (float)std::atof(fe);
+		printf("Cavity-biased init: %zu pocket points, seeding %.0f%% of trajectories\n",
+		       cav_pocket_pts.size(), cav_init_frac * 100.0f); fflush(stdout);
+	}
+
 	for (int re_epoch = 0; re_epoch < re_rounds; re_epoch++) {
 
         if (re_epoch > 0) {
@@ -242,6 +255,12 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 					for (int k = 0; k < par.mc.thread; k++) {
 						tmp.c.randomize(corner1, corner2, local_gen);
 						for (int j = 0; j < 3; j++) rp[k].position[j] = tmp.c.ligands[0].rigid.position[j];
+						if (!cav_pocket_pts.empty() && random_fl(0.0f, 1.0f, local_gen) < cav_init_frac) {
+							const auto& pp = cav_pocket_pts[(size_t)random_int(0, (int)cav_pocket_pts.size()-1, local_gen)];
+							rp[k].position[0] = pp[0] + random_fl(-2.0f, 2.0f, local_gen);
+							rp[k].position[1] = pp[1] + random_fl(-2.0f, 2.0f, local_gen);
+							rp[k].position[2] = pp[2] + random_fl(-2.0f, 2.0f, local_gen);
+						}
 						rp[k].orientation[0] = tmp.c.ligands[0].rigid.orientation.R_component_1();
 						rp[k].orientation[1] = tmp.c.ligands[0].rigid.orientation.R_component_2();
 						rp[k].orientation[2] = tmp.c.ligands[0].rigid.orientation.R_component_3();

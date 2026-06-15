@@ -290,3 +290,54 @@ bool compute_cavity_grid_from_receptor(
            exp_center, exp_corner);
     return true;
 }
+
+// ── Cavity-biased initial placement: collect buried (pocket) voxel centres in the box ───────────
+static const float POCKET_BURIED_THR = 0.45f;  // buriedness >= this ⇒ pocket interior
+std::vector<std::array<float,3>> cavity_pocket_points(const model& m, const grid& ref_grid) {
+    std::vector<std::array<float,3>> pts;
+    std::vector<std::array<float,3>> P;
+    for (sz i = 0; i < m.grid_atoms.size(); i++)
+        P.push_back({(float)m.grid_atoms[i].coords[0],(float)m.grid_atoms[i].coords[1],(float)m.grid_atoms[i].coords[2]});
+    if (P.empty()) return pts;
+    const float bs  = (float)ref_grid.m_factor_inv[0];
+    const float bmi = (float)ref_grid.m_data.dim0()-1.0f, bmj=(float)ref_grid.m_data.dim1()-1.0f, bmk=(float)ref_grid.m_data.dim2()-1.0f;
+    if (bmi<=0.0f||bmj<=0.0f||bmk<=0.0f) return pts;
+    const float cx=(float)ref_grid.m_init[0]+bmi*0.5f*bs, cy=(float)ref_grid.m_init[1]+bmj*0.5f*bs, cz=(float)ref_grid.m_init[2]+bmk*0.5f*bs;
+    const float sx=bmi*bs, sy=bmj*bs, sz=bmk*bs, sp=CAV_SPACING;
+    int mi=(int)std::round(sx/sp)+1, mj=(int)std::round(sy/sp)+1, mk=(int)std::round(sz/sp)+1;  // box only (no GMARGIN)
+    if (mi>MAX_NUM_OF_GRID_MI) mi=MAX_NUM_OF_GRID_MI;
+    if (mj>MAX_NUM_OF_GRID_MJ) mj=MAX_NUM_OF_GRID_MJ;
+    if (mk>MAX_NUM_OF_GRID_MK) mk=MAX_NUM_OF_GRID_MK;
+    const float ox=cx-(mi-1)*0.5f*sp, oy=cy-(mj-1)*0.5f*sp, oz=cz-(mk-1)*0.5f*sp;
+    const int pad=(int)std::ceil(CAV_RAY_MAX/sp);
+    const int omi=mi+2*pad, omj=mj+2*pad, omk=mk+2*pad;
+    const float oox=ox-pad*sp, ooy=oy-pad*sp, ooz=oz-pad*sp;
+    std::vector<unsigned char> occ((size_t)omi*omj*omk,0);
+    auto oidx=[&](int i,int j,int k){ return ((size_t)i*omj+j)*omk+k; };
+    const int srad=(int)std::ceil(CAV_CLASH/sp); const float clash2=CAV_CLASH*CAV_CLASH;
+    for (const auto& a:P){
+        const int ai=(int)std::lround((a[0]-oox)/sp), aj=(int)std::lround((a[1]-ooy)/sp), ak=(int)std::lround((a[2]-ooz)/sp);
+        for (int di=-srad; di<=srad; di++) for (int dj=-srad; dj<=srad; dj++) for (int dk=-srad; dk<=srad; dk++){
+            const int i=ai+di,j=aj+dj,k=ak+dk;
+            if (i<0||j<0||k<0||i>=omi||j>=omj||k>=omk) continue;
+            const float vx=oox+i*sp-a[0], vy=ooy+j*sp-a[1], vz=ooz+k*sp-a[2];
+            if (vx*vx+vy*vy+vz*vz < clash2) occ[oidx(i,j,k)]=1;
+        }
+    }
+    const float sdg=1.0f/std::sqrt(3.0f);
+    const float dirs[14][3]={{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1},
+        {sdg,sdg,sdg},{sdg,sdg,-sdg},{sdg,-sdg,sdg},{sdg,-sdg,-sdg},{-sdg,sdg,sdg},{-sdg,sdg,-sdg},{-sdg,-sdg,sdg},{-sdg,-sdg,-sdg}};
+    const int nsteps=(int)(CAV_RAY_MAX/sp);
+    for (int i=0;i<mi;i++) for (int j=0;j<mj;j++) for (int k=0;k<mk;k++){
+        const int oi=i+pad,oj=j+pad,ok=k+pad;
+        if (occ[oidx(oi,oj,ok)]) continue;               // inside protein
+        int blocked=0;
+        for (int d=0;d<14;d++) for (int st=1; st<=nsteps; st++){
+            const int qi=oi+(int)std::lround(dirs[d][0]*st), qj=oj+(int)std::lround(dirs[d][1]*st), qk=ok+(int)std::lround(dirs[d][2]*st);
+            if (qi<0||qj<0||qk<0||qi>=omi||qj>=omj||qk>=omk) break;
+            if (occ[oidx(qi,qj,qk)]){ blocked++; break; }
+        }
+        if (blocked/14.0f >= POCKET_BURIED_THR) pts.push_back({ox+i*sp, oy+j*sp, oz+k*sp});
+    }
+    return pts;
+}
