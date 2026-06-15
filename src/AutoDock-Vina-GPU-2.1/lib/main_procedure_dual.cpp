@@ -28,6 +28,8 @@
 #include "qfd_grids.h"
 #include "ls_metal.h"
 #include "cl_common.h"
+#include "ligand_prep.h"
+#include "protein_gpu.h"
 #include "main_procedure_cl.h"
 #include <numeric>
 #include <algorithm>
@@ -224,279 +226,30 @@ void main_procedure_cl_dual(
 
 	vec authentic_v(1000, 1000, 1000);
 
-	// Build mis_cl — use thread from par.mc.thread
-	mis_cl* mis_ptr = (mis_cl*)malloc(sizeof(mis_cl));
-	mis_ptr->needed_size      = needed.size();
-	mis_ptr->epsilon_fl       = epsilon_fl;
-	mis_ptr->cutoff_sqr       = cutoff_sqr;
-	mis_ptr->max_fl           = max_fl;
-	mis_ptr->mutation_amplitude  = par.mc.mutation_amplitude;
-	mis_ptr->use_ad4zn           = use_ad4zn ? 1 : 0;
-	mis_ptr->flex_torsion_size   = 0;  // Phase 4: rigid receptor default
-	mis_ptr->total_wi            = max_wi_size[0] * max_wi_size[1];
-	mis_ptr->thread           = par.mc.thread;
-	mis_ptr->ar_mi            = ig.m_data.m_i;
-	mis_ptr->ar_mj            = ig.m_data.m_j;
-	mis_ptr->ar_mk            = ig.m_data.m_k;
-	for (int i = 0; i < 3; i++) mis_ptr->authentic_v[i] = authentic_v[i];
-	for (int i = 0; i < 3; i++) mis_ptr->hunt_cap[i]    = par.mc.hunt_cap[i];
-
-	// Protein atoms
-	pa_cl* pa_ptr = (pa_cl*)malloc(sizeof(pa_cl));
-	if (MAX_NUM_OF_PROTEIN_ATOMS <= ma.grid_atoms.size()) throw std::runtime_error("pocket too large!");
-	for (int i = 0; i < (int)ma.grid_atoms.size(); i++) {
-		pa_ptr->atoms[i].types[0] = ma.grid_atoms[i].el;
-		pa_ptr->atoms[i].types[1] = ma.grid_atoms[i].ad;
-		pa_ptr->atoms[i].types[2] = ma.grid_atoms[i].xs;
-		pa_ptr->atoms[i].types[3] = ma.grid_atoms[i].sy;
-		for (int j = 0; j < 3; j++) pa_ptr->atoms[i].coords[j] = ma.grid_atoms[i].coords.data[j];
-	}
-
-	// LS metal rescoring for dual mode
-	auto dual_receptor_metals = collect_receptor_metals(ma);
-	float dual_ls_metal_weight = 0.30f;
-	{
-		const char* env = std::getenv("VINA_LS_METAL_WEIGHT");
-		if (env) dual_ls_metal_weight = (float)std::atof(env);
-	}
-	if (!dual_receptor_metals.empty())
-		printf("QFD LS (dual): %zu receptor metal(s) found (weight=%.3f)\n",
-		       dual_receptor_metals.size(), dual_ls_metal_weight);
-
-	// Precalculate LUT
-	pre_cl* pre_ptr = (pre_cl*)malloc(sizeof(pre_cl));
-	pre_ptr->m_cutoff_sqr = p.cutoff_sqr();
-	pre_ptr->factor = p.factor;
-	pre_ptr->n = p.n;
-	if (MAX_P_DATA_M_DATA_SIZE <= p.data.m_data.size()) throw std::runtime_error("LUT too large!");
-	for (int i = 0; i < (int)p.data.m_data.size(); i++) {
-		pre_ptr->m_data[i].factor = p.data.m_data[i].factor;
-		for (int j = 0; j < FAST_SIZE; j++)   pre_ptr->m_data[i].fast[j]       = p.data.m_data[i].fast[j];
-		for (int j = 0; j < SMOOTH_SIZE; j++) { pre_ptr->m_data[i].smooth[j][0] = p.data.m_data[i].smooth[j].first;
-		                                         pre_ptr->m_data[i].smooth[j][1] = p.data.m_data[i].smooth[j].second; }
-	}
-
-	// Grid boundaries
-	gb_cl* gb_ptr = (gb_cl*)malloc(sizeof(gb_cl));
-	gb_ptr->dims[0] = ig.m_data.dim0(); gb_ptr->dims[1] = ig.m_data.dim1(); gb_ptr->dims[2] = ig.m_data.dim2();
-	for (int i = 0; i < 3; i++) gb_ptr->init[i]  = ig.m_init.data[i];
-	for (int i = 0; i < 3; i++) gb_ptr->range[i] = ig.m_range.data[i];
-
-	// Atom relation map
-	if (MAX_NUM_OF_AR_CELLS < ig.m_data.m_data.size()) throw std::runtime_error("Relation too large!");
-	ar_cl* ar_ptr = (ar_cl*)malloc(sizeof(ar_cl));
-	for (int i = 0; i < (int)ig.m_data.m_data.size(); i++) {
-		ar_ptr->relation_size[i] = ig.m_data.m_data[i].size();
-		for (int j = 0; j < (int)ar_ptr->relation_size[i]; j++)
-			ar_ptr->relation[i][j] = ig.m_data.m_data[i][j];
-	}
-
-	// Grids
-	// QFD: GRIDS_SIZE=21 adds slots 17-20 for QFD grids. c.grids has standard atom-type grids (≤17).
-	// Allow c.grids.size() <= GRIDS_SIZE; zero-fill extra QFD slots so kernel skips them (m_i=0).
-	{
-		int bg = (int)c.grids.size();
-		if (bg > GRIDS_SIZE) throw std::runtime_error("grid_size exceeds GRIDS_SIZE=" + std::to_string(GRIDS_SIZE) + "!");
-	}
-	grids_cl* grids_ptr = (grids_cl*)malloc(sizeof(grids_cl));
-	if (!grids_ptr) throw std::runtime_error("Grid too large!");
-	memset(grids_ptr, 0, sizeof(grids_cl)); // zero-fills QFD slots 17-20
-	grid* tmp_grid_ptr = &c.grids[0];
-	grids_ptr->atu   = c.atu;
-	grids_ptr->slope = c.slope;
-	int grids_front = 0;
-	int base_grids2 = (int)c.grids.size();
-	for (int i = base_grids2 - 1; i >= 0; i--) {
-		for (int j = 0; j < 3; j++) {
-			grids_ptr->grids[i].m_init[j]            = tmp_grid_ptr[i].m_init[j];
-			grids_ptr->grids[i].m_factor[j]          = tmp_grid_ptr[i].m_factor[j];
-			grids_ptr->grids[i].m_dim_fl_minus_1[j]  = tmp_grid_ptr[i].m_dim_fl_minus_1[j];
-			grids_ptr->grids[i].m_factor_inv[j]      = tmp_grid_ptr[i].m_factor_inv[j];
-		}
-		if (tmp_grid_ptr[i].m_data.dim0() != 0) {
-			grids_ptr->grids[i].m_i = tmp_grid_ptr[i].m_data.dim0();
-			grids_ptr->grids[i].m_j = tmp_grid_ptr[i].m_data.dim1();
-			grids_ptr->grids[i].m_k = tmp_grid_ptr[i].m_data.dim2();
-			grids_front = i;
-		}
-		// else: m_i/j/k already 0 from memset
-	}
-	// QFD: optionally load precomputed field grids from CWD (produced by prep_qfd_grids.py)
-	load_qfd_grid_file("qfd_esp.bin",      &grids_ptr->grids[GRID_IDX_ESP]);
-	load_qfd_grid_file("qfd_desolv.bin",   &grids_ptr->grids[GRID_IDX_DESOLV]);
-	load_qfd_grid_file("qfd_infomap.bin",  &grids_ptr->grids[GRID_IDX_INFOMAP]);
-	load_qfd_grid_file("qfd_water.bin",    &grids_ptr->grids[GRID_IDX_WATER]);    // Phase 3: xtal water penalty
-	// Phase 5: pipi — load from file if available, else compute from receptor (always active)
-	if (!load_qfd_grid_file("qfd_pipi.bin", &grids_ptr->grids[GRID_IDX_PIPI]))
-	    compute_pipi_grid_from_receptor(ma, g, &grids_ptr->grids[GRID_IDX_PIPI]);
-	if (getenv("VINA_CAVITY") && atoi(getenv("VINA_CAVITY")) != 0)
-	    compute_cavity_grid_from_receptor(ma, g, &grids_ptr->grids[GRID_IDX_CAVITY]);
-	mis_ptr->grids_front = grids_front;
-	size_t mis_size    = sizeof(mis_cl);
-	size_t pre_size    = sizeof(pre_cl);
-	size_t pa_size     = sizeof(pa_cl);
-	size_t gb_size     = sizeof(gb_cl);
-	size_t ar_size     = sizeof(ar_cl);
-	size_t grids_size  = sizeof(grids_cl);
-
-	float* needed_ptr = (float*)malloc(mis_ptr->needed_size * sizeof(float));
-	for (int i = 0; i < (int)mis_ptr->needed_size; i++) needed_ptr[i] = needed[i];
-
-	// Upload shared (protein-side) buffers
-	auto _tbuf0 = std::chrono::steady_clock::now();
-	cl_mem pre_gpu, pa_gpu, gb_gpu, ar_gpu, grids_gpu, needed_gpu, mis_gpu;
-	CreateDeviceBuffer(&pre_gpu,    CL_MEM_READ_ONLY,  pre_size,                           context);
-	CreateDeviceBuffer(&pa_gpu,     CL_MEM_READ_ONLY,  pa_size,                            context);
-	CreateDeviceBuffer(&gb_gpu,     CL_MEM_READ_ONLY,  gb_size,                            context);
-	CreateDeviceBuffer(&ar_gpu,     CL_MEM_READ_ONLY,  ar_size,                            context);
-	CreateDeviceBuffer(&grids_gpu,  CL_MEM_READ_WRITE, grids_size,                         context);
-	CreateDeviceBuffer(&needed_gpu, CL_MEM_READ_WRITE, mis_ptr->needed_size * sizeof(float), context);
-	CreateDeviceBuffer(&mis_gpu,    CL_MEM_READ_ONLY,  mis_size,                           context);
-
-	err = clEnqueueWriteBuffer(queue, pre_gpu,    false, 0, pre_size,  pre_ptr,    0, NULL, NULL); checkErr(err);
-	err = clEnqueueWriteBuffer(queue, pa_gpu,     false, 0, pa_size,  pa_ptr,     0, NULL, NULL); checkErr(err);
-	err = clEnqueueWriteBuffer(queue, gb_gpu,     false, 0, gb_size,  gb_ptr,     0, NULL, NULL); checkErr(err);
-	err = clEnqueueWriteBuffer(queue, ar_gpu,     false, 0, ar_size,  ar_ptr,     0, NULL, NULL); checkErr(err);
-
-	// grids_gpu: upload ONLY the metadata fields (atu, slope, m_i/j/k, m_init, m_factor…)
-	// for standard grids — skip m_data (kernel1 writes those entirely anyway).
-	// For QFD grids (slots 17-20), also upload m_data because kernel1 never writes those slots.
-	{
-		const size_t hdr_sz    = offsetof(grids_cl, grids);     // atu + slope header (8 bytes)
-		const size_t meta_sz   = offsetof(grid_cl,  m_data);    // per-grid metadata (60 bytes)
-		const size_t grid_full = sizeof(grid_cl);
-		const char*  src       = reinterpret_cast<const char*>(grids_ptr);
-
-		err = clEnqueueWriteBuffer(queue, grids_gpu, false, 0, hdr_sz, src, 0, NULL, NULL); checkErr(err);
-		// Upload metadata for ALL slots (standard + QFD, all 21)
-		for (int i = 0; i < GRIDS_SIZE; i++) {
-			size_t off = hdr_sz + (size_t)i * grid_full;
-			err = clEnqueueWriteBuffer(queue, grids_gpu, false, off, meta_sz, src + off, 0, NULL, NULL); checkErr(err);
-		}
-		// Upload m_data for QFD slots that were loaded (kernel1 won't fill these)
-		for (int i = base_grids2; i < GRIDS_SIZE; i++) {
-			if (grids_ptr->grids[i].m_i > 0) {
-				size_t data_off = hdr_sz + (size_t)i * grid_full + meta_sz;
-				size_t data_sz  = (size_t)grids_ptr->grids[i].m_i
-				                * (size_t)grids_ptr->grids[i].m_j
-				                * (size_t)grids_ptr->grids[i].m_k * 8 * sizeof(float);
-				err = clEnqueueWriteBuffer(queue, grids_gpu, false, data_off, data_sz, src + data_off, 0, NULL, NULL); checkErr(err);
-			}
-		}
-	}
-
-	err = clEnqueueWriteBuffer(queue, needed_gpu, false, 0, mis_ptr->needed_size * sizeof(float), needed_ptr, 0, NULL, NULL); checkErr(err);
-	err = clEnqueueWriteBuffer(queue, mis_gpu,    false, 0, mis_size, mis_ptr,    0, NULL, NULL); checkErr(err);
-	clFinish(queue);
-	{
-		auto _tbuf1 = std::chrono::steady_clock::now();
-		printf("DIAG GPU%d: protein_buf_alloc+upload=%.0fms  (grids skip m_data)\n", gpu_id,
-		       std::chrono::duration<double,std::milli>(_tbuf1-_tbuf0).count()); fflush(stdout);
-	}
-
-	SetKernelArg(kernels[0], 0, sizeof(cl_mem), &pre_gpu);
-	SetKernelArg(kernels[0], 1, sizeof(cl_mem), &pa_gpu);
-	SetKernelArg(kernels[0], 2, sizeof(cl_mem), &gb_gpu);
-	SetKernelArg(kernels[0], 3, sizeof(cl_mem), &ar_gpu);
-	SetKernelArg(kernels[0], 4, sizeof(cl_mem), &grids_gpu);
-	SetKernelArg(kernels[0], 5, sizeof(cl_mem), &mis_gpu);
-	SetKernelArg(kernels[0], 6, sizeof(cl_mem), &needed_gpu);
-	SetKernelArg(kernels[0], 7, sizeof(int),    &c.atu);
-	SetKernelArg(kernels[0], 8, sizeof(int),    &nat);
-
 	std::atomic<int> local_status{static_cast<int>(DockingStatus::Docking)};
 #ifdef NDEBUG
 	std::thread console_thread(print_process, &local_status);
 	ThreadGuard console_guard(console_thread);
 #endif
 
-	// kernel1: build protein affinity grid
-	size_t kernel1_global_size[3] = { 128, 128, 128 };
-	size_t kernel1_local_size[3]  = { 4, 4, 4 };
-	{
-		auto _k1_t0 = std::chrono::steady_clock::now();
-		cl_event kernel1_ev;
-		err = clEnqueueNDRangeKernel(queue, kernels[0], 3, 0, kernel1_global_size, kernel1_local_size, 0, NULL, &kernel1_ev); checkErr(err);
-		clWaitForEvents(1, &kernel1_ev);
-		clReleaseEvent(kernel1_ev);
-		auto _k1_t1 = std::chrono::steady_clock::now();
-		printf("DIAG GPU%d: kernel1 = %.1fms\n", gpu_id,
-		       std::chrono::duration<double, std::milli>(_k1_t1 - _k1_t0).count()); fflush(stdout);
-	}
+	ProteinGpuBuffers __pg = protein_gpu_setup(c, ma, p, ig, g, needed, par, context, queue,
+	        kernels[0], max_wi_size, authentic_v, cutoff_sqr, use_ad4zn, gpu_id, 2);
+	cl_mem pre_gpu = __pg.pre_gpu, grids_gpu = __pg.grids_gpu, mis_gpu = __pg.mis_gpu;
+	mis_cl* mis_ptr = __pg.mis_ptr;
 
-	free(pa_ptr); free(gb_ptr); free(ar_ptr); free(needed_ptr); free(grids_ptr);
-	err = clReleaseMemObject(pa_gpu);     checkErr(err);
-	err = clReleaseMemObject(gb_gpu);     checkErr(err);
-	err = clReleaseMemObject(ar_gpu);     checkErr(err);
-	err = clReleaseMemObject(needed_gpu); checkErr(err);
+	// LS metal rescoring for dual (receptor metals shared by both ligands)
+	auto dual_receptor_metals = collect_receptor_metals(ma);
+	float dual_ls_metal_weight = 0.30f;
+	{ const char* env = std::getenv("VINA_LS_METAL_WEIGHT"); if (env) dual_ls_metal_weight = (float)std::atof(env); }
+	if (!dual_receptor_metals.empty())
+		printf("QFD LS (dual): %zu receptor metal(s) found (weight=%.3f)\n",
+		       dual_receptor_metals.size(), dual_ls_metal_weight);
 
 	/**** Prepare ligand data (CPU, for both ligands) ****/
 	const int thread = par.mc.thread;
 
 	// Helper lambda: populate one m_cl from a model
-	auto fill_m_cl = [](const model& m, m_cl* m_ptr) {
-		m_ptr->flex_rigid.num_nodes = 0;   // Stage 1: flex forest empty until populated
-		m_ptr->other_pairs.num_pairs = 0;  // Stage 2: dual = no flex, empty other_pairs
-		for (int ai = 0; ai < (int)m.atoms.size(); ai++) {
-			m_ptr->atoms[ai].types[0] = m.atoms[ai].el;
-			m_ptr->atoms[ai].types[1] = m.atoms[ai].ad;
-			m_ptr->atoms[ai].types[2] = m.atoms[ai].xs;
-			m_ptr->atoms[ai].types[3] = m.atoms[ai].sy;
-			for (int j = 0; j < 3; j++) m_ptr->atoms[ai].coords[j] = m.atoms[ai].coords[j];
-			m_ptr->atoms[ai].charge = (float)m.atoms[ai].charge; // QFD: partial charge [e]
-		}
-		for (int ci = 0; ci < (int)m.coords.size(); ci++)
-			for (int j = 0; j < 3; j++) m_ptr->m_coords.coords[ci][j] = m.coords[ci].data[j];
-		for (int ci = 0; ci < (int)m.coords.size(); ci++)
-			for (int j = 0; j < 3; j++) m_ptr->minus_forces.coords[ci][j] = m.minus_forces[ci].data[j];
-
-		ligand m_lig = m.ligands[0];
-		m_ptr->ligand.pairs.num_pairs = m.ligands[0].pairs.size();
-		for (int pi = 0; pi < m_ptr->ligand.pairs.num_pairs; pi++) {
-			m_ptr->ligand.pairs.type_pair_index[pi] = m.ligands[0].pairs[pi].type_pair_index;
-			m_ptr->ligand.pairs.a[pi] = m.ligands[0].pairs[pi].a;
-			m_ptr->ligand.pairs.b[pi] = m.ligands[0].pairs[pi].b;
-		}
-		m_ptr->ligand.begin = m.ligands[0].begin;
-		m_ptr->ligand.end   = m.ligands[0].end;
-		m_ptr->ligand.rigid.atom_range[0][0] = m_lig.node.begin;
-		m_ptr->ligand.rigid.atom_range[0][1] = m_lig.node.end;
-		for (int j = 0; j < 3; j++) m_ptr->ligand.rigid.origin[0][j] = m_lig.node.get_origin()[j];
-		for (int j = 0; j < 9; j++) m_ptr->ligand.rigid.orientation_m[0][j] = m_lig.node.get_orientation_m().data[j];
-		m_ptr->ligand.rigid.orientation_q[0][0] = m_lig.node.orientation().R_component_1();
-		m_ptr->ligand.rigid.orientation_q[0][1] = m_lig.node.orientation().R_component_2();
-		m_ptr->ligand.rigid.orientation_q[0][2] = m_lig.node.orientation().R_component_3();
-		m_ptr->ligand.rigid.orientation_q[0][3] = m_lig.node.orientation().R_component_4();
-		for (int j = 0; j < 3; j++) { m_ptr->ligand.rigid.axis[0][j] = 0; m_ptr->ligand.rigid.relative_axis[0][j] = 0; m_ptr->ligand.rigid.relative_origin[0][j] = 0; }
-
-		struct S {
-			int start_index = 0, parent_index = 0;
-			void store_node(tree<segment>& ch, rigid_cl& r) {
-				start_index++;
-				r.parent[start_index] = parent_index;
-				r.atom_range[start_index][0] = ch.node.begin;
-				r.atom_range[start_index][1] = ch.node.end;
-				for (int j = 0; j < 9; j++) r.orientation_m[start_index][j] = ch.node.get_orientation_m().data[j];
-				r.orientation_q[start_index][0] = ch.node.orientation().R_component_1();
-				r.orientation_q[start_index][1] = ch.node.orientation().R_component_2();
-				r.orientation_q[start_index][2] = ch.node.orientation().R_component_3();
-				r.orientation_q[start_index][3] = ch.node.orientation().R_component_4();
-				for (int j = 0; j < 3; j++) {
-					r.origin[start_index][j]          = ch.node.get_origin()[j];
-					r.axis[start_index][j]            = ch.node.get_axis()[j];
-					r.relative_axis[start_index][j]   = ch.node.relative_axis[j];
-					r.relative_origin[start_index][j] = ch.node.relative_origin[j];
-				}
-				if (ch.children.empty()) return;
-				int pi = start_index;
-				for (int ci = 0; ci < (int)ch.children.size(); ci++) { this->parent_index = pi; store_node(ch.children[ci], r); }
-			}
-		} ts;
-		for (int ci = 0; ci < (int)m_lig.children.size(); ci++) { ts.parent_index = 0; ts.store_node(m_lig.children[ci], m_ptr->ligand.rigid); }
-		m_ptr->ligand.rigid.num_children = ts.start_index;
-		m_ptr->ligand.rigid.parent[0] = -1;  // root has no parent (children derived from parent[])
-		m_ptr->m_num_movable_atoms = m.num_movable_atoms();
-	};
+	// fill_m_cl now shared from ligand_prep.h (was a local lambda)
 
 	rng generator(static_cast<rng::result_type>(seed));
 	auto _tlig0 = std::chrono::steady_clock::now();
@@ -781,7 +534,7 @@ void main_procedure_cl_dual(
 
 	// Cleanup
 	free(results_a); free(results_b); free(coords_a); free(coords_b); free(combined);
-	free(mis_ptr); free(pre_ptr);
+	free(mis_ptr);
 
 	err = clReleaseKernel(k2d);                    checkErr(err);
 	err = clReleaseMemObject(ric_a_gpu);           checkErr(err);
