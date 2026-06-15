@@ -5,7 +5,10 @@
 #include <vector>
 #include <thread>
 #include <random>
-#include "conf.h"      // output_type
+#include "conf.h"
+#include "model.h"
+#include "coords.h"
+#include <array>      // output_type
 #include "kernel2.h"   // output_type_cl, ligand_atom_coords_cl
 
 // Fix: RAII guard ensures console_thread is always joined even when exceptions are thrown
@@ -28,3 +31,10 @@ void apply_re_swaps(std::vector<output_type_cl*>& result_ptrs, int num_ligands, 
                     int epoch, std::mt19937& rng_re);
 void apply_de_exchange(std::vector<output_type_cl*>& result_ptrs, const std::vector<int>& torsion_sizes,
                        int num_ligands, int thread, std::mt19937& rng);
+
+// Convert one ligand's GPU MC results to Vina poses, apply metal rescoring, optionally dump
+// trajectory endpoints (VINA_DUMP_ENDPOINTS), and add the top poses to `out`. Defined in cl_common.cpp.
+void store_ligand_output(const model& mlig, output_type_cl* result_ptr,
+    ligand_atom_coords_cl* result_coords_ptr, int thread, int torsion_size,
+    const std::vector<std::array<float,3>>& receptor_metals, float ls_metal_weight,
+    fl min_rmsd, sz num_saved_mins, output_container& out, int li);

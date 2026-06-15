@@ -478,62 +478,17 @@ void main_procedure_cl(cache& c, const std::vector<model>& ms,  const precalcula
 		for (int b = 0; b < actual_batch; b++) {
 			int li = batch_start + b;
 
-			auto _t_a0 = std::chrono::steady_clock::now();
-			// Stage 1.5: per-residue flex torsion counts so cl_to_vina rebuilds conf.flex correctly.
-			std::vector<int> flex_counts_li;
-			{
-				conf ic_li = ms[li].get_initial_conf();
-				for (size_t r = 0; r < ic_li.flex.size(); r++)
-					flex_counts_li.push_back((int)ic_li.flex[r].torsions.size());
-			}
-			std::vector<output_type> result_vina = cl_to_vina(
-			    result_ptrs[li], result_coords_ptrs[li],
-			    par.mc.thread, torsion_sizes[li], flex_counts_li);
-			// LS metal rescoring: adjust .e before add_to_output_container sorts
-			apply_ls_metal_scores(result_vina, receptor_metals, ls_metal_weight);
-			auto _t_a1 = std::chrono::steady_clock::now();
-			t_cl2vina += std::chrono::duration<double>(_t_a1 - _t_a0).count();
-
-			if (re_epoch == re_rounds - 1) {
-				// --- Funnel-density experiment: dump ALL trajectory endpoints ---
-				// Gated by VINA_DUMP_ENDPOINTS=<prefix>. One line/pose: e then x y z per heavy atom.
-				// Lets us test offline whether the densest basin (most-converged cluster)
-				// predicts the crystal pose better than the lowest-energy pose.
-				if (const char* dmp = getenv("VINA_DUMP_ENDPOINTS")) {
-					char fn[1024];
-					snprintf(fn, sizeof(fn), "%s_lig%d.txt", dmp, li);
-					FILE* f = fopen(fn, "w");
-					if (f) {
-						for (int i = 0; i < par.mc.thread; i++) {
-							fprintf(f, "%.4f", result_vina[i].e);
-							for (const auto& cc : result_vina[i].coords)
-								fprintf(f, " %.3f %.3f %.3f", cc[0], cc[1], cc[2]);
-							fprintf(f, "\n");
-						}
-						fclose(f);
-						printf("DUMP: wrote %d endpoints to %s\n", par.mc.thread, fn);
-					}
-				}
-				// Final epoch: commit to output
-				if (result_vina.empty()) {
-					std::cerr << "Warning: no results for ligand " << li << " — skipping.\n";
+				auto _t_a0 = std::chrono::steady_clock::now();
+				if (re_epoch == re_rounds - 1) {
+					store_ligand_output(ms[li], result_ptrs[li], result_coords_ptrs[li],
+					    par.mc.thread, torsion_sizes[li], receptor_metals, ls_metal_weight,
+					    par.mc.min_rmsd, par.mc.num_saved_mins, outs[li], li);
+					free(result_ptrs[li]); result_ptrs[li] = nullptr;
 				} else {
-					for (int i = 0; i < par.mc.thread; i++) {
-						add_to_output_container(outs[li], result_vina[i],
-						    par.mc.min_rmsd, par.mc.num_saved_mins);
-					}
+					ric_for_re[li] = result_ptrs[li]; result_ptrs[li] = nullptr;
 				}
-				free(result_ptrs[li]);        result_ptrs[li] = nullptr;
-			} else {
-				// Intermediate RE epoch: transfer result_ptrs ownership to ric_for_re
-				// for RE swap; result_coords not needed beyond this epoch
-				ric_for_re[li] = result_ptrs[li];
-				result_ptrs[li] = nullptr;
-			}
-			auto _t_a2 = std::chrono::steady_clock::now();
-			t_add2out += std::chrono::duration<double>(_t_a2 - _t_a1).count();
-
-			free(result_coords_ptrs[li]); result_coords_ptrs[li] = nullptr;
+				free(result_coords_ptrs[li]); result_coords_ptrs[li] = nullptr;
+				t_cl2vina += std::chrono::duration<double>(std::chrono::steady_clock::now() - _t_a0).count();
 		}
 		lig_count += actual_batch;
 	}

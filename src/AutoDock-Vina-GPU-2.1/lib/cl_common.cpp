@@ -1,4 +1,7 @@
 #include "cl_common.h"
+#include "ls_metal.h"
+#include <iostream>
+#include <cstdlib>
 #include <chrono>
 #include <cstdio>
 #include <random>
@@ -172,4 +175,40 @@ void apply_de_exchange(
         }
         for (int i = 0; i < thread; i++) res[i] = trial[i];
     }
+}
+
+void store_ligand_output(const model& mlig, output_type_cl* result_ptr,
+    ligand_atom_coords_cl* result_coords_ptr, int thread, int torsion_size,
+    const std::vector<std::array<float,3>>& receptor_metals, float ls_metal_weight,
+    fl min_rmsd, sz num_saved_mins, output_container& out, int li)
+{
+	std::vector<int> flex_counts_li;
+	{
+		conf ic_li = mlig.get_initial_conf();
+		for (size_t r = 0; r < ic_li.flex.size(); r++)
+			flex_counts_li.push_back((int)ic_li.flex[r].torsions.size());
+	}
+	std::vector<output_type> result_vina = cl_to_vina(result_ptr, result_coords_ptr, thread, torsion_size, flex_counts_li);
+	apply_ls_metal_scores(result_vina, receptor_metals, ls_metal_weight);
+
+	if (const char* dmp = getenv("VINA_DUMP_ENDPOINTS")) {
+		char fn[1024];
+		snprintf(fn, sizeof(fn), "%s_lig%d.txt", dmp, li);
+		FILE* fp = fopen(fn, "w");
+		if (fp) {
+			for (int i = 0; i < thread; i++) {
+				fprintf(fp, "%.4f", result_vina[i].e);
+				for (const auto& cc : result_vina[i].coords) fprintf(fp, " %.3f %.3f %.3f", cc[0], cc[1], cc[2]);
+				fprintf(fp, "\n");
+			}
+			fclose(fp);
+			printf("DUMP: wrote %d endpoints to %s\n", thread, fn);
+		}
+	}
+	if (result_vina.empty()) {
+		std::cerr << "Warning: no results for ligand " << li << " — skipping.\n";
+	} else {
+		for (int i = 0; i < thread; i++)
+			add_to_output_container(out, result_vina[i], min_rmsd, num_saved_mins);
+	}
 }
