@@ -38,14 +38,27 @@ with two key additions: **metal coordination scoring** for metalloenzyme targets
 
 **Prerequisites:** Docker, Singularity/Apptainer, NVIDIA GPU with CUDA drivers.
 
-### Step 1 — Build the SIF (one-time, ~5 min)
+### Step 1 — Build the SIF (one-time)
+
+**Option A — direct Singularity build (no Docker required, recommended):**
 
 ```bash
 git clone https://github.com/CHIHX12/Vina-GPU-2.1-PRO.git
 cd Vina-GPU-2.1-PRO
+singularity build --fakeroot autodock-vina-gpu-2.1.sif Singularity.def
+# no --fakeroot configured?  use:  sudo singularity build autodock-vina-gpu-2.1.sif Singularity.def
+```
+
+**Option B — via Docker:**
+
+```bash
 docker build -t autodock-vina-gpu .
 singularity build autodock-vina-gpu.sif docker-daemon://autodock-vina-gpu:latest
+# convenience wrapper for both steps:  bash build_sif.sh
 ```
+
+The image builds from the current source and **compiles the OpenCL kernels per-machine on first run**
+(it bakes in no GPU-specific binary), so the resulting `.sif` is portable to any NVIDIA GPU.
 
 ### Step 2 — Patch meeko (one-time, any metal in the periodic table)
 
@@ -144,6 +157,73 @@ singularity run --nv \
   -B /path/to/work:/work \
   autodock-vina-gpu.sif --config /work/config.txt --gpu_id all
 ```
+
+---
+
+## Dual-Ligand Co-Docking
+
+Dock **two ligands into the same pocket simultaneously** — for fragment-linking,
+cooperative/competitive binding, and allosteric+orthosteric studies. The two ligands are
+co-optimised with an explicit steric-exclusion term and emitted as a **paired** result
+(`--out` model *k* pairs with `--out2` model *k*), so the top complex never has the two
+ligands clashing.
+
+```bash
+singularity run --nv -B "$PWD:/work" autodock-vina-gpu-2.1.sif \
+  --receptor /work/receptor.pdbqt \
+  --ligand   /work/ligandA.pdbqt \
+  --ligand2  /work/ligandB.pdbqt \
+  --out      /work/outA.pdbqt \
+  --out2     /work/outB.pdbqt \
+  --center_x X --center_y Y --center_z Z \
+  --size_x 24 --size_y 24 --size_z 24 \
+  --thread 8000 --search_depth 64 --gpu_id 0
+```
+
+| Flag | Meaning |
+|------|---------|
+| `--ligand2` | Second ligand PDBQT (enables dual mode) |
+| `--out2` | Output for the second ligand (poses paired with `--out`) |
+
+Verified on 1RX2 (NADP⁺ + folate): **0 inter-ligand clashes**, ~3.1 Å separation, matching
+CPU AutoDock Vina 1.2.7. Use a higher `--search_depth` (32–64) for dual runs — the joint
+conformational space is larger.
+
+**Synergy vs. competition experiment** — dock A alone, B alone, and A+B together, then
+compare the energies:
+
+```bash
+bash tests/03_dual/compare_solo_vs_codock.sh <gpu_id>
+```
+
+A large positive co-dock penalty vs. the solo docks ⇒ the ligands **compete** for the site;
+≈0 ⇒ they **coexist**; a negative shift ⇒ **cooperative** binding. See `tests/03_dual/` and
+`dual_test/` for the full harness.
+
+---
+
+## Cavity-Shape Features (opt-in, default OFF)
+
+Geometric pocket priors derived from the receptor surface. **Both are off by default** —
+standard production docking is unchanged. Enable per-run via environment variables; a
+buriedness grid is computed internally, so there is **no extra prep step**.
+
+| Env var | Effect | Status |
+|---------|--------|--------|
+| `VINA_CAVITY=1` | **Rescue gate** — down-ranks poses with most atoms exposed to solvent, pulling badly mislocalised ligands back toward the pocket. | Verified *do-no-harm*; rescues solvent-escape failures |
+| `VINA_CAVITY_INIT=1` | **Cavity-biased init** — seeds a fraction of search trajectories inside the pocket instead of uniformly across the box. | Verified *do-no-harm*; rescue benefit not yet validated on hard targets |
+| `VINA_CAVITY_INIT_FRAC=0.4` | Fraction of trajectories seeded in the pocket (used with `VINA_CAVITY_INIT`). | Default `0.4` |
+
+```bash
+VINA_CAVITY=1 VINA_CAVITY_INIT=1 \
+singularity run --nv -B "$PWD:/work" autodock-vina-gpu-2.1.sif \
+  --receptor /work/rec.pdbqt --ligand /work/lig.pdbqt --out /work/out.pdbqt \
+  --center_x X --center_y Y --center_z Z --size_x 24 --size_y 24 --size_z 24 --gpu_id 0
+```
+
+These help large/flexible ligands whose force-field search drifts out of the pocket. On
+standard drug-like targets they make no measurable difference (do-no-harm by design), so
+they are safe to leave enabled but only matter on hard cases.
 
 ---
 
