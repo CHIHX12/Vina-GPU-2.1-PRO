@@ -300,7 +300,40 @@ float ig_eval_deriv(						output_type_cl*		x,
 		}
 	}
 
+	// --- QFD Phase 6: cavity ---
+	// The per-atom cavity GRADIENT is DISABLED. Two failed forms: (3) ungated additive → over-buries
+	// good poses (~4.5 Å); (6) GATED gradient → does no harm but does NOT rescue (the long-range pull
+	// is ineffective: a ligand stranded ~22 Å out sits in flat exposure beyond the field's reach).
+	// The cavity grid is consumed only by the pose-level RESCUE gate (cavity_rescue) at the kernel2 MC
+	// layer — a RE-RANKING effect (promote a sampled pocket pose over a solvent decoy), which is what
+	// actually rescues failures (4DFR 22.9→~7 Å). See QFD_CAVITY_RESCUE_W in kernel2.h.
+
 	return e;
+}
+
+// Phase 6b: pose-level cavity RESCUE penalty (energy only; NOT used in the BFGS gradient).
+// Returns a non-negative penalty that is EXACTLY 0 unless a large fraction of the ligand's heavy
+// atoms sit in solvent (exposure > threshold). Gated by smoothstep over that fraction so in-pocket
+// poses are untouched (do-no-harm) and only badly-mislocalised poses are down-ranked. Sampled from
+// the cavity exposure grid; no-op when the grid is absent (m_i == 0) or cavity disabled.
+float cavity_rescue(m_cl_private* m, const __global grids_cl* grids, float v, float epsilon_fl) {
+	if (grids->grids[GRID_IDX_CAVITY].m_i <= 0) return 0.0f;
+	int   nheavy = 0, nexposed = 0;
+	float sum_exp = 0.0f;
+	for (int i = m->ligand.begin; i < m->m_num_movable_atoms; i++) {
+		if (m->atoms[i].types[0] == EL_TYPE_H) continue;
+		float dummy[3];
+		float ex = g_evaluate(&grids->grids[GRID_IDX_CAVITY],
+		                      m->m_coords.coords[i], grids->slope, v, dummy, epsilon_fl);
+		nheavy++;
+		sum_exp += ex;
+		if (ex > QFD_CAV_EXPOSED_THR) nexposed++;
+	}
+	if (nheavy == 0) return 0.0f;
+	float frac = (float)nexposed / (float)nheavy;
+	float gate = (frac - QFD_CAV_GATE_LO) / (QFD_CAV_GATE_HI - QFD_CAV_GATE_LO);
+	gate = gate < 0.0f ? 0.0f : (gate > 1.0f ? 1.0f : gate);   // smooth one-sided gate
+	return QFD_CAVITY_RESCUE_W * gate * sum_exp;
 }
 
 inline void quaternion_to_r3(const float* q, float* orientation_m) {

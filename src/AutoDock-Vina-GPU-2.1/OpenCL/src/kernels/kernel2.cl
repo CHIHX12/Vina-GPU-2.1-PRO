@@ -146,6 +146,10 @@ void kernel2(
 				);
 			}
 
+			// Phase 6b: pose-level cavity rescue — 0 for in-pocket poses, a penalty only when the
+			// pose is mostly in solvent. m.m_coords holds the just-optimised candidate here.
+			candidate.e += cavity_rescue(&m, grids, mis->hunt_cap[1], mis->epsilon_fl);
+
 			// Decorrelate the Metropolis acceptance draw from the mutation RNG.
 			// map_index feeds mutate_conf_cl (torsion value = pi_map[map_index]); reusing the
 			// same entry for n made acceptance a deterministic function of the chosen torsion
@@ -192,6 +196,10 @@ void kernel2(
 						);
 					}
 
+					// Phase 6b: re-add the pose-level cavity rescue (bfgs overwrote tmp.e with the
+					// pure FF energy); keeps best-tracking consistent with the Metropolis energy.
+					tmp.e += cavity_rescue(&m, grids, mis->hunt_cap[1], mis->epsilon_fl);
+
 					// set
 					if (tmp.e < best_e) {
 						set(&tmp, &m.ligand.rigid, &m.m_coords,
@@ -234,6 +242,7 @@ void kernel2(
 				}
 
 				float hop_n = generate_n(rmap->pi_map, (hop_map + 2) % MAX_NUM_OF_RANDOM_MAP);
+					hopped.e += cavity_rescue(&m, grids, mis->hunt_cap[1], mis->epsilon_fl);  // Phase 6b
 
 				// Metropolis accept at current SA temperature
 				if (metropolis_accept(tmp.e, hopped.e, temperature, hop_n)) {
@@ -248,6 +257,7 @@ void kernel2(
 						} else {
 							bfgs(&tmp, &g, &m, pairs_g, other_g, pre, grids, mis, tcount, max_bfgs_steps);
 						}
+						tmp.e += cavity_rescue(&m, grids, mis->hunt_cap[1], mis->epsilon_fl);  // Phase 6b
 						if (tmp.e < best_e) {
 							set(&tmp, &m.ligand.rigid, &m.m_coords,
 								m.atoms, m.m_num_movable_atoms, mis->epsilon_fl);

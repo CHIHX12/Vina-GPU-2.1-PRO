@@ -31,14 +31,15 @@
 #define MAX_NUM_OF_LIG_PAIRS 65536  // C(272,2)=36856 max theoretical; 65536 guarantees full coverage
 #define MAX_NUM_OF_BFGS_STEPS 64
 #define MAX_NUM_OF_RANDOM_MAP 20000 // not too large (stack overflow!)
-#define GRIDS_SIZE 22
+#define GRIDS_SIZE 23
 
-// QFD (Quantum Field Docking) grid indices — slots 17-21 appended after standard atom-type grids
+// QFD (Quantum Field Docking) grid indices — slots 17-22 appended after standard atom-type grids
 #define GRID_IDX_ESP      17   // receptor electrostatic potential  [kcal/(mol·e)]
 #define GRID_IDX_DESOLV   18   // desolvation susceptibility grid   [kcal/mol per unit q²]
 #define GRID_IDX_INFOMAP  19   // information resonance field       [dimensionless coupling]
 #define GRID_IDX_WATER    20   // explicit water displacement grid  [kcal/mol]
 #define GRID_IDX_PIPI     21   // aromatic ring proximity grid      [dimensionless]
+#define GRID_IDX_CAVITY   22   // pocket cavity / buriedness field   [0..1, 1 = deep pocket]
 
 // QFD scoring weights — calibrated for real Gasteiger charges on ligands
 #define QFD_ELEC_WEIGHT   0.05f
@@ -51,6 +52,32 @@
 // Phase 5: π-π aromatic stacking grid weight.
 // Rewards aromatic ligand atoms (AD_TYPE_A) near receptor ring centres.
 #define QFD_PIPI_WEIGHT   0.015f
+// Phase 6: cavity containment grid (shape-complementarity prior). The grid stores per-voxel
+// EXPOSURE: 0 inside the pocket (buried) and 1 in solvent. Scoring adds e += QFD_CAVITY_WEIGHT *
+// exposure (POSITIVE weight = a penalty for straying into solvent). Inside the pocket exposure is
+// flat ~0, so there is NO gradient there and the force field alone decides the exact pose; only
+// atoms leaving the pocket are pushed back in. This is the corrected formulation: an earlier
+// "reward buriedness" version dragged the whole ligand to the single deepest void (5ofu 14.8 Å).
+// Set 0 to disable (or omit the grid). Opt-in via env VINA_CAVITY=1.
+// NOTE: this per-atom ADDITIVE form is a proven dead end (iteration 3) — it drags the ligand to the
+// maximally-buried spot, ~4.5 Å off the crystal pose, weight-independently. Disabled in ig_eval_deriv.
+#define QFD_CAVITY_WEIGHT (0.005f)
+
+// Phase 6b: pose-level cavity RESCUE gate (iteration 4). Computed per pose in kernel2 (MC layer,
+// NOT the BFGS gradient), so it never distorts an in-pocket optimisation. One-sided: a penalty
+// QFD_CAVITY_RESCUE_W * gate * Σexposure added to the pose energy for Metropolis/best ranking,
+// where gate = smoothstep(GATE_LO, GATE_HI) over the FRACTION of heavy atoms in solvent. In-pocket
+// poses (fraction < GATE_LO) get gate=0 ⇒ exactly 0 rescue ⇒ do-no-harm; only poses with most atoms
+// in solvent are down-ranked, pulling the search toward the pocket.
+#define QFD_CAVITY_RESCUE_W   0.30f
+#define QFD_CAV_GATE_LO       0.40f   // mean/fraction exposure below this ⇒ gate 0 (in pocket)
+#define QFD_CAV_GATE_HI       0.70f   // mean/fraction exposure above this ⇒ gate 1 (in solvent)
+#define QFD_CAV_EXPOSED_THR   0.50f   // an atom counts as "exposed" when grid exposure > this
+// Phase 6c (iteration 6): GATED cavity GRADIENT. The per-atom pull-in force, scaled by the same
+// pose-level gate (mean exposure over heavy atoms). gate≈0 in the pocket ⇒ no force ⇒ do-no-harm;
+// gate>0 in solvent ⇒ active inward pull so a mislocalised ligand is dragged INTO the pocket during
+// BFGS (not just re-ranked). Replaces the passive MC-acceptance rescue. 0 disables.
+#define QFD_CAVITY_GRAD_W     0.10f
 // AD atom type index for aromatic carbon (consistent with atom_constants.h AD_TYPE_A=1)
 #define AD_TYPE_A         1
 // LS metal rescoring: tight Gaussian well for C++ post-docking reranking
