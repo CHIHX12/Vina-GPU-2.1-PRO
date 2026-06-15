@@ -59,3 +59,19 @@ mdinfo
 **/__pycache__/
 **/*.pyc
 **/*.pyo
+
+# Test run outputs (docking results; fixtures kept are receptor/ligand*/crystal*/box*)
+tests/**/gpu*.pdbqt
+tests/**/cpu*.pdbqt
+tests/**/cav*.pdbqt
+tests/**/nocav.pdbqt
+tests/**/chk.pdbqt
+tests/01_single_ligand/out.pdbqt
+tests/03_dual/co[AB].pdbqt
+tests/03_dual/out[AB].pdbqt
+tests/03_dual/solo[AB].pdbqt
+dual_test/**/gpu_*.pdbqt
+dual_test/**/cpu_*.pdbqt
+# Stray AMBER/tooling logs
+leap.log
+*.log
