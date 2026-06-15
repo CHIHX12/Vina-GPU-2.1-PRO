@@ -1,0 +1,76 @@
+REMARK  Name = /home/cycheng/Vina-GPU-2.1/dual_test/4DFR/ligA_xtal.pdb
+REMARK  10 active torsions:
+REMARK  status: ('A' for Active; 'I' for Inactive)
+REMARK    1  A    between atoms: C_9  and  C_13
+REMARK    2  A    between atoms: C_13  and  N_14
+REMARK    3  A    between atoms: N_14  and  C_15
+REMARK    4  A    between atoms: N_14  and  C_19
+REMARK    5  A    between atoms: C_16  and  C_22
+REMARK    6  A    between atoms: N_24  and  CA_25
+REMARK    7  A    between atoms: CA_25  and  C_26
+REMARK    8  A    between atoms: CA_25  and  CB_29
+REMARK    9  A    between atoms: CB_29  and  CG_30
+REMARK   10  A    between atoms: CG_30  and  CD_31
+REMARK                            x       y       z     vdW  Elec       q    Type
+REMARK                         _______ _______ _______ _____ _____    ______ ____
+ROOT
+ATOM      1  N   UNK A   0      16.957  59.967  25.533  0.00  0.00    +0.000 N 
+ATOM      2  C   UNK A   0      16.225  59.184  26.643  0.00  0.00    +0.000 C 
+ENDROOT
+BRANCH   1   6
+ATOM      3  C   UNK A   0      18.122  64.100  25.805  0.00  0.00    +0.000 A 
+ATOM      4  C   UNK A   0      17.288  63.511  26.732  0.00  0.00    +0.000 A 
+ATOM      5  C   UNK A   0      16.845  62.195  26.688  0.00  0.00    +0.000 A 
+ATOM      6  C   UNK A   0      17.320  61.452  25.680  0.00  0.00    +0.000 A 
+ATOM      7  C   UNK A   0      18.141  62.098  24.672  0.00  0.00    +0.000 A 
+ATOM      8  C   UNK A   0      18.518  63.414  24.738  0.00  0.00    +0.000 A 
+BRANCH   3   9
+ATOM      9  C   UNK A   0      18.192  65.626  25.834  0.00  0.00    +0.000 C 
+ATOM     10  O   UNK A   0      17.516  66.280  26.783  0.00  0.00    +0.000 OA
+ATOM     11  N   GLU A   1      19.329  65.981  25.135  0.00  0.00    +0.000 N 
+ATOM     12  H   GLU A   1      19.825  65.296  24.631  0.00  0.00    +0.000 HD
+BRANCH  11  13
+ATOM     13  CA  GLU A   1      19.837  67.459  25.135  0.00  0.00    +0.000 C 
+BRANCH  13  14
+ATOM     14  C   GLU A   1      20.159  67.548  23.635  0.00  0.00    +0.000 C 
+ATOM     15  O   GLU A   1      20.289  66.659  22.848  0.00  0.00    +0.000 OA
+ATOM     16  OXT GLU A   1      19.921  68.750  23.149  0.00  0.00    +0.000 OA
+ENDBRANCH  13  14
+BRANCH  13  17
+ATOM     17  CB  GLU A   1      21.217  67.669  25.761  0.00  0.00    +0.000 C 
+BRANCH  17  18
+ATOM     18  CG  GLU A   1      20.891  67.636  27.320  0.00  0.00    +0.000 C 
+BRANCH  18  19
+ATOM     19  CD  GLU A   1      19.921  68.524  28.357  0.00  0.00    +0.000 C 
+ATOM     20  OE2 GLU A   1      19.413  68.371  29.593  0.00  0.00    +0.000 OA
+ATOM     21  OE1 GLU A   1      19.441  69.469  27.489  0.00  0.00    +0.000 OA
+ENDBRANCH  18  19
+ENDBRANCH  17  18
+ENDBRANCH  13  17
+ENDBRANCH  11  13
+ENDBRANCH   3   9
+ENDBRANCH   1   6
+BRANCH   1  22
+ATOM     22  C   UNK A   0      17.465  59.006  24.451  0.00  0.00    +0.000 C 
+BRANCH  22  31
+ATOM     23  N   UNK A   0      22.983  58.667  24.488  0.00  0.00    +0.000 NA
+ATOM     24  C   UNK A   0      23.468  58.215  23.282  0.00  0.00    +0.000 C 
+ATOM     25  N   UNK A   0      24.797  58.223  23.208  0.00  0.00    +0.000 N 
+ATOM     26  N   UNK A   0      22.792  57.819  22.230  0.00  0.00    +0.000 N 
+ATOM     27  C   UNK A   0      21.459  57.803  22.068  0.00  0.00    +0.000 C 
+ATOM     28  N   UNK A   0      20.821  57.440  21.075  0.00  0.00    +0.000 N 
+ATOM     29  C   UNK A   0      20.900  58.304  23.363  0.00  0.00    +0.000 C 
+ATOM     30  N   UNK A   0      19.558  58.514  23.370  0.00  0.00    +0.000 NA
+ATOM     31  C   UNK A   0      18.989  58.982  24.422  0.00  0.00    +0.000 C 
+ATOM     32  C   UNK A   0      19.781  59.256  25.628  0.00  0.00    +0.000 C 
+ATOM     33  N   UNK A   0      21.096  59.176  25.562  0.00  0.00    +0.000 N 
+ATOM     34  C   UNK A   0      21.608  58.594  24.363  0.00  0.00    +0.000 C 
+ATOM     35  H   UNK A   0      25.246  57.918  22.387  0.00  0.00    +0.000 HD
+ATOM     36  H   UNK A   0      25.331  58.534  23.975  0.00  0.00    +0.000 HD
+ATOM     37  H   UNK A   0      23.325  57.495  21.469  0.00  0.00    +0.000 HD
+ATOM     38  H   UNK A   0      21.296  57.127  20.272  0.00  0.00    +0.000 HD
+ATOM     39  H   UNK A   0      19.837  57.464  21.086  0.00  0.00    +0.000 HD
+ATOM     40  H   UNK A   0      21.682  59.494  26.287  0.00  0.00    +0.000 HD
+ENDBRANCH  22  31
+ENDBRANCH   1  22
+TORSDOF 9
