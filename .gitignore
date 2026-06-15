@@ -75,3 +75,6 @@ dual_test/**/cpu_*.pdbqt
 # Stray AMBER/tooling logs
 leap.log
 *.log
+
+# Clean redock benchmark working dir (regenerable from PDBbind via run_clean_redock.sh)
+tests/bench/redock/
