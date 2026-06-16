@@ -31,6 +31,7 @@
 #include "protein_gpu.h"
 #include "ligand_prep.h"
 #include "ocl_setup.h"
+#include <cstddef>   // offsetof — host/device layout probe
 
 using namespace std;
 
@@ -55,6 +56,43 @@ void main_procedure_multi(cache& c, model& m, const precalculate& p, const paral
 	cl_program*      programs = ocl.programs;
 	cl_kernel*       kernels  = ocl.kernels;
 	size_t*          max_wi_size = ocl.max_wi_size;
+
+	// ───── DEBUG: host vs device struct-layout probe (cap-bug hunt). VINA_MULTI_PROBE=1 ─────
+	if (getenv("VINA_MULTI_PROBE")) {
+		cl_kernel probe = clCreateKernel(programs[1], "multi_layout_probe", &err); checkErr(err);
+		cl_mem buf; CreateDeviceBuffer(&buf, CL_MEM_WRITE_ONLY, 16 * sizeof(cl_ulong), context);
+		SetKernelArg(probe, 0, sizeof(cl_mem), &buf);
+		size_t gw1 = 1, lw1 = 1;
+		err = clEnqueueNDRangeKernel(queue, probe, 1, 0, &gw1, &lw1, 0, NULL, NULL); checkErr(err);
+		clFinish(queue);
+		cl_ulong d[16];
+		err = clEnqueueReadBuffer(queue, buf, true, 0, 16 * sizeof(cl_ulong), d, 0, NULL, NULL); checkErr(err);
+		auto cmp = [](const char* name, size_t h, cl_ulong dev) {
+			printf("  %-32s host=%-8zu dev=%-8lu %s\n", name, h, (unsigned long)dev,
+			       (h == (size_t)dev) ? "OK" : "<<<<< MISMATCH");
+		};
+		printf("\n=== MULTI LAYOUT PROBE (MAX_NUM_OF_LIGANDS=%d) ===\n", (int)d[15]);
+		cmp("sizeof(output_type_multi_cl)", sizeof(output_type_multi_cl), d[0]);
+		cmp("sizeof(change_multi_cl)",      sizeof(change_multi_cl),      d[1]);
+		cmp("sizeof(m_multi_cl_private)",   sizeof(m_multi_cl_private),   d[2]);
+		cmp("sizeof(m_multi_cl)",           sizeof(m_multi_cl),           d[3]);
+		cmp("sizeof(ligand_multi_cl)",      sizeof(ligand_multi_cl),      d[4]);
+		cmp("sizeof(rigid_cl)",             sizeof(rigid_cl),             d[5]);
+		cmp("sizeof(m_coords_multi_cl)",    sizeof(m_coords_multi_cl),    d[6]);
+		cmp("sizeof(lig_pairs_multi_cl)",   sizeof(lig_pairs_multi_cl),   d[7]);
+		cmp("off output.orientation",       offsetof(output_type_multi_cl, orientation), d[8]);
+		cmp("off output.lig_torsion",       offsetof(output_type_multi_cl, lig_torsion), d[9]);
+		cmp("off change.orientation",       offsetof(change_multi_cl, orientation), d[10]);
+		cmp("off change.lig_torsion",       offsetof(change_multi_cl, lig_torsion), d[11]);
+		cmp("off m.ligands[0]",             offsetof(m_multi_cl_private, ligands), d[12]);
+		printf("  %-32s host=%-8zu dev=%-8lu %s\n", "ligand stride (ligands[1]-[0])",
+		       sizeof(ligand_multi_cl), (unsigned long)(d[13] - d[12]),
+		       (sizeof(ligand_multi_cl) == (size_t)(d[13] - d[12])) ? "OK" : "<<<<< MISMATCH");
+		cmp("off m.m_coords",               offsetof(m_multi_cl_private, m_coords), d[14]);
+		printf("=== probe done (no docking performed) ===\n"); fflush(stdout);
+		clReleaseMemObject(buf); clReleaseKernel(probe);
+		return;
+	}
 
 	/**** Vina grid setup (reused from single/dual path) ****/
 	sz nat = num_atom_types(c.atu);
@@ -167,6 +205,62 @@ void main_procedure_multi(cache& c, model& m, const precalculate& p, const paral
 	err = clEnqueueWriteBuffer(queue, rand_gpu, false, 0, sizeof(random_maps),rmap, 0, NULL, NULL); checkErr(err);
 	clFinish(queue);
 	free(ric); free(mg); free(rmap);
+
+	// ───── DEBUG: score ric[0] once (no MC/BFGS) for cap-bug bisection. VINA_MULTI_SCORE1=1 ─────
+	// Run with a FIXED --seed at N=8 and N=16; if E or per-ligand gradnorm differ, the multi
+	// eval diverges with the cap (and gradnorm_ligA vs ligB shows which ligand is mis-evaluated).
+	if (getenv("VINA_MULTI_SCORE1")) {
+		cl_kernel sc = clCreateKernel(programs[1], "kernel2_multi_score1", &err); checkErr(err);
+		cl_mem ebuf; CreateDeviceBuffer(&ebuf, CL_MEM_WRITE_ONLY, 3 * sizeof(float), context);
+		SetKernelArg(sc, 0, sizeof(cl_mem), &ric_gpu);   // conf_in = ric[0]
+		SetKernelArg(sc, 1, sizeof(cl_mem), &mg_gpu);
+		SetKernelArg(sc, 2, sizeof(cl_mem), &pre_gpu);
+		SetKernelArg(sc, 3, sizeof(cl_mem), &grids_gpu);
+		SetKernelArg(sc, 4, sizeof(cl_mem), &mis_gpu);
+		SetKernelArg(sc, 5, sizeof(int),    &N);
+		SetKernelArg(sc, 6, sizeof(int),    &total_torsions);
+		SetKernelArg(sc, 7, sizeof(cl_mem), &ebuf);
+		size_t g1 = 1, l1 = 1;
+		err = clEnqueueNDRangeKernel(queue, sc, 1, 0, &g1, &l1, 0, NULL, NULL); checkErr(err);
+		clFinish(queue);
+		float ev[3];
+		err = clEnqueueReadBuffer(queue, ebuf, true, 0, 3 * sizeof(float), ev, 0, NULL, NULL); checkErr(err);
+		printf("\n=== SCORE1 (MAX_NUM_OF_LIGANDS=%d) ===\n", MAX_NUM_OF_LIGANDS);
+		printf("  E(ric[0]) = %.6f   gradnorm_ligA = %.6f   gradnorm_ligB = %.6f\n", ev[0], ev[1], ev[2]);
+		printf("=== score1 done (no docking) ===\n"); fflush(stdout);
+		clReleaseMemObject(ebuf); clReleaseKernel(sc);
+		return;
+	}
+
+	// ───── DEBUG: run bfgs_multi ONCE on ric[0] (isolates the optimizer). VINA_MULTI_BFGS1=1 ─────
+	if (getenv("VINA_MULTI_BFGS1")) {
+		cl_kernel bk = clCreateKernel(programs[1], "kernel2_multi_bfgs1", &err); checkErr(err);
+		cl_mem obuf; CreateDeviceBuffer(&obuf, CL_MEM_WRITE_ONLY, 8 * sizeof(float), context);
+		SetKernelArg(bk, 0, sizeof(cl_mem), &ric_gpu);
+		SetKernelArg(bk, 1, sizeof(cl_mem), &mg_gpu);
+		SetKernelArg(bk, 2, sizeof(cl_mem), &pre_gpu);
+		SetKernelArg(bk, 3, sizeof(cl_mem), &grids_gpu);
+		SetKernelArg(bk, 4, sizeof(cl_mem), &mis_gpu);
+		SetKernelArg(bk, 5, sizeof(int),    &N);
+		SetKernelArg(bk, 6, sizeof(int),    &total_torsions);
+		SetKernelArg(bk, 7, sizeof(int),    &bfgs_steps);
+		SetKernelArg(bk, 8, sizeof(cl_mem), &obuf);
+		cl_ulong bpriv = 0;
+		clGetKernelWorkGroupInfo(bk, devices[gpu_id], CL_KERNEL_PRIVATE_MEM_SIZE, sizeof(cl_ulong), &bpriv, NULL);
+		printf("DIAG: bfgs1 private_mem=%llu bytes/work-item\n", (unsigned long long)bpriv); fflush(stdout);
+		size_t g1 = 64, l1 = 64;   // match docking work-group (local=1 over-allocates local-mem backing)
+		err = clEnqueueNDRangeKernel(queue, bk, 1, 0, &g1, &l1, 0, NULL, NULL); checkErr(err);
+		clFinish(queue);
+		float ov[8];
+		err = clEnqueueReadBuffer(queue, obuf, true, 0, 8 * sizeof(float), ov, 0, NULL, NULL); checkErr(err);
+		printf("\n=== BFGS1 (MAX_NUM_OF_LIGANDS=%d, bfgs_steps=%d) ===\n", MAX_NUM_OF_LIGANDS, bfgs_steps);
+		printf("  post-BFGS E = %.6f\n", ov[0]);
+		printf("  ligA root pos = (%.5f, %.5f, %.5f)\n", ov[1], ov[2], ov[3]);
+		printf("  ligB root pos = (%.5f, %.5f, %.5f)\n", ov[4], ov[5], ov[6]);
+		printf("=== bfgs1 done (no MC) ===\n"); fflush(stdout);
+		clReleaseMemObject(obuf); clReleaseKernel(bk);
+		return;
+	}
 
 	/**** Launch kernel2_multi ****/
 	cl_kernel k2m = clCreateKernel(programs[1], "kernel2_multi", &err); checkErr(err);

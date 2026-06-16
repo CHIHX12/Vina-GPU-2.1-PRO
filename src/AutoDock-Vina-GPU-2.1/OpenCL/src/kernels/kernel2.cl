@@ -649,3 +649,86 @@ void kernel2_multi(
 		out_coords[traj_id] = best_coords;
 	}
 }
+
+// ───── DEBUG: host/device struct-layout probe (cap-bug hunt) ─────
+// Writes device-side sizeof + field offsets so the host can compare against its own
+// (gcc) values. Any mismatch = host/device struct layout divergence (the suspected cap-bug).
+__kernel void multi_layout_probe(__global ulong* out) {
+	if (get_global_id(0) != 0) return;
+	__private output_type_multi_cl o;
+	__private change_multi_cl ch;
+	__private m_multi_cl_private m;
+	out[0]  = sizeof(output_type_multi_cl);
+	out[1]  = sizeof(change_multi_cl);
+	out[2]  = sizeof(m_multi_cl_private);
+	out[3]  = sizeof(m_multi_cl);
+	out[4]  = sizeof(ligand_multi_cl);
+	out[5]  = sizeof(rigid_cl);
+	out[6]  = sizeof(m_coords_multi_cl);
+	out[7]  = sizeof(lig_pairs_multi_cl);
+	out[8]  = (ulong)((__private char*)&o.orientation[0] - (__private char*)&o);
+	out[9]  = (ulong)((__private char*)&o.lig_torsion[0] - (__private char*)&o);
+	out[10] = (ulong)((__private char*)&ch.orientation[0] - (__private char*)&ch);
+	out[11] = (ulong)((__private char*)&ch.lig_torsion[0] - (__private char*)&ch);
+	out[12] = (ulong)((__private char*)&m.ligands[0] - (__private char*)&m);
+	out[13] = (ulong)((__private char*)&m.ligands[1] - (__private char*)&m);
+	out[14] = (ulong)((__private char*)&m.m_coords - (__private char*)&m);
+	out[15] = MAX_NUM_OF_LIGANDS;
+}
+
+// DEBUG: score ONE fixed conf with the multi eval (no MC/BFGS). For cap-bug bisection:
+// same conf at N=8 vs N=16 must give the same energy; if not, the eval diverges with the cap.
+__kernel void kernel2_multi_score1(
+		const __global output_type_multi_cl* conf_in,
+				__global m_multi_cl* mg,
+		const __global pre_cl* pre,
+		const __global grids_cl* grids,
+		const __global mis_cl* mis,
+		const int num_ligands, const int total_torsions,
+				__global float* e_out) {
+	if (get_global_id(0) != 0) return;
+	m_multi_cl_private m;
+	m.m_num_movable_atoms = mg->m_num_movable_atoms;
+	m.num_ligands = mg->num_ligands;
+	for (int i = 0; i < m.m_num_movable_atoms; i++) m.atoms[i] = mg->atoms[i];
+	m.m_coords = mg->m_coords;
+	m.minus_forces = mg->minus_forces;
+	for (int k = 0; k < m.num_ligands; k++) m.ligands[k] = mg->ligands[k];
+	m.flex_rigid = mg->flex_rigid;
+	output_type_multi_cl c = *conf_in;
+	change_multi_cl g;
+	float e = m_eval_deriv_multi(&c, &g, &m, mg->lig_pairs, &mg->other_pairs, pre, grids, mis->hunt_cap, mis->epsilon_fl);
+	// also report the per-DOF gradient norm of ligand 0 vs ligand 1 (to see which ligand's grad is off)
+	float g0 = 0, g1 = 0;
+	for (int i = 0; i < 3; i++) { g0 += g.position[0][i]*g.position[0][i] + g.orientation[0][i]*g.orientation[0][i];
+	                              g1 += g.position[1][i]*g.position[1][i] + g.orientation[1][i]*g.orientation[1][i]; }
+	e_out[0] = e;
+	e_out[1] = g0;
+	e_out[2] = g1;
+}
+
+// DEBUG: run bfgs_multi ONCE on a fixed conf (no MC, no mutate). Isolates the SEARCH optimizer.
+// Same conf at N=8 vs N=12 must give the same optimized conf; if not, the BFGS path is the cap-bug.
+__kernel void kernel2_multi_bfgs1(
+		const __global output_type_multi_cl* conf_in,
+				__global m_multi_cl* mg,
+		const __global pre_cl* pre,
+		const __global grids_cl* grids,
+		const __global mis_cl* mis,
+		const int num_ligands, const int total_torsions, const int bfgs_steps,
+				__global float* out) {
+	if (get_global_id(0) != 0) return;
+	m_multi_cl_private m;
+	m.m_num_movable_atoms = mg->m_num_movable_atoms;
+	m.num_ligands = mg->num_ligands;
+	for (int i = 0; i < m.m_num_movable_atoms; i++) m.atoms[i] = mg->atoms[i];
+	m.m_coords = mg->m_coords;
+	m.minus_forces = mg->minus_forces;
+	for (int k = 0; k < m.num_ligands; k++) m.ligands[k] = mg->ligands[k];
+	m.flex_rigid = mg->flex_rigid;
+	output_type_multi_cl c = *conf_in;
+	change_multi_cl g;
+	bfgs_multi(&c, &g, &m, mg->lig_pairs, &mg->other_pairs, pre, grids, mis, num_ligands, total_torsions, bfgs_steps);
+	out[0] = c.e;
+	for (int i = 0; i < 3; i++) { out[1+i] = c.position[0][i]; out[4+i] = c.position[1][i]; }  // optimized A,B root pos
+}
