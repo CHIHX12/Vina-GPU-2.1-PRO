@@ -106,14 +106,17 @@ ProteinGpuBuffers protein_gpu_setup(
 		}
 		// else: m_i/j/k already 0 from memset
 	}
-	// QFD: optionally load precomputed field grids from CWD (produced by prep_qfd_grids.py)
-	load_qfd_grid_file("qfd_esp.bin",      &grids_ptr->grids[GRID_IDX_ESP]);
-	load_qfd_grid_file("qfd_desolv.bin",   &grids_ptr->grids[GRID_IDX_DESOLV]);
-	load_qfd_grid_file("qfd_infomap.bin",  &grids_ptr->grids[GRID_IDX_INFOMAP]);
-	load_qfd_grid_file("qfd_water.bin",    &grids_ptr->grids[GRID_IDX_WATER]);    // Phase 3: xtal water penalty
-	// Phase 5: pipi — load from file if available, else compute from receptor (always active)
-	if (!load_qfd_grid_file("qfd_pipi.bin", &grids_ptr->grids[GRID_IDX_PIPI]))
-	    compute_pipi_grid_from_receptor(m, g, &grids_ptr->grids[GRID_IDX_PIPI]);
+	// QFD: optionally load precomputed field grids from CWD (produced by prep_qfd_grids.py).
+	// Each load is frame-validated against the current box (g) so a stale qfd_*.bin from a
+	// different receptor is ignored rather than silently applied.
+	load_qfd_grid_file("qfd_esp.bin",      &grids_ptr->grids[GRID_IDX_ESP],     g);
+	load_qfd_grid_file("qfd_desolv.bin",   &grids_ptr->grids[GRID_IDX_DESOLV],  g);
+	load_qfd_grid_file("qfd_infomap.bin",  &grids_ptr->grids[GRID_IDX_INFOMAP], g);
+	load_qfd_grid_file("qfd_water.bin",    &grids_ptr->grids[GRID_IDX_WATER],   g);  // Phase 3: xtal water penalty
+	// Phase 5: pipi — ALWAYS computed from the receptor for the current box (internalized in
+	// commit 190cf87). Building unconditionally is correct-by-construction and immune to a stale
+	// qfd_pipi.bin in the CWD; the file path is intentionally not consulted here.
+	compute_pipi_grid_from_receptor(m, g, &grids_ptr->grids[GRID_IDX_PIPI]);
 	// Phase 6: cavity buriedness grid — opt-in via VINA_CAVITY=1 (A/B test before default-on)
 	if (getenv("VINA_CAVITY") && atoi(getenv("VINA_CAVITY")) != 0)
 	    compute_cavity_grid_from_receptor(m, g, &grids_ptr->grids[GRID_IDX_CAVITY]);

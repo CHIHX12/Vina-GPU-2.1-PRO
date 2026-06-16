@@ -11,17 +11,44 @@
 //   float[12]: m_init[3], m_factor[3], m_dim_fl_minus_1[3], m_factor_inv[3]
 //   float[m_i*m_j*m_k*8]: trilinear interpolation coefficients
 // Returns true and fills slot if loaded; returns false and leaves slot zeroed if file absent.
-bool load_qfd_grid_file(const std::string& path, grid_cl* slot) {
+bool load_qfd_grid_file(const std::string& path, grid_cl* slot, const grid& ref_grid) {
 	FILE* f = std::fopen(path.c_str(), "rb");
 	if (!f) return false;
 	int dims[3];
-	float meta[12];
+	float meta[12];   // m_init[3], m_factor[3], m_dim_fl_minus_1[3], m_factor_inv[3]
 	if (std::fread(dims, sizeof(int), 3, f) != 3 || std::fread(meta, sizeof(float), 12, f) != 12) {
 		std::fclose(f); return false;
 	}
 	int mi = dims[0], mj = dims[1], mk = dims[2];
 	if (mi <= 0 || mj <= 0 || mk <= 0 || mi > MAX_NUM_OF_GRID_DIM || mj > MAX_NUM_OF_GRID_DIM || mk > MAX_NUM_OF_GRID_DIM) {
 		std::fclose(f); return false;
+	}
+	// Staleness guard: reject a cache whose spatial frame does not COVER the current docking box.
+	// Without this, a qfd_*.bin left in the CWD from a *different* receptor is loaded blindly and
+	// silently corrupts every score (observed: a DHFR pipi grid wrongly applied to another target
+	// flipped a -8.3 redock to +52). A grid built for (or covering) this box passes; one offset by
+	// tens of Å for another protein fails on at least one axis.
+	{
+		const float* gi  = meta + 0;   // loaded grid origin
+		const float* gsp = meta + 9;   // loaded grid spacing (m_factor_inv)
+		const float lmin[3] = { gi[0], gi[1], gi[2] };
+		const float lmax[3] = { gi[0] + (mi - 1) * gsp[0],
+		                        gi[1] + (mj - 1) * gsp[1],
+		                        gi[2] + (mk - 1) * gsp[2] };
+		const float bs = (float)ref_grid.m_factor_inv[0];
+		const float bmin[3] = { (float)ref_grid.m_init[0], (float)ref_grid.m_init[1], (float)ref_grid.m_init[2] };
+		const float bmax[3] = { bmin[0] + ((float)ref_grid.m_data.dim0() - 1) * bs,
+		                        bmin[1] + ((float)ref_grid.m_data.dim1() - 1) * bs,
+		                        bmin[2] + ((float)ref_grid.m_data.dim2() - 1) * bs };
+		const float tol = 2.0f;  // [Å] absorb spacing/rounding differences between builders
+		for (int ax = 0; ax < 3; ax++) {
+			if (lmin[ax] > bmin[ax] + tol || lmax[ax] < bmax[ax] - tol) {
+				std::fclose(f);
+				printf("QFD: ignoring %s — frame does not cover current box (stale cache from a different receptor/box)\n",
+				       path.c_str());
+				return false;
+			}
+		}
 	}
 	size_t ndata = (size_t)mi * mj * mk * 8;
 	if (std::fread(slot->m_data, sizeof(float), ndata, f) != ndata) {
