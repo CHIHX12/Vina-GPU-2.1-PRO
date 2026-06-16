@@ -589,27 +589,30 @@ void kernel2_multi(
 				const				int						total_torsions,
 				const				int						search_depth,
 				const				int						max_bfgs_steps,
-				const				int						n_traj
+				const				int						n_traj,
+						__global	m_multi_cl_private*		g_work			// P3: per-work-item working state in GLOBAL memory
 ) {
 	int gl = get_global_linear_id();
 	int total_wi = get_global_size(0) * get_global_size(1);
+	const __global random_maps* rmap = rand_maps_arr;   // single job
+
+	// P3: the working model copy lives in GLOBAL memory (one slab per work-item) so per-thread
+	// private stays tiny — this is what lets N scale toward hundreds (the trees no longer sit in
+	// private). Topology (atoms, trees, pairs) is constant across a work-item's trajectories, so
+	// copy it ONCE; m_coords/minus_forces are scratch overwritten by set_multi/eval each step.
+	__global m_multi_cl_private* m = &g_work[gl];
+	m->m_num_movable_atoms = mg->m_num_movable_atoms;
+	m->num_ligands         = mg->num_ligands;
+	for (int i = 0; i < m->m_num_movable_atoms; i++) m->atoms[i] = mg->atoms[i];
+	m->m_coords     = mg->m_coords;
+	m->minus_forces = mg->minus_forces;
+	for (int k = 0; k < m->num_ligands; k++) m->ligands[k] = mg->ligands[k];
+	m->flex_rigid = mg->flex_rigid;
+
+	__global const lig_pairs_multi_cl* lig_pairs_g = mg->lig_pairs;
+	__global const other_pairs_cl*     other_g     = &mg->other_pairs;
 
 	for (int traj_id = gl; traj_id < n_traj; traj_id += total_wi) {
-		const __global random_maps* rmap = rand_maps_arr;   // single job
-
-		// pairs-free private copy of the multi-ligand model
-		m_multi_cl_private m;
-		m.m_num_movable_atoms = mg->m_num_movable_atoms;
-		m.num_ligands         = mg->num_ligands;
-		for (int i = 0; i < m.m_num_movable_atoms; i++) m.atoms[i] = mg->atoms[i];
-		m.m_coords     = mg->m_coords;
-		m.minus_forces = mg->minus_forces;
-		for (int k = 0; k < m.num_ligands; k++) m.ligands[k] = mg->ligands[k];
-		m.flex_rigid = mg->flex_rigid;   // P1: num_nodes == 0
-
-		__global const lig_pairs_multi_cl* lig_pairs_g = mg->lig_pairs;
-		__global const other_pairs_cl*     other_g     = &mg->other_pairs;
-
 		float best_e = INFINITY;
 		output_type_multi_cl best_out;
 		m_coords_multi_cl     best_coords;
@@ -624,18 +627,17 @@ void kernel2_multi(
 			candidate = tmp;
 			int map_index = (step + traj_id * search_depth) % MAX_NUM_OF_RANDOM_MAP;
 
-			mutate_conf_multi(map_index, &candidate, &m,
+			mutate_conf_multi(map_index, &candidate, m,
 							  rmap->int_map, rmap->sphere_map, rmap->pi_map,
 							  mis->epsilon_fl, mis->mutation_amplitude);
 
-			// Optimizer selected by cap: dense BFGS (full Hessian, best quality) fits in private up to
-			// N=16; beyond that the Hessian is too large, so use L-BFGS (limited-memory, no dense
-			// Hessian — small private, scales to 32+). Build with MAX_NUM_OF_LIGANDS=32 to enable it.
+			// Optimizer selected by cap: dense BFGS (full Hessian, best quality) fits up to N=16;
+			// beyond that use L-BFGS (no dense Hessian — small private, scales to 32+/hundreds).
 #if MAX_NUM_OF_LIGANDS > 16
-			rilc_bfgs_multi(&candidate, &g, &m, lig_pairs_g, other_g, pre, grids, mis,
+			rilc_bfgs_multi(&candidate, &g, m, lig_pairs_g, other_g, pre, grids, mis,
 					   num_ligands, total_torsions, max_bfgs_steps);
 #else
-			bfgs_multi(&candidate, &g, &m, lig_pairs_g, other_g, pre, grids, mis,
+			bfgs_multi(&candidate, &g, m, lig_pairs_g, other_g, pre, grids, mis,
 					   num_ligands, total_torsions, max_bfgs_steps);
 #endif
 
@@ -644,10 +646,10 @@ void kernel2_multi(
 
 			if (step == 0 || metropolis_accept(tmp.e, candidate.e, temperature, nrand)) {
 				tmp = candidate;
-				set_multi(&tmp, &m, mis->epsilon_fl);   // refresh m.m_coords for the accepted conf
+				set_multi(&tmp, m, mis->epsilon_fl);   // refresh m->m_coords for the accepted conf
 				if (tmp.e < best_e) {
 					best_out    = tmp;
-					best_coords = m.m_coords;
+					best_coords = m->m_coords;
 					best_e      = tmp.e;
 				}
 			}
@@ -682,61 +684,4 @@ __kernel void multi_layout_probe(__global ulong* out) {
 	out[13] = (ulong)((__private char*)&m.ligands[1] - (__private char*)&m);
 	out[14] = (ulong)((__private char*)&m.m_coords - (__private char*)&m);
 	out[15] = MAX_NUM_OF_LIGANDS;
-}
-
-// DEBUG: score ONE fixed conf with the multi eval (no MC/BFGS). For cap-bug bisection:
-// same conf at N=8 vs N=16 must give the same energy; if not, the eval diverges with the cap.
-__kernel void kernel2_multi_score1(
-		const __global output_type_multi_cl* conf_in,
-				__global m_multi_cl* mg,
-		const __global pre_cl* pre,
-		const __global grids_cl* grids,
-		const __global mis_cl* mis,
-		const int num_ligands, const int total_torsions,
-				__global float* e_out) {
-	if (get_global_id(0) != 0) return;
-	m_multi_cl_private m;
-	m.m_num_movable_atoms = mg->m_num_movable_atoms;
-	m.num_ligands = mg->num_ligands;
-	for (int i = 0; i < m.m_num_movable_atoms; i++) m.atoms[i] = mg->atoms[i];
-	m.m_coords = mg->m_coords;
-	m.minus_forces = mg->minus_forces;
-	for (int k = 0; k < m.num_ligands; k++) m.ligands[k] = mg->ligands[k];
-	m.flex_rigid = mg->flex_rigid;
-	output_type_multi_cl c = *conf_in;
-	change_multi_cl g;
-	float e = m_eval_deriv_multi(&c, &g, &m, mg->lig_pairs, &mg->other_pairs, pre, grids, mis->hunt_cap, mis->epsilon_fl);
-	// also report the per-DOF gradient norm of ligand 0 vs ligand 1 (to see which ligand's grad is off)
-	float g0 = 0, g1 = 0;
-	for (int i = 0; i < 3; i++) { g0 += g.position[0][i]*g.position[0][i] + g.orientation[0][i]*g.orientation[0][i];
-	                              g1 += g.position[1][i]*g.position[1][i] + g.orientation[1][i]*g.orientation[1][i]; }
-	e_out[0] = e;
-	e_out[1] = g0;
-	e_out[2] = g1;
-}
-
-// DEBUG: run bfgs_multi ONCE on a fixed conf (no MC, no mutate). Isolates the SEARCH optimizer.
-// Same conf at N=8 vs N=12 must give the same optimized conf; if not, the BFGS path is the cap-bug.
-__kernel void kernel2_multi_bfgs1(
-		const __global output_type_multi_cl* conf_in,
-				__global m_multi_cl* mg,
-		const __global pre_cl* pre,
-		const __global grids_cl* grids,
-		const __global mis_cl* mis,
-		const int num_ligands, const int total_torsions, const int bfgs_steps,
-				__global float* out) {
-	if (get_global_id(0) != 0) return;
-	m_multi_cl_private m;
-	m.m_num_movable_atoms = mg->m_num_movable_atoms;
-	m.num_ligands = mg->num_ligands;
-	for (int i = 0; i < m.m_num_movable_atoms; i++) m.atoms[i] = mg->atoms[i];
-	m.m_coords = mg->m_coords;
-	m.minus_forces = mg->minus_forces;
-	for (int k = 0; k < m.num_ligands; k++) m.ligands[k] = mg->ligands[k];
-	m.flex_rigid = mg->flex_rigid;
-	output_type_multi_cl c = *conf_in;
-	change_multi_cl g;
-	bfgs_multi(&c, &g, &m, mg->lig_pairs, &mg->other_pairs, pre, grids, mis, num_ligands, total_torsions, bfgs_steps);
-	out[0] = c.e;
-	for (int i = 0; i < 3; i++) { out[1+i] = c.position[0][i]; out[4+i] = c.position[1][i]; }  // optimized A,B root pos
 }

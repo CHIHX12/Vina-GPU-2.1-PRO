@@ -220,67 +220,11 @@ void main_procedure_multi(cache& c, model& m, const precalculate& p, const paral
 	clFinish(queue);
 	free(ric); free(mg); free(rmap);
 
-	// ───── DEBUG: score ric[0] once (no MC/BFGS) for cap-bug bisection. VINA_MULTI_SCORE1=1 ─────
-	// Run with a FIXED --seed at N=8 and N=16; if E or per-ligand gradnorm differ, the multi
-	// eval diverges with the cap (and gradnorm_ligA vs ligB shows which ligand is mis-evaluated).
-	if (getenv("VINA_MULTI_SCORE1")) {
-		cl_kernel sc = clCreateKernel(programs[1], "kernel2_multi_score1", &err); checkErr(err);
-		cl_mem ebuf; CreateDeviceBuffer(&ebuf, CL_MEM_WRITE_ONLY, 3 * sizeof(float), context);
-		SetKernelArg(sc, 0, sizeof(cl_mem), &ric_gpu);   // conf_in = ric[0]
-		SetKernelArg(sc, 1, sizeof(cl_mem), &mg_gpu);
-		SetKernelArg(sc, 2, sizeof(cl_mem), &pre_gpu);
-		SetKernelArg(sc, 3, sizeof(cl_mem), &grids_gpu);
-		SetKernelArg(sc, 4, sizeof(cl_mem), &mis_gpu);
-		SetKernelArg(sc, 5, sizeof(int),    &N);
-		SetKernelArg(sc, 6, sizeof(int),    &total_torsions);
-		SetKernelArg(sc, 7, sizeof(cl_mem), &ebuf);
-		size_t g1 = 1, l1 = 1;
-		err = clEnqueueNDRangeKernel(queue, sc, 1, 0, &g1, &l1, 0, NULL, NULL); checkErr(err);
-		clFinish(queue);
-		float ev[3];
-		err = clEnqueueReadBuffer(queue, ebuf, true, 0, 3 * sizeof(float), ev, 0, NULL, NULL); checkErr(err);
-		printf("\n=== SCORE1 (MAX_NUM_OF_LIGANDS=%d) ===\n", MAX_NUM_OF_LIGANDS);
-		printf("  E(ric[0]) = %.6f   gradnorm_ligA = %.6f   gradnorm_ligB = %.6f\n", ev[0], ev[1], ev[2]);
-		printf("=== score1 done (no docking) ===\n"); fflush(stdout);
-		clReleaseMemObject(ebuf); clReleaseKernel(sc);
-		return;
-	}
-
-	// ───── DEBUG: run bfgs_multi ONCE on ric[0] (isolates the optimizer). VINA_MULTI_BFGS1=1 ─────
-	if (getenv("VINA_MULTI_BFGS1")) {
-		cl_kernel bk = clCreateKernel(programs[1], "kernel2_multi_bfgs1", &err); checkErr(err);
-		cl_mem obuf; CreateDeviceBuffer(&obuf, CL_MEM_WRITE_ONLY, 8 * sizeof(float), context);
-		SetKernelArg(bk, 0, sizeof(cl_mem), &ric_gpu);
-		SetKernelArg(bk, 1, sizeof(cl_mem), &mg_gpu);
-		SetKernelArg(bk, 2, sizeof(cl_mem), &pre_gpu);
-		SetKernelArg(bk, 3, sizeof(cl_mem), &grids_gpu);
-		SetKernelArg(bk, 4, sizeof(cl_mem), &mis_gpu);
-		SetKernelArg(bk, 5, sizeof(int),    &N);
-		SetKernelArg(bk, 6, sizeof(int),    &total_torsions);
-		SetKernelArg(bk, 7, sizeof(int),    &bfgs_steps);
-		SetKernelArg(bk, 8, sizeof(cl_mem), &obuf);
-		cl_ulong bpriv = 0;
-		clGetKernelWorkGroupInfo(bk, devices[gpu_id], CL_KERNEL_PRIVATE_MEM_SIZE, sizeof(cl_ulong), &bpriv, NULL);
-		printf("DIAG: bfgs1 private_mem=%llu bytes/work-item\n", (unsigned long long)bpriv); fflush(stdout);
-		size_t g1 = 64, l1 = 64;   // match docking work-group (local=1 over-allocates local-mem backing)
-		err = clEnqueueNDRangeKernel(queue, bk, 1, 0, &g1, &l1, 0, NULL, NULL); checkErr(err);
-		clFinish(queue);
-		float ov[8];
-		err = clEnqueueReadBuffer(queue, obuf, true, 0, 8 * sizeof(float), ov, 0, NULL, NULL); checkErr(err);
-		printf("\n=== BFGS1 (MAX_NUM_OF_LIGANDS=%d, bfgs_steps=%d) ===\n", MAX_NUM_OF_LIGANDS, bfgs_steps);
-		printf("  post-BFGS E = %.6f\n", ov[0]);
-		printf("  ligA root pos = (%.5f, %.5f, %.5f)\n", ov[1], ov[2], ov[3]);
-		printf("  ligB root pos = (%.5f, %.5f, %.5f)\n", ov[4], ov[5], ov[6]);
-		printf("=== bfgs1 done (no MC) ===\n"); fflush(stdout);
-		clReleaseMemObject(obuf); clReleaseKernel(bk);
-		return;
-	}
-
 	/**** Launch kernel2_multi ****/
 	cl_kernel k2m = clCreateKernel(programs[1], "kernel2_multi", &err); checkErr(err);
 	{
 		cl_uint nargs = 0; clGetKernelInfo(k2m, CL_KERNEL_NUM_ARGS, sizeof(cl_uint), &nargs, NULL);
-		printf("DIAG GPU%d: kernel2_multi CL_KERNEL_NUM_ARGS=%u (expect 13)\n", gpu_id, nargs); fflush(stdout);
+		printf("DIAG GPU%d: kernel2_multi CL_KERNEL_NUM_ARGS=%u (expect 14)\n", gpu_id, nargs); fflush(stdout);
 		cl_ulong priv = 0; cl_device_id dev = devices[gpu_id];
 		clGetKernelWorkGroupInfo(k2m, dev, CL_KERNEL_PRIVATE_MEM_SIZE, sizeof(cl_ulong), &priv, NULL);
 		printf("DIAG GPU%d: kernel2_multi private_mem=%llu bytes/work-item\n", gpu_id, (unsigned long long)priv); fflush(stdout);
@@ -308,6 +252,15 @@ void main_procedure_multi(cache& c, model& m, const precalculate& p, const paral
 	if (const char* e = getenv("VINA_MULTI_LWS")) { int v = atoi(e); if (v >= 1) local_wg = (size_t)v; }
 	size_t gw = ((multi_wi + local_wg - 1) / local_wg) * local_wg;
 	printf("DIAG GPU%d: kernel2_multi max_wg=%zu  local=%zu  global=%zu\n", gpu_id, k2m_max_wg, local_wg, gw); fflush(stdout);
+
+	// P3: per-work-item working-state slab in GLOBAL memory (one m_multi_cl_private per work-item).
+	cl_mem g_work_gpu;
+	const size_t g_work_sz = (size_t)gw * sizeof(m_multi_cl_private);
+	CreateDeviceBuffer(&g_work_gpu, CL_MEM_READ_WRITE, g_work_sz, context);
+	SetKernelArg(k2m, 13, sizeof(cl_mem), &g_work_gpu);
+	printf("DIAG GPU%d: g_work = %.1f MB (%zu WI x %.0f KB)\n", gpu_id,
+	       g_work_sz / 1048576.0, gw, sizeof(m_multi_cl_private) / 1024.0); fflush(stdout);
+
 	const size_t gws[2] = { gw, 1 };
 	const size_t lws[2] = { local_wg, 1 };
 	{
@@ -348,6 +301,7 @@ void main_procedure_multi(cache& c, model& m, const precalculate& p, const paral
 
 	free(results); free(out_coords); free(mis_ptr);
 	err = clReleaseKernel(k2m);            checkErr(err);
+	err = clReleaseMemObject(g_work_gpu);  checkErr(err);
 	err = clReleaseMemObject(ric_gpu);     checkErr(err);
 	err = clReleaseMemObject(mg_gpu);      checkErr(err);
 	err = clReleaseMemObject(rand_gpu);    checkErr(err);

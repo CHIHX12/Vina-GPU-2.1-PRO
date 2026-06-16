@@ -1336,7 +1336,7 @@ void bfgs(					output_type_cl*			x,
 
 // Forward kinematics for ONE ligand: writes lab coords for its atoms into coords[].
 void set_one_multi(const float* pos, const float* ori, const float* tors,
-				   rigid_multi_cl* rigid, m_coords_multi_cl* m_coords, const atom_cl* atoms, float epsilon_fl) {
+				   __global rigid_multi_cl* rigid, __global m_coords_multi_cl* m_coords, __global const atom_cl* atoms, float epsilon_fl) {
 	for (int i = 0; i < 3; i++) rigid->origin[0][i]        = pos[i];
 	for (int i = 0; i < 4; i++) rigid->orientation_q[0][i] = ori[i];
 	quaternion_to_r3(rigid->orientation_q[0], rigid->orientation_m[0]);
@@ -1367,9 +1367,9 @@ void set_one_multi(const float* pos, const float* ori, const float* tors,
 }
 
 // Forward kinematics for ALL ligands.
-void set_multi(const output_type_multi_cl* c, m_multi_cl_private* m, float epsilon_fl) {
+void set_multi(const output_type_multi_cl* c, __global m_multi_cl_private* m, float epsilon_fl) {
 	for (int k = 0; k < m->num_ligands; k++) {
-		ligand_multi_cl* L = &m->ligands[k];
+		__global ligand_multi_cl* L = &m->ligands[k];
 		set_one_multi(c->position[k], c->orientation[k], &c->lig_torsion[L->torsion_offset],
 					  &L->rigid, &m->m_coords, m->atoms, epsilon_fl);
 	}
@@ -1378,7 +1378,7 @@ void set_multi(const output_type_multi_cl* c, m_multi_cl_private* m, float epsil
 // Raw-pointer interacting-pairs energy+forces (serves intra AND inter-ligand pairs).
 float eval_pairs_multi(const __global pre_cl* pre, const float v, const int num_pairs,
 					   const __global int* tpi, const __global int* pa, const __global int* pb,
-					   m_coords_multi_cl* m_coords, m_minus_forces_multi* minus_forces, const float epsilon_fl) {
+					   __global m_coords_multi_cl* m_coords, __global m_minus_forces_multi* minus_forces, const float epsilon_fl) {
 	float e = 0;
 	for (int i = 0; i < num_pairs; i++) {
 		int a = pa[i], b = pb[i];
@@ -1401,8 +1401,8 @@ float eval_pairs_multi(const __global pre_cl* pre, const float v, const int num_
 
 // Standard Vina atom-type affinity grid term over ALL movable atoms. Initialises minus_forces[i]
 // for every movable atom (assignment), so the subsequent pair evals can accumulate (+=/-=).
-float ig_eval_multi(const __global grids_cl* grids, m_coords_multi_cl* m_coords, m_minus_forces_multi* minus_forces,
-					const atom_cl* atoms, const int num_movable, const float v, const float epsilon_fl) {
+float ig_eval_multi(const __global grids_cl* grids, __global m_coords_multi_cl* m_coords, __global m_minus_forces_multi* minus_forces,
+					__global const atom_cl* atoms, const int num_movable, const float v, const float epsilon_fl) {
 	float e = 0;
 	int nat = num_atom_types(grids->atu);
 	for (int i = 0; i < num_movable; i++) {
@@ -1418,7 +1418,7 @@ float ig_eval_multi(const __global grids_cl* grids, m_coords_multi_cl* m_coords,
 // Per-ligand force/torque -> DOF gradient. Writes raw output slots g_pos[3], g_ori[3], g_tor[ntors].
 // Inter-ligand forces are already summed into minus_forces[atom], so gathering this ligand's atoms
 // captures the coupling to all other ligands automatically.
-void POT_deriv_one_multi(m_minus_forces_multi* minus_forces, const rigid_multi_cl* rigid, m_coords_multi_cl* m_coords,
+void POT_deriv_one_multi(__global m_minus_forces_multi* minus_forces, __global const rigid_multi_cl* rigid, __global m_coords_multi_cl* m_coords,
 						 float* g_pos, float* g_ori, float* g_tor) {
 	int num_torsion = rigid->num_children;
 	int num_rigid = num_torsion + 1;
@@ -1466,7 +1466,7 @@ void POT_deriv_one_multi(m_minus_forces_multi* minus_forces, const rigid_multi_c
 }
 
 // Energy + gradient for a multi-ligand conf. lig_pairs_g points to mg->lig_pairs[0..N-1].
-float m_eval_deriv_multi(output_type_multi_cl* c, change_multi_cl* g, m_multi_cl_private* m,
+float m_eval_deriv_multi(output_type_multi_cl* c, change_multi_cl* g, __global m_multi_cl_private* m,
 						 const __global lig_pairs_multi_cl* lig_pairs_g,
 						 const __global other_pairs_cl* other_g,
 						 const __global pre_cl* pre, const __global grids_cl* grids,
@@ -1486,7 +1486,7 @@ float m_eval_deriv_multi(output_type_multi_cl* c, change_multi_cl* g, m_multi_cl
 						  &m->m_coords, &m->minus_forces, epsilon_fl);
 
 	for (int k = 0; k < m->num_ligands; k++) {
-		ligand_multi_cl* L = &m->ligands[k];
+		__global ligand_multi_cl* L = &m->ligands[k];
 		POT_deriv_one_multi(&m->minus_forces, &L->rigid, &m->m_coords,
 							g->position[k], g->orientation[k], &g->lig_torsion[L->torsion_offset]);
 	}
@@ -1542,7 +1542,7 @@ void output_type_multi_cl_increment(output_type_multi_cl* x, const change_multi_
 
 // Mutate ONE randomly-chosen DOF across all ligands: each ligand offers 1 translate + 1 rotate +
 // its torsions; pick one uniformly. Mirrors single mutate_conf_cl but ligand-aware.
-void mutate_conf_multi(const int step, output_type_multi_cl* c, m_multi_cl_private* m,
+void mutate_conf_multi(const int step, output_type_multi_cl* c, __global m_multi_cl_private* m,
 					   __global const int* random_int_map,
 					   __global const float random_inside_sphere_map[][3],
 					   __global const float* random_fl_pi_map,
@@ -1601,7 +1601,7 @@ void minus_mat_vec_product_multi(const matrix_multi* h, const change_multi_cl* i
 	}
 }
 
-float line_search_multi(m_multi_cl_private* m,
+float line_search_multi(__global m_multi_cl_private* m,
 						const __global lig_pairs_multi_cl* lig_pairs_g,
 						const __global other_pairs_cl* other_g,
 						const __global pre_cl* pre, const __global grids_cl* grids,
@@ -1644,7 +1644,7 @@ bool bfgs_update_multi(matrix_multi* h, const change_multi_cl* p, const change_m
 	return true;
 }
 
-void bfgs_multi(output_type_multi_cl* x, change_multi_cl* g, m_multi_cl_private* m,
+void bfgs_multi(output_type_multi_cl* x, change_multi_cl* g, __global m_multi_cl_private* m,
 				const __global lig_pairs_multi_cl* lig_pairs_g, const __global other_pairs_cl* other_g,
 				const __global pre_cl* pre, const __global grids_cl* grids, const __global mis_cl* mis,
 				const int num_ligands, const int total_torsions, const int max_bfgs_steps) {
@@ -1698,7 +1698,7 @@ void get_to_minus_multi(change_multi_cl* a, const change_multi_cl* b, int n, int
 }
 
 int line_search_lewisoverton_multi(
-		m_multi_cl_private* m, const __global lig_pairs_multi_cl* lig_pairs_g, const __global other_pairs_cl* other_g,
+		__global m_multi_cl_private* m, const __global lig_pairs_multi_cl* lig_pairs_g, const __global other_pairs_cl* other_g,
 		const __global pre_cl* pre, const __global grids_cl* grids,
 		int n, float* stp, output_type_multi_cl* x, float* f, change_multi_cl* g,
 		const change_multi_cl* d, const output_type_multi_cl* xp, const change_multi_cl* gp,
@@ -1731,7 +1731,7 @@ int line_search_lewisoverton_multi(
 }
 
 void rilc_bfgs_multi(
-		output_type_multi_cl* x, change_multi_cl* g, m_multi_cl_private* m,
+		output_type_multi_cl* x, change_multi_cl* g, __global m_multi_cl_private* m,
 		const __global lig_pairs_multi_cl* lig_pairs_g, const __global other_pairs_cl* other_g,
 		const __global pre_cl* pre, const __global grids_cl* grids, const __global mis_cl* mis,
 		const int num_ligands, const int total_torsions, const int max_steps)
