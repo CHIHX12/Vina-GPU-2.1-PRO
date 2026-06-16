@@ -1688,3 +1688,99 @@ void bfgs_multi(output_type_multi_cl* x, change_multi_cl* g, m_multi_cl_private*
 	if (!(f0 <= f_orig)) { f0 = f_orig; *x = x_orig; *g = g_orig; }
 	x->e = f0;
 }
+// ════════════ Multi L-BFGS (rilc_bfgs_multi) — limited-memory, NO dense Hessian ════════════
+// Mirrors the single rilc_bfgs but over the flattened multi-root DOF. Private cost is just two
+// history vectors (lm_s, lm_y, MAX_MULTI_CONF_DIM each) instead of the O(n^2) Hessian — this is
+// what lets N scale to 32 in private (and, with the global m path, toward hundreds).
+void get_to_minus_multi(change_multi_cl* a, const change_multi_cl* b, int n, int num_ligands) {
+	for (int i = 0; i < n; i++)
+		find_change_index_write_multi(a, i, -find_change_index_read_multi(b, i, num_ligands), num_ligands);
+}
+
+int line_search_lewisoverton_multi(
+		m_multi_cl_private* m, const __global lig_pairs_multi_cl* lig_pairs_g, const __global other_pairs_cl* other_g,
+		const __global pre_cl* pre, const __global grids_cl* grids,
+		int n, float* stp, output_type_multi_cl* x, float* f, change_multi_cl* g,
+		const change_multi_cl* d, const output_type_multi_cl* xp, const change_multi_cl* gp,
+		const float epsilon_fl, const __global float* hunt_cap,
+		const int num_ligands, const int total_torsions)
+{
+	int count = 0;
+	bool brackt = false;
+	float finit, dginit, dgtest, dstest;
+	float mu = 0.0, nu = 1.0e+20;
+	dginit = scalar_product_multi(gp, d, n, num_ligands);
+	if (0.0 < dginit) return -1;
+	finit = *f;
+	dgtest = 1.0e-4 * dginit;
+	dstest = 0.1 * dginit;
+	while (true) {
+		*x = *xp;
+		output_type_multi_cl_increment(x, d, *stp, epsilon_fl, total_torsions);
+		*f = m_eval_deriv_multi(x, g, m, lig_pairs_g, other_g, pre, grids, hunt_cap, epsilon_fl);
+		++count;
+		if (*f > finit + *stp * dgtest) { nu = *stp; brackt = true; }
+		else {
+			if (scalar_product_multi(g, d, n, num_ligands) < dstest) mu = *stp;
+			else return count;
+		}
+		if (10 <= count) { if (*f > finit) return -1; else return count; }
+		if (brackt) (*stp) = 0.5 * (mu + nu);
+		else (*stp) *= 2.0;
+	}
+}
+
+void rilc_bfgs_multi(
+		output_type_multi_cl* x, change_multi_cl* g, m_multi_cl_private* m,
+		const __global lig_pairs_multi_cl* lig_pairs_g, const __global other_pairs_cl* other_g,
+		const __global pre_cl* pre, const __global grids_cl* grids, const __global mis_cl* mis,
+		const int num_ligands, const int total_torsions, const int max_steps)
+{
+	int n = 6 * num_ligands + total_torsions;
+	int k, ls;
+	float step, fx, ys, yy;
+	float beta = 0, cau, cau_t, lm_s_dot_d, lm_alpha = 0, lm_ys = 0;
+	output_type_multi_cl xp = *x;
+	change_multi_cl gp = *g;
+	float lm_s[MAX_MULTI_CONF_DIM] = { 0 };
+	float lm_y[MAX_MULTI_CONF_DIM] = { 0 };
+	fx = m_eval_deriv_multi(x, g, m, lig_pairs_g, other_g, pre, grids, mis->hunt_cap, mis->epsilon_fl);
+	float fxp = fx, fx_orig = fx;
+	change_multi_cl g_orig = *g;
+	output_type_multi_cl x_orig = *x;
+	change_multi_cl d = *g;
+	get_to_minus_multi(&d, g, n, num_ligands);
+	if (!(sqrt(scalar_product_multi(g, g, n, num_ligands)) >= 1e-5)) { x->e = fx; return; }
+	step = 1.0 / to_norm_multi(&d, n, num_ligands);
+	k = 1;
+	while (true) {
+		xp = *x; gp = *g; fxp = fx;
+		ls = line_search_lewisoverton_multi(m, lig_pairs_g, other_g, pre, grids, n, &step, x, &fx, g, &d, &xp, &gp,
+		                                    mis->epsilon_fl, mis->hunt_cap, num_ligands, total_torsions);
+		if (ls < 0) { *x = xp; *g = gp; fx = fxp; break; }
+		if (!(sqrt(scalar_product_multi(g, g, n, num_ligands)) >= 1e-5)) { x->e = fx; return; }
+		if (max_steps != 0 && max_steps <= k) break;
+		++k;
+		for (int i = 0; i < n; i++) lm_s[i] = step * find_change_index_read_multi(&d, i, num_ligands);
+		for (int i = 0; i < n; i++) lm_y[i] = find_change_index_read_multi(g, i, num_ligands) - find_change_index_read_multi(&gp, i, num_ligands);
+		ys = 0; for (int i = 0; i < n; i++) ys += lm_y[i] * lm_s[i];
+		yy = 0; for (int i = 0; i < n; i++) yy += lm_y[i] * lm_y[i];
+		lm_ys = ys;
+		get_to_minus_multi(&d, g, n, num_ligands);
+		cau = 0; for (int i = 0; i < n; i++) cau += lm_s[i] * lm_s[i];
+		cau_t = 0; for (int i = 0; i < n; i++) cau_t += find_change_index_read_multi(&gp, i, num_ligands) * find_change_index_read_multi(&gp, i, num_ligands);
+		cau = cau * sqrt(cau_t) * 1.0e-6;
+		if (ys > cau) {
+			lm_s_dot_d = 0; for (int a = 0; a < n; a++) lm_s_dot_d += lm_s[a] * find_change_index_read_multi(&d, a, num_ligands);
+			lm_alpha = lm_s_dot_d / lm_ys;
+			for (int b = 0; b < n; b++) find_change_index_write_multi(&d, b, find_change_index_read_multi(&d, b, num_ligands) + lm_alpha * lm_y[b], num_ligands);
+			for (int i = 0; i < n; i++) find_change_index_write_multi(&d, i, find_change_index_read_multi(&d, i, num_ligands) * (ys / yy), num_ligands);
+			beta = 0; for (int a = 0; a < n; a++) beta += lm_y[a] * find_change_index_read_multi(&d, a, num_ligands);
+			beta /= lm_ys;
+			for (int i = 0; i < n; i++) find_change_index_write_multi(&d, i, find_change_index_read_multi(&d, i, num_ligands) + (lm_alpha - beta) * lm_s[i], num_ligands);
+		}
+		step = 1.0;
+	}
+	if (!(fx <= fx_orig)) { fx = fx_orig; *x = x_orig; *g = g_orig; }
+	x->e = fx;
+}

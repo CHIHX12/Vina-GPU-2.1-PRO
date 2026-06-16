@@ -628,8 +628,16 @@ void kernel2_multi(
 							  rmap->int_map, rmap->sphere_map, rmap->pi_map,
 							  mis->epsilon_fl, mis->mutation_amplitude);
 
+			// Optimizer selected by cap: dense BFGS (full Hessian, best quality) fits in private up to
+			// N=16; beyond that the Hessian is too large, so use L-BFGS (limited-memory, no dense
+			// Hessian — small private, scales to 32+). Build with MAX_NUM_OF_LIGANDS=32 to enable it.
+#if MAX_NUM_OF_LIGANDS > 16
+			rilc_bfgs_multi(&candidate, &g, &m, lig_pairs_g, other_g, pre, grids, mis,
+					   num_ligands, total_torsions, max_bfgs_steps);
+#else
 			bfgs_multi(&candidate, &g, &m, lig_pairs_g, other_g, pre, grids, mis,
 					   num_ligands, total_torsions, max_bfgs_steps);
+#endif
 
 			int accept_index = (map_index + MAX_NUM_OF_RANDOM_MAP / 2) % MAX_NUM_OF_RANDOM_MAP;
 			float nrand = generate_n(rmap->pi_map, accept_index);

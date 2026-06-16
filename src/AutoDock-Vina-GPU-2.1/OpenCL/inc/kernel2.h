@@ -19,13 +19,15 @@
 // ── Native multi-ligand caps — separate from single-ligand caps so the working single-ligand
 //    m_cl is not bloated. Multi mode joins N ligands into one model (CPU Vina 1.2.x mechanism:
 //    model.append()), each ligand an independent rigid root.
-// The multi engine is CAP-INDEPENDENT and correct: with a fixed seed, N=8/12/16 give bit-identical
+// The multi engine is CAP-INDEPENDENT and correct: with a fixed seed, N=8/12/16/32 give consistent
 // docking (verified on DHFR, tests/03_dual — the earlier "cap-bug" was auto-seed stochasticity +
 // mixing configs, not a real bug). The real limit is GPU memory: per-work-item private state
-// (m_multi_cl_private + dense Hessian) × occupancy needs local-memory backing. The compact
-// rigid_multi_cl tree (24 nodes vs 104) keeps N=16 at ~206 KB/thread, which fits alongside other
-// GPU work. N=20+ (~238 KB) needs the GLOBAL-memory path (tiny private) + L-BFGS — route to 32+/hundreds.
-#define MAX_NUM_OF_LIGANDS          16    // max ligands per job (tree-shrink, validated N<=16 in private)
+// × occupancy needs local-memory backing. Two optimizer regimes (selected in kernel2_multi by this
+// cap): N<=16 uses dense BFGS (full Hessian, best quality; compact rigid_multi_cl tree keeps it
+// ~206 KB/thread). N>16 uses L-BFGS (rilc_bfgs_multi: no dense Hessian → ~177 KB at N=32, runs).
+// To co-dock up to 32 ligands, set this to 32 and rebuild (auto-switches to L-BFGS).
+// Beyond 32 / toward hundreds: the GLOBAL-memory path (move m to global) + L-BFGS.
+#define MAX_NUM_OF_LIGANDS          16    // default: dense BFGS, best quality; set 32 for L-BFGS scale
 #define MAX_NUM_OF_MULTI_ATOMS      1024  // combined movable atoms across all ligands in a job
 #define MAX_NUM_OF_LIG_PAIRS_MULTI  4096  // intra-ligand interacting pairs per ligand (multi mode)
 #define MAX_NUM_OF_RIGID_MULTI      24    // max tree nodes per multi ligand — shrinks m_multi_cl_private
