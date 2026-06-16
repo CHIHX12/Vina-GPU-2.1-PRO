@@ -16,16 +16,19 @@
 // torsion. Generous cap so a few residues (each with several rotatable bonds) fit.
 #define MAX_NUM_OF_FLEX_RIGID 48  // anchors + torsion nodes across all flexible side chains (raised 24→48)
 #define MAX_NUM_OF_ATOMS 272
-// ── Native multi-ligand (P1) caps — separate from single-ligand caps so the working
-//    single-ligand m_cl is not bloated. Multi mode joins N ligands into one model
-//    (CPU Vina 1.2.x mechanism: model.append()), each ligand an independent rigid root.
-// P1 caps are bounded by the CUDA 512 KB/thread local-memory limit: the per-work-item private
-// copy (m_multi_cl_private) + dense Hessian must fit. N=8/1024 atoms keeps it ~250 KB. Scaling
-// to 32+ ligands / thousands of atoms (the "hundreds" goal) requires P2 (move per-trajectory
-// state to GLOBAL memory + L-BFGS) — dense-BFGS-in-private cannot reach 32.
-#define MAX_NUM_OF_LIGANDS          8     // max ligands in one joint multi-ligand job (P1; P2 raises this)
+// ── Native multi-ligand caps — separate from single-ligand caps so the working single-ligand
+//    m_cl is not bloated. Multi mode joins N ligands into one model (CPU Vina 1.2.x mechanism:
+//    model.append()), each ligand an independent rigid root.
+// The multi engine is CAP-INDEPENDENT and correct: with a fixed seed, N=8/12/16 give bit-identical
+// docking (verified on DHFR, tests/03_dual — the earlier "cap-bug" was auto-seed stochasticity +
+// mixing configs, not a real bug). The real limit is GPU memory: per-work-item private state
+// (m_multi_cl_private + dense Hessian) × occupancy needs local-memory backing. The compact
+// rigid_multi_cl tree (24 nodes vs 104) keeps N=16 at ~206 KB/thread, which fits alongside other
+// GPU work. N=20+ (~238 KB) needs the GLOBAL-memory path (tiny private) + L-BFGS — route to 32+/hundreds.
+#define MAX_NUM_OF_LIGANDS          16    // max ligands per job (tree-shrink, validated N<=16 in private)
 #define MAX_NUM_OF_MULTI_ATOMS      1024  // combined movable atoms across all ligands in a job
 #define MAX_NUM_OF_LIG_PAIRS_MULTI  4096  // intra-ligand interacting pairs per ligand (multi mode)
+#define MAX_NUM_OF_RIGID_MULTI      24    // max tree nodes per multi ligand — shrinks m_multi_cl_private
 // Multi-ligand flattened DOF = 6*N (per-ligand root pos+ori) + total ligand torsions (shared array).
 #define MAX_MULTI_CONF_DIM          (6 * MAX_NUM_OF_LIGANDS + MAX_NUM_OF_LIG_TORSION + 2)
 #define MAX_MULTI_HESSIAN_MATRIX_SIZE ((6 * MAX_NUM_OF_LIGANDS + MAX_NUM_OF_LIG_TORSION) * (6 * MAX_NUM_OF_LIGANDS + MAX_NUM_OF_LIG_TORSION + 1) / 2)
@@ -331,13 +334,27 @@ typedef struct {
 	int b				[MAX_NUM_OF_LIG_PAIRS_MULTI];
 } lig_pairs_multi_cl;
 
+// Compact per-ligand tree (rigid_cl layout, small MAX_NUM_OF_RIGID_MULTI cap) — keeps
+// m_multi_cl_private small enough to scale N within the GPU per-thread/backing limits.
+typedef struct {
+	int		num_children;
+	int		parent			[MAX_NUM_OF_RIGID_MULTI];
+	int		atom_range		[MAX_NUM_OF_RIGID_MULTI][2];
+	float	origin			[MAX_NUM_OF_RIGID_MULTI][3];
+	float	orientation_m	[MAX_NUM_OF_RIGID_MULTI][9];
+	float	orientation_q	[MAX_NUM_OF_RIGID_MULTI][4];
+	float	axis			[MAX_NUM_OF_RIGID_MULTI][3];
+	float	relative_axis	[MAX_NUM_OF_RIGID_MULTI][3];
+	float	relative_origin	[MAX_NUM_OF_RIGID_MULTI][3];
+} rigid_multi_cl;
+
 // One ligand inside a multi-ligand job. Atom indices reference the shared combined arrays.
 typedef struct {
-	int      begin;            // first atom index (into shared atom/coord arrays)
-	int      end;              // one-past-last atom index
-	int      torsion_offset;   // this ligand owns lig_torsion[torsion_offset .. +num_torsions)
-	int      num_torsions;
-	rigid_cl rigid;            // this ligand's own tree (root node 0 + branch nodes)
+	int            begin;          // first atom index (into shared atom/coord arrays)
+	int            end;            // one-past-last atom index
+	int            torsion_offset; // this ligand owns lig_torsion[torsion_offset .. +num_torsions)
+	int            num_torsions;
+	rigid_multi_cl rigid;          // this ligand's own tree (root node 0 + branch nodes)
 } ligand_multi_cl;
 
 // conf (output_type) for a multi-ligand pose: one root (pos+quat) per ligand,

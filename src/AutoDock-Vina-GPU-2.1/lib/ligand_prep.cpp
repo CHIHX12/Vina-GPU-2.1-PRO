@@ -193,7 +193,7 @@ void fill_m_cl_multi(model& m, m_multi_cl* m_ptr) {
 	struct tmp_struct_local {
 		int start_index = 0;
 		int parent_index = 0;
-		void store_node(tree<segment>& child_ptr, rigid_cl& rigid) {
+		void store_node(tree<segment>& child_ptr, rigid_multi_cl& rigid) {
 			start_index++;
 			rigid.parent[start_index] = parent_index;
 			rigid.atom_range[start_index][0] = child_ptr.node.begin;
@@ -210,7 +210,7 @@ void fill_m_cl_multi(model& m, m_multi_cl* m_ptr) {
 				rigid.relative_origin[start_index][j] = child_ptr.node.relative_origin[j];
 			}
 			if (child_ptr.children.empty()) return;
-			if (start_index >= MAX_NUM_OF_RIGID) { throw std::runtime_error("Children map too large!"); }
+			if (start_index >= MAX_NUM_OF_RIGID_MULTI) { throw std::runtime_error("Children map too large!"); }
 			int parent_index_tmp = start_index;
 			for (int ci = 0; ci < (int)child_ptr.children.size(); ci++) {
 				this->parent_index = parent_index_tmp;
@@ -223,7 +223,7 @@ void fill_m_cl_multi(model& m, m_multi_cl* m_ptr) {
 	for (int k = 0; k < N; k++) {
 		ligand m_ligand = m.ligands[k];
 		ligand_multi_cl& L = m_ptr->ligands[k];
-		rigid_cl& rigid = L.rigid;
+		rigid_multi_cl& rigid = L.rigid;
 
 		L.begin = m.ligands[k].begin;
 		L.end   = m.ligands[k].end;

@@ -1336,7 +1336,7 @@ void bfgs(					output_type_cl*			x,
 
 // Forward kinematics for ONE ligand: writes lab coords for its atoms into coords[].
 void set_one_multi(const float* pos, const float* ori, const float* tors,
-				   rigid_cl* rigid, m_coords_multi_cl* m_coords, const atom_cl* atoms, float epsilon_fl) {
+				   rigid_multi_cl* rigid, m_coords_multi_cl* m_coords, const atom_cl* atoms, float epsilon_fl) {
 	for (int i = 0; i < 3; i++) rigid->origin[0][i]        = pos[i];
 	for (int i = 0; i < 4; i++) rigid->orientation_q[0][i] = ori[i];
 	quaternion_to_r3(rigid->orientation_q[0], rigid->orientation_m[0]);
@@ -1418,13 +1418,13 @@ float ig_eval_multi(const __global grids_cl* grids, m_coords_multi_cl* m_coords,
 // Per-ligand force/torque -> DOF gradient. Writes raw output slots g_pos[3], g_ori[3], g_tor[ntors].
 // Inter-ligand forces are already summed into minus_forces[atom], so gathering this ligand's atoms
 // captures the coupling to all other ligands automatically.
-void POT_deriv_one_multi(m_minus_forces_multi* minus_forces, const rigid_cl* rigid, m_coords_multi_cl* m_coords,
+void POT_deriv_one_multi(m_minus_forces_multi* minus_forces, const rigid_multi_cl* rigid, m_coords_multi_cl* m_coords,
 						 float* g_pos, float* g_ori, float* g_tor) {
 	int num_torsion = rigid->num_children;
 	int num_rigid = num_torsion + 1;
-	float pos_d_tmp[MAX_NUM_OF_RIGID][3], pos_d[MAX_NUM_OF_RIGID][3];
-	float ori_d_tmp[MAX_NUM_OF_RIGID][3], ori_d[MAX_NUM_OF_RIGID][3];
-	float tor_d[MAX_NUM_OF_RIGID];
+	float pos_d_tmp[MAX_NUM_OF_RIGID_MULTI][3], pos_d[MAX_NUM_OF_RIGID_MULTI][3];
+	float ori_d_tmp[MAX_NUM_OF_RIGID_MULTI][3], ori_d[MAX_NUM_OF_RIGID_MULTI][3];
+	float tor_d[MAX_NUM_OF_RIGID_MULTI];
 
 	for (int i = 0; i < num_rigid; i++) {
 		int begin = rigid->atom_range[i][0];

@@ -170,19 +170,33 @@ void main_procedure_multi(cache& c, model& m, const precalculate& p, const paral
 		for (int j = 0; j < 3; j++) rmap->sphere_map[k][j] = rc[j];
 	}
 
+	// DIAGNOSTIC: VINA_MULTI_CRYSTAL=1 starts every trajectory from the INPUT (crystal) pose —
+	// each ligand's parsed root frame + torsions=0 — a non-clashing pose so BFGS actually
+	// optimises (vs the random box pose, which clashes and makes BFGS a no-op).
+	const bool use_crystal = (getenv("VINA_MULTI_CRYSTAL") != nullptr);
 	output_type tmp(s, 0);  // conf with N ligand_confs
 	output_type_multi_cl* ric = (output_type_multi_cl*)malloc((size_t)n_traj * sizeof(output_type_multi_cl));
 	for (int t = 0; t < n_traj; t++) {
-		tmp.c.randomize(corner1, corner2, generator);
+		if (!use_crystal) tmp.c.randomize(corner1, corner2, generator);
 		ric[t].num_ligands = N;
 		for (int k = 0; k < N; k++) {
-			for (int j = 0; j < 3; j++) ric[t].position[k][j] = tmp.c.ligands[k].rigid.position[j];
-			ric[t].orientation[k][0] = tmp.c.ligands[k].rigid.orientation.R_component_1();
-			ric[t].orientation[k][1] = tmp.c.ligands[k].rigid.orientation.R_component_2();
-			ric[t].orientation[k][2] = tmp.c.ligands[k].rigid.orientation.R_component_3();
-			ric[t].orientation[k][3] = tmp.c.ligands[k].rigid.orientation.R_component_4();
-			for (int j = 0; j < (int)s.ligands[k]; j++)
-				ric[t].lig_torsion[tors_off[k] + j] = tmp.c.ligands[k].torsions[j];
+			if (use_crystal) {
+				vec o = m.ligands[k].node.get_origin();
+				for (int j = 0; j < 3; j++) ric[t].position[k][j] = (float)o[j];
+				ric[t].orientation[k][0] = m.ligands[k].node.orientation().R_component_1();
+				ric[t].orientation[k][1] = m.ligands[k].node.orientation().R_component_2();
+				ric[t].orientation[k][2] = m.ligands[k].node.orientation().R_component_3();
+				ric[t].orientation[k][3] = m.ligands[k].node.orientation().R_component_4();
+				for (int j = 0; j < (int)s.ligands[k]; j++) ric[t].lig_torsion[tors_off[k] + j] = 0.0f;
+			} else {
+				for (int j = 0; j < 3; j++) ric[t].position[k][j] = tmp.c.ligands[k].rigid.position[j];
+				ric[t].orientation[k][0] = tmp.c.ligands[k].rigid.orientation.R_component_1();
+				ric[t].orientation[k][1] = tmp.c.ligands[k].rigid.orientation.R_component_2();
+				ric[t].orientation[k][2] = tmp.c.ligands[k].rigid.orientation.R_component_3();
+				ric[t].orientation[k][3] = tmp.c.ligands[k].rigid.orientation.R_component_4();
+				for (int j = 0; j < (int)s.ligands[k]; j++)
+					ric[t].lig_torsion[tors_off[k] + j] = tmp.c.ligands[k].torsions[j];
+			}
 		}
 	}
 
