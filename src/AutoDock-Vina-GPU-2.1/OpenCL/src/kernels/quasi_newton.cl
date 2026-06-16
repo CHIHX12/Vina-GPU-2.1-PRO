@@ -1323,3 +1323,368 @@ void bfgs(					output_type_cl*			x,
 	// write output_type_cl energy
 	x->e = f0;
 }
+
+// ════════════════════════ Native multi-ligand (P1) device core ════════════════════════
+// ADDITIVE: every single-ligand function above is untouched. These take raw float(*)[3]
+// pointers so they work over the larger m_multi_cl arrays, and reuse the type-agnostic leaf
+// helpers (local_to_lab, local_to_lab_direction, angle_to_quaternion2, angle_to_quaternion_multi,
+// quaternion_to_r3, quaternion_normalize_approx, quaternion_increment, normalize_angle,
+// g_evaluate, p_eval_deriv, curl, product). Lean STANDARD Vina scoring (no QFD) to match
+// CPU AutoDock Vina 1.2.7. N ligands = N independent rigid roots in one shared coordinate frame;
+// inter-ligand coupling is automatic: inter-ligand forces land in minus_forces[atom] (via the
+// other_pairs eval) and each ligand's POT routes its own atoms' forces to its own DOF.
+
+// Forward kinematics for ONE ligand: writes lab coords for its atoms into coords[].
+void set_one_multi(const float* pos, const float* ori, const float* tors,
+				   rigid_cl* rigid, m_coords_multi_cl* m_coords, const atom_cl* atoms, float epsilon_fl) {
+	for (int i = 0; i < 3; i++) rigid->origin[0][i]        = pos[i];
+	for (int i = 0; i < 4; i++) rigid->orientation_q[0][i] = ori[i];
+	quaternion_to_r3(rigid->orientation_q[0], rigid->orientation_m[0]);
+	int begin = rigid->atom_range[0][0];
+	int end   = rigid->atom_range[0][1];
+	for (int i = begin; i < end; i++)
+		local_to_lab(m_coords->coords[i], rigid->origin[0], &atoms[i].coords[0], rigid->orientation_m[0]);
+
+	for (int current = 1; current < rigid->num_children + 1; current++) {
+		int parent = rigid->parent[current];
+		float torsion = tors[current - 1];
+		local_to_lab(rigid->origin[current], rigid->origin[parent], rigid->relative_origin[current], rigid->orientation_m[parent]);
+		local_to_lab_direction(rigid->axis[current], rigid->relative_axis[current], rigid->orientation_m[parent]);
+		float tmp[4];
+		float parent_q[4] = { rigid->orientation_q[parent][0], rigid->orientation_q[parent][1],
+							  rigid->orientation_q[parent][2], rigid->orientation_q[parent][3] };
+		float current_axis[3] = { rigid->axis[current][0], rigid->axis[current][1], rigid->axis[current][2] };
+		angle_to_quaternion2(tmp, current_axis, torsion);
+		angle_to_quaternion_multi(tmp, parent_q);
+		quaternion_normalize_approx(tmp, epsilon_fl);
+		for (int i = 0; i < 4; i++) rigid->orientation_q[current][i] = tmp[i];
+		quaternion_to_r3(rigid->orientation_q[current], rigid->orientation_m[current]);
+		begin = rigid->atom_range[current][0];
+		end   = rigid->atom_range[current][1];
+		for (int i = begin; i < end; i++)
+			local_to_lab(m_coords->coords[i], rigid->origin[current], &atoms[i].coords[0], rigid->orientation_m[current]);
+	}
+}
+
+// Forward kinematics for ALL ligands.
+void set_multi(const output_type_multi_cl* c, m_multi_cl_private* m, float epsilon_fl) {
+	for (int k = 0; k < m->num_ligands; k++) {
+		ligand_multi_cl* L = &m->ligands[k];
+		set_one_multi(c->position[k], c->orientation[k], &c->lig_torsion[L->torsion_offset],
+					  &L->rigid, &m->m_coords, m->atoms, epsilon_fl);
+	}
+}
+
+// Raw-pointer interacting-pairs energy+forces (serves intra AND inter-ligand pairs).
+float eval_pairs_multi(const __global pre_cl* pre, const float v, const int num_pairs,
+					   const __global int* tpi, const __global int* pa, const __global int* pb,
+					   m_coords_multi_cl* m_coords, m_minus_forces_multi* minus_forces, const float epsilon_fl) {
+	float e = 0;
+	for (int i = 0; i < num_pairs; i++) {
+		int a = pa[i], b = pb[i];
+		float r[3] = { m_coords->coords[b][0] - m_coords->coords[a][0],
+		               m_coords->coords[b][1] - m_coords->coords[a][1],
+		               m_coords->coords[b][2] - m_coords->coords[a][2] };
+		float r2 = r[0]*r[0] + r[1]*r[1] + r[2]*r[2];
+		if (r2 < pre->m_cutoff_sqr) {
+			float tmp[2];
+			p_eval_deriv(tmp, tpi[i], r2, pre, epsilon_fl);
+			float force[3] = { r[0]*tmp[1], r[1]*tmp[1], r[2]*tmp[1] };
+			curl(&tmp[0], force, v, epsilon_fl);
+			e += tmp[0];
+			for (int j = 0; j < 3; j++) minus_forces->coords[a][j] -= force[j];
+			for (int j = 0; j < 3; j++) minus_forces->coords[b][j] += force[j];
+		}
+	}
+	return e;
+}
+
+// Standard Vina atom-type affinity grid term over ALL movable atoms. Initialises minus_forces[i]
+// for every movable atom (assignment), so the subsequent pair evals can accumulate (+=/-=).
+float ig_eval_multi(const __global grids_cl* grids, m_coords_multi_cl* m_coords, m_minus_forces_multi* minus_forces,
+					const atom_cl* atoms, const int num_movable, const float v, const float epsilon_fl) {
+	float e = 0;
+	int nat = num_atom_types(grids->atu);
+	for (int i = 0; i < num_movable; i++) {
+		int t = atoms[i].types[grids->atu];
+		if (t >= nat) { for (int j = 0; j < 3; j++) minus_forces->coords[i][j] = 0; continue; }
+		float deriv[3];
+		e += g_evaluate(&grids->grids[t], m_coords->coords[i], grids->slope, v, deriv, epsilon_fl);
+		for (int j = 0; j < 3; j++) minus_forces->coords[i][j] = deriv[j];
+	}
+	return e;
+}
+
+// Per-ligand force/torque -> DOF gradient. Writes raw output slots g_pos[3], g_ori[3], g_tor[ntors].
+// Inter-ligand forces are already summed into minus_forces[atom], so gathering this ligand's atoms
+// captures the coupling to all other ligands automatically.
+void POT_deriv_one_multi(m_minus_forces_multi* minus_forces, const rigid_cl* rigid, m_coords_multi_cl* m_coords,
+						 float* g_pos, float* g_ori, float* g_tor) {
+	int num_torsion = rigid->num_children;
+	int num_rigid = num_torsion + 1;
+	float pos_d_tmp[MAX_NUM_OF_RIGID][3], pos_d[MAX_NUM_OF_RIGID][3];
+	float ori_d_tmp[MAX_NUM_OF_RIGID][3], ori_d[MAX_NUM_OF_RIGID][3];
+	float tor_d[MAX_NUM_OF_RIGID];
+
+	for (int i = 0; i < num_rigid; i++) {
+		int begin = rigid->atom_range[i][0];
+		int end   = rigid->atom_range[i][1];
+		for (int k = 0; k < 3; k++) { pos_d_tmp[i][k] = 0; ori_d_tmp[i][k] = 0; }
+		for (int j = begin; j < end; j++) {
+			for (int k = 0; k < 3; k++) pos_d_tmp[i][k] += minus_forces->coords[j][k];
+			float tmp1[3] = { m_coords->coords[j][0] - rigid->origin[i][0], m_coords->coords[j][1] - rigid->origin[i][1], m_coords->coords[j][2] - rigid->origin[i][2] };
+			float tmp2[3] = { minus_forces->coords[j][0], minus_forces->coords[j][1], minus_forces->coords[j][2] };
+			float tmp3[3]; product(tmp3, tmp1, tmp2);
+			for (int k = 0; k < 3; k++) ori_d_tmp[i][k] += tmp3[k];
+		}
+	}
+	for (int i = num_rigid - 1; i >= 0; i--) {
+		for (int k = 0; k < 3; k++) pos_d[i][k] = pos_d_tmp[i][k];
+		for (int j = 1; j < num_rigid; j++)
+			if (rigid->parent[j] == i)
+				for (int k = 0; k < 3; k++) pos_d[i][k] += pos_d[j][k];
+	}
+	for (int i = num_rigid - 1; i >= 0; i--) {
+		for (int k = 0; k < 3; k++) ori_d[i][k] = ori_d_tmp[i][k];
+		for (int j = 1; j < num_rigid; j++)
+			if (rigid->parent[j] == i) {
+				for (int k = 0; k < 3; k++) ori_d[i][k] += ori_d[j][k];
+				float po[3];
+				float ot[3] = { rigid->origin[j][0] - rigid->origin[i][0], rigid->origin[j][1] - rigid->origin[i][1], rigid->origin[j][2] - rigid->origin[i][2] };
+				product(po, ot, pos_d[j]);
+				for (int k = 0; k < 3; k++) ori_d[i][k] += po[k];
+			}
+	}
+	for (int i = num_rigid - 1; i >= 0; i--) {
+		float s = 0;
+		for (int j = 0; j < 3; j++) s += ori_d[i][j] * rigid->axis[i][j];
+		tor_d[i] = s;
+	}
+	for (int k = 0; k < 3; k++) g_pos[k] = pos_d[0][k];
+	for (int k = 0; k < 3; k++) g_ori[k] = ori_d[0][k];
+	for (int k = 0; k < num_torsion; k++) g_tor[k] = tor_d[k + 1];
+}
+
+// Energy + gradient for a multi-ligand conf. lig_pairs_g points to mg->lig_pairs[0..N-1].
+float m_eval_deriv_multi(output_type_multi_cl* c, change_multi_cl* g, m_multi_cl_private* m,
+						 const __global lig_pairs_multi_cl* lig_pairs_g,
+						 const __global other_pairs_cl* other_g,
+						 const __global pre_cl* pre, const __global grids_cl* grids,
+						 const __global float* v, const float epsilon_fl) {
+	set_multi(c, m, epsilon_fl);
+
+	float e = ig_eval_multi(grids, &m->m_coords, &m->minus_forces,
+							m->atoms, m->m_num_movable_atoms, v[1], epsilon_fl);
+
+	for (int k = 0; k < m->num_ligands; k++)
+		e += eval_pairs_multi(pre, v[0], lig_pairs_g[k].num_pairs,
+							  lig_pairs_g[k].type_pair_index, lig_pairs_g[k].a, lig_pairs_g[k].b,
+							  &m->m_coords, &m->minus_forces, epsilon_fl);
+
+	e += eval_pairs_multi(pre, v[0], other_g->num_pairs,
+						  other_g->type_pair_index, other_g->a, other_g->b,
+						  &m->m_coords, &m->minus_forces, epsilon_fl);
+
+	for (int k = 0; k < m->num_ligands; k++) {
+		ligand_multi_cl* L = &m->ligands[k];
+		POT_deriv_one_multi(&m->minus_forces, &L->rigid, &m->m_coords,
+							g->position[k], g->orientation[k], &g->lig_torsion[L->torsion_offset]);
+	}
+	return e;
+}
+
+// ── Multi conf-vector ops over the flattened DOF: [ per-ligand 6 (pos+ori) ] then [ torsions ] ──
+inline float find_change_index_read_multi(const change_multi_cl* g, int index, int num_ligands) {
+	int rigid_dof = 6 * num_ligands;
+	if (index < rigid_dof) {
+		int k = index / 6, c = index % 6;
+		return (c < 3) ? g->position[k][c] : g->orientation[k][c - 3];
+	}
+	return g->lig_torsion[index - rigid_dof];
+}
+inline void find_change_index_write_multi(change_multi_cl* g, int index, float data, int num_ligands) {
+	int rigid_dof = 6 * num_ligands;
+	if (index < rigid_dof) {
+		int k = index / 6, c = index % 6;
+		if (c < 3) g->position[k][c] = data; else g->orientation[k][c - 3] = data;
+		return;
+	}
+	g->lig_torsion[index - rigid_dof] = data;
+}
+inline float scalar_product_multi(const change_multi_cl* a, const change_multi_cl* b, int n, int num_ligands) {
+	float t = 0;
+	for (int i = 0; i < n; i++) t += find_change_index_read_multi(a, i, num_ligands) * find_change_index_read_multi(b, i, num_ligands);
+	return t;
+}
+inline float to_norm_multi(const change_multi_cl* in, int n, int num_ligands) {
+	float d = 0;
+	for (int i = 0; i < n; i++) { float x = find_change_index_read_multi(in, i, num_ligands); d += x * x; }
+	return sqrt(d);
+}
+
+// x += factor * c   (per-ligand position + quaternion orientation; shared torsion array)
+void output_type_multi_cl_increment(output_type_multi_cl* x, const change_multi_cl* c,
+									float factor, float epsilon_fl, int total_torsions) {
+	int N = x->num_ligands;
+	for (int k = 0; k < N; k++) {
+		for (int i = 0; i < 3; i++) x->position[k][i] += factor * c->position[k][i];
+		float rotation[3];
+		for (int i = 0; i < 3; i++) rotation[i] = factor * c->orientation[k][i];
+		quaternion_increment(x->orientation[k], rotation, epsilon_fl);
+	}
+	for (int t = 0; t < total_torsions; t++) {
+		float tmp = factor * c->lig_torsion[t];
+		normalize_angle(&tmp);
+		x->lig_torsion[t] += tmp;
+		normalize_angle(&(x->lig_torsion[t]));
+	}
+}
+
+// Mutate ONE randomly-chosen DOF across all ligands: each ligand offers 1 translate + 1 rotate +
+// its torsions; pick one uniformly. Mirrors single mutate_conf_cl but ligand-aware.
+void mutate_conf_multi(const int step, output_type_multi_cl* c, m_multi_cl_private* m,
+					   __global const int* random_int_map,
+					   __global const float random_inside_sphere_map[][3],
+					   __global const float* random_fl_pi_map,
+					   const float epsilon_fl, const float amplitude) {
+	int index = step;
+	int total_choices = 0;
+	for (int k = 0; k < m->num_ligands; k++) total_choices += 2 + m->ligands[k].num_torsions;
+	if (total_choices <= 0) return;
+	int which = random_int_map[index] % total_choices;
+
+	for (int k = 0; k < m->num_ligands; k++) {
+		int per = 2 + m->ligands[k].num_torsions;
+		if (which < per) {
+			if (which == 0) {                       // translate ligand k
+				for (int i = 0; i < 3; i++) c->position[k][i] += amplitude * random_inside_sphere_map[index][i];
+				return;
+			}
+			which--;
+			if (which == 0) {                       // rotate ligand k about its centre
+				int begin = m->ligands[k].begin, end = m->ligands[k].end;
+				float origin[3] = { m->ligands[k].rigid.origin[0][0], m->ligands[k].rigid.origin[0][1], m->ligands[k].rigid.origin[0][2] };
+				float acc = 0; int cnt = 0;
+				for (int i = begin; i < end; i++) {
+					if (m->atoms[i].types[0] != EL_TYPE_H) {
+						float dx = m->m_coords.coords[i][0] - origin[0];
+						float dy = m->m_coords.coords[i][1] - origin[1];
+						float dz = m->m_coords.coords[i][2] - origin[2];
+						acc += dx*dx + dy*dy + dz*dz; cnt++;
+					}
+				}
+				float gr = (cnt > 0) ? sqrt(acc / cnt) : 0;
+				if (gr > epsilon_fl) {
+					float rotation[3];
+					for (int i = 0; i < 3; i++) rotation[i] = amplitude / gr * random_inside_sphere_map[index][i];
+					quaternion_increment(c->orientation[k], rotation, epsilon_fl);
+				}
+				return;
+			}
+			which--;                                // torsion `which` of ligand k
+			c->lig_torsion[m->ligands[k].torsion_offset + which] = random_fl_pi_map[index];
+			return;
+		}
+		which -= per;
+	}
+}
+
+// ── Multi dense BFGS (mirrors single bfgs(); operates on the flattened multi-root DOF) ──
+void minus_mat_vec_product_multi(const matrix_multi* h, const change_multi_cl* in,
+								 change_multi_cl* out, const int num_ligands) {
+	int n = h->dim;
+	for (int i = 0; i < n; i++) {
+		float sum = 0;
+		for (int j = 0; j < n; j++)
+			sum += h->data[index_permissive_multi(h, i, j)] * find_change_index_read_multi(in, j, num_ligands);
+		find_change_index_write_multi(out, i, -sum, num_ligands);
+	}
+}
+
+float line_search_multi(m_multi_cl_private* m,
+						const __global lig_pairs_multi_cl* lig_pairs_g,
+						const __global other_pairs_cl* other_g,
+						const __global pre_cl* pre, const __global grids_cl* grids,
+						int n, const output_type_multi_cl* x, const change_multi_cl* g, float f0,
+						const change_multi_cl* p, output_type_multi_cl* x_new, change_multi_cl* g_new, float* f1,
+						const float epsilon_fl, const __global float* hunt_cap,
+						const int num_ligands, const int total_torsions) {
+	const float c0 = 0.0001;
+	const int max_trials = 10;
+	const float multiplier = 0.5;
+	float alpha = 1;
+	const float pg = scalar_product_multi(p, g, n, num_ligands);
+	for (int trial = 0; trial < max_trials; trial++) {
+		*x_new = *x;
+		output_type_multi_cl_increment(x_new, p, alpha, epsilon_fl, total_torsions);
+		*f1 = m_eval_deriv_multi(x_new, g_new, m, lig_pairs_g, other_g, pre, grids, hunt_cap, epsilon_fl);
+		if (*f1 - f0 < c0 * alpha * pg) break;
+		alpha *= multiplier;
+	}
+	return alpha;
+}
+
+bool bfgs_update_multi(matrix_multi* h, const change_multi_cl* p, const change_multi_cl* y,
+					   const float alpha, const __global mis_cl* mis, const int num_ligands) {
+	const float yp = scalar_product_multi(y, p, h->dim, num_ligands);
+	if (alpha * yp < mis->epsilon_fl) return false;
+	change_multi_cl minus_hy = *y;
+	minus_mat_vec_product_multi(h, y, &minus_hy, num_ligands);
+	const float yhy = -scalar_product_multi(y, &minus_hy, h->dim, num_ligands);
+	const float r = 1 / (alpha * yp);
+	const int n = h->dim;
+	for (int i = 0; i < n; i++) {
+		for (int j = i; j < n; j++) {
+			float tmp = alpha * r * (find_change_index_read_multi(&minus_hy, i, num_ligands) * find_change_index_read_multi(p, j, num_ligands)
+								   + find_change_index_read_multi(&minus_hy, j, num_ligands) * find_change_index_read_multi(p, i, num_ligands))
+					  + alpha * alpha * (r * r * yhy + r) * find_change_index_read_multi(p, i, num_ligands) * find_change_index_read_multi(p, j, num_ligands);
+			h->data[i + j * (j + 1) / 2] += tmp;
+		}
+	}
+	return true;
+}
+
+void bfgs_multi(output_type_multi_cl* x, change_multi_cl* g, m_multi_cl_private* m,
+				const __global lig_pairs_multi_cl* lig_pairs_g, const __global other_pairs_cl* other_g,
+				const __global pre_cl* pre, const __global grids_cl* grids, const __global mis_cl* mis,
+				const int num_ligands, const int total_torsions, const int max_bfgs_steps) {
+	int n = 6 * num_ligands + total_torsions;
+
+	matrix_multi h;
+	matrix_multi_init(&h, n, 0);
+	matrix_multi_set_diagonal(&h, 1);
+
+	change_multi_cl g_new = *g;
+	output_type_multi_cl x_new = *x;
+	float f0 = m_eval_deriv_multi(x, g, m, lig_pairs_g, other_g, pre, grids, mis->hunt_cap, mis->epsilon_fl);
+	float f_orig = f0;
+	change_multi_cl g_orig = *g;
+	output_type_multi_cl x_orig = *x;
+	change_multi_cl p = *g;
+
+	for (int step = 0; step < max_bfgs_steps; step++) {
+		minus_mat_vec_product_multi(&h, g, &p, num_ligands);
+		float f1 = 0;
+		const float alpha = line_search_multi(m, lig_pairs_g, other_g, pre, grids, n, x, g, f0, &p,
+											  &x_new, &g_new, &f1, mis->epsilon_fl, mis->hunt_cap,
+											  num_ligands, total_torsions);
+		change_multi_cl y = g_new;
+		for (int i = 0; i < n; i++) {
+			float tmp = find_change_index_read_multi(&y, i, num_ligands) - find_change_index_read_multi(g, i, num_ligands);
+			find_change_index_write_multi(&y, i, tmp, num_ligands);
+		}
+		f0 = f1;
+		*x = x_new;
+		if (!(sqrt(scalar_product_multi(g, g, n, num_ligands)) >= 1e-5)) break;
+		*g = g_new;
+		if (step == 0) {
+			float yy = scalar_product_multi(&y, &y, n, num_ligands);
+			if (fabs(yy) > mis->epsilon_fl)
+				matrix_multi_set_diagonal(&h, alpha * scalar_product_multi(&y, &p, n, num_ligands) / yy);
+		}
+		bfgs_update_multi(&h, &p, &y, alpha, mis, num_ligands);
+	}
+
+	if (!(f0 <= f_orig)) { f0 = f_orig; *x = x_orig; *g = g_orig; }
+	x->e = f0;
+}

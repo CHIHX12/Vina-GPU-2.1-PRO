@@ -23,3 +23,19 @@ void main_procedure_cl_dual(
 	const int rilc_bfgs,
 	const int gpu_id,
 	const bool use_ad4zn = false);
+
+// GPU native multi-ligand co-docking: dock N ligands jointly on GPU using kernel2_multi.
+// `m` is one model holding all N ligands (built via parse_bundle()/model::append()).
+// `out` receives the best joint pose; the caller writes all N ligands with write_all_output.
+void main_procedure_multi(
+	cache& c,
+	model& m,
+	const precalculate& p,
+	const parallel_mc par,
+	const vec& corner1, const vec& corner2,
+	const int seed,
+	output_container& out,
+	std::string opencl_binary_path,
+	const int rilc_bfgs,
+	const int gpu_id,
+	const bool use_ad4zn = false);

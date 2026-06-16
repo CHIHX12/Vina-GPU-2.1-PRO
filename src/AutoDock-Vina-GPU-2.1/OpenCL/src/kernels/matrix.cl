@@ -42,3 +42,21 @@ inline int tri_index(int n, int i, int j) {
 inline int index_permissive(const matrix* m, int i, int j) {
 	return (i < j) ? tri_index(m->dim, i, j) : tri_index(m->dim, j, i);
 }
+
+// ── Native multi-ligand (P1): larger symmetric Hessian for the joint multi-root conf ──
+typedef struct {
+	float data[MAX_MULTI_HESSIAN_MATRIX_SIZE];
+	int dim;
+} matrix_multi;
+
+void matrix_multi_init(matrix_multi* m, int dim, float fill_data) {
+	m->dim = dim;
+	for (int i = 0; i < (dim * (dim + 1) / 2); i++) m->data[i] = fill_data;
+	for (int i = (dim * (dim + 1) / 2); i < MAX_MULTI_HESSIAN_MATRIX_SIZE; i++) m->data[i] = 0;
+}
+void matrix_multi_set_diagonal(matrix_multi* m, float fill_data) {
+	for (int i = 0; i < m->dim; i++) m->data[i + i * (i + 1) / 2] = fill_data;
+}
+inline int index_permissive_multi(const matrix_multi* m, int i, int j) {
+	return (i < j) ? (i + j * (j + 1) / 2) : (j + i * (i + 1) / 2);
+}

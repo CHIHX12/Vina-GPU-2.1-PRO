@@ -16,6 +16,19 @@
 // torsion. Generous cap so a few residues (each with several rotatable bonds) fit.
 #define MAX_NUM_OF_FLEX_RIGID 48  // anchors + torsion nodes across all flexible side chains (raised 24→48)
 #define MAX_NUM_OF_ATOMS 272
+// ── Native multi-ligand (P1) caps — separate from single-ligand caps so the working
+//    single-ligand m_cl is not bloated. Multi mode joins N ligands into one model
+//    (CPU Vina 1.2.x mechanism: model.append()), each ligand an independent rigid root.
+// P1 caps are bounded by the CUDA 512 KB/thread local-memory limit: the per-work-item private
+// copy (m_multi_cl_private) + dense Hessian must fit. N=8/1024 atoms keeps it ~250 KB. Scaling
+// to 32+ ligands / thousands of atoms (the "hundreds" goal) requires P2 (move per-trajectory
+// state to GLOBAL memory + L-BFGS) — dense-BFGS-in-private cannot reach 32.
+#define MAX_NUM_OF_LIGANDS          8     // max ligands in one joint multi-ligand job (P1; P2 raises this)
+#define MAX_NUM_OF_MULTI_ATOMS      1024  // combined movable atoms across all ligands in a job
+#define MAX_NUM_OF_LIG_PAIRS_MULTI  4096  // intra-ligand interacting pairs per ligand (multi mode)
+// Multi-ligand flattened DOF = 6*N (per-ligand root pos+ori) + total ligand torsions (shared array).
+#define MAX_MULTI_CONF_DIM          (6 * MAX_NUM_OF_LIGANDS + MAX_NUM_OF_LIG_TORSION + 2)
+#define MAX_MULTI_HESSIAN_MATRIX_SIZE ((6 * MAX_NUM_OF_LIGANDS + MAX_NUM_OF_LIG_TORSION) * (6 * MAX_NUM_OF_LIGANDS + MAX_NUM_OF_LIG_TORSION + 1) / 2)
 #define SIZE_OF_MOLEC_STRUC ((3+4+MAX_NUM_OF_LIG_TORSION+MAX_NUM_OF_FLEX_TORSION+ 1)*sizeof(float) )
 #define SIZE_OF_CHANGE_STRUC ((3+3+MAX_NUM_OF_LIG_TORSION+MAX_NUM_OF_FLEX_TORSION + 1)*sizeof(float))
 #define MAX_HESSIAN_MATRIX_SIZE ((6 +  MAX_NUM_OF_LIG_TORSION + MAX_NUM_OF_FLEX_TORSION)*(6 +  MAX_NUM_OF_LIG_TORSION + MAX_NUM_OF_FLEX_TORSION + 1) / 2)
@@ -301,6 +314,76 @@ typedef struct {
 	ligand_private_cl ligand;
 	flex_rigid_cl flex_rigid;   // Stage 1: ~3 KB, small enough for the private copy
 } m_cl_private;
+
+// ════════════════ Native multi-ligand (P1): joint co-docking of up to MAX_NUM_OF_LIGANDS ════════════════
+// Mirrors CPU AutoDock Vina 1.2.x: ONE model holds N ligands (built host-side via model.append()),
+// each ligand an independent rigid root in a shared coordinate frame. Inter-ligand + ligand-flex
+// pairs live in other_pairs (already populated by the model); intra-ligand pairs are per-ligand.
+// Kept as a SEPARATE struct family + kernel2_multi so the single-ligand engine is untouched.
+
+typedef struct { float coords[MAX_NUM_OF_MULTI_ATOMS][3]; } m_coords_multi_cl;
+typedef struct { float coords[MAX_NUM_OF_MULTI_ATOMS][3]; } m_minus_forces_multi;
+
+typedef struct {
+	int num_pairs;
+	int type_pair_index	[MAX_NUM_OF_LIG_PAIRS_MULTI];
+	int a				[MAX_NUM_OF_LIG_PAIRS_MULTI];
+	int b				[MAX_NUM_OF_LIG_PAIRS_MULTI];
+} lig_pairs_multi_cl;
+
+// One ligand inside a multi-ligand job. Atom indices reference the shared combined arrays.
+typedef struct {
+	int      begin;            // first atom index (into shared atom/coord arrays)
+	int      end;              // one-past-last atom index
+	int      torsion_offset;   // this ligand owns lig_torsion[torsion_offset .. +num_torsions)
+	int      num_torsions;
+	rigid_cl rigid;            // this ligand's own tree (root node 0 + branch nodes)
+} ligand_multi_cl;
+
+// conf (output_type) for a multi-ligand pose: one root (pos+quat) per ligand,
+// torsions packed into one shared array partitioned by each ligand's torsion_offset.
+typedef struct {
+	float e;
+	int   num_ligands;
+	float position		[MAX_NUM_OF_LIGANDS][3];
+	float orientation	[MAX_NUM_OF_LIGANDS][4];
+	float lig_torsion	[MAX_NUM_OF_LIG_TORSION];
+	float flex_torsion	[MAX_NUM_OF_FLEX_TORSION];
+} output_type_multi_cl;
+
+// change (gradient) for a multi-ligand conf: orientation is a 3-vector (axis-angle) per root.
+typedef struct {
+	int   num_ligands;
+	float position		[MAX_NUM_OF_LIGANDS][3];
+	float orientation	[MAX_NUM_OF_LIGANDS][3];
+	float lig_torsion	[MAX_NUM_OF_LIG_TORSION];
+	float flex_torsion	[MAX_NUM_OF_FLEX_TORSION];
+} change_multi_cl;
+
+// Global multi-ligand model (one per job). Intra pairs per ligand; cross pairs in other_pairs.
+typedef struct {
+	int m_num_movable_atoms;
+	int num_ligands;
+	atom_cl atoms[MAX_NUM_OF_MULTI_ATOMS];
+	m_coords_multi_cl m_coords;
+	m_minus_forces_multi minus_forces;
+	ligand_multi_cl ligands[MAX_NUM_OF_LIGANDS];
+	lig_pairs_multi_cl lig_pairs[MAX_NUM_OF_LIGANDS]; // intra-ligand pairs (global only)
+	flex_rigid_cl flex_rigid;
+	other_pairs_cl other_pairs;                       // inter-ligand + ligand-flex + flex-flex
+} m_multi_cl;
+
+// Per-work-item private copy: pair-free (pairs read from the global m_multi_cl), trees kept.
+// At N=32 this is large (~500 KB); multi mode therefore runs fewer trajectories (see P2).
+typedef struct {
+	int m_num_movable_atoms;
+	int num_ligands;
+	atom_cl atoms[MAX_NUM_OF_MULTI_ATOMS];
+	m_coords_multi_cl m_coords;
+	m_minus_forces_multi minus_forces;
+	ligand_multi_cl ligands[MAX_NUM_OF_LIGANDS];
+	flex_rigid_cl flex_rigid;
+} m_multi_cl_private;
 
 typedef struct {
 	int m_i;

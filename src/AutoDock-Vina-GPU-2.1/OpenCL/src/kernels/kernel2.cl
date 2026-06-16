@@ -567,3 +567,85 @@ void kernel2_dual(
 #undef DUAL_BFGS
 #undef SYNC_B_INTO_A
 #undef SYNC_A_INTO_B
+
+// ---------------------------------------------------------------------------
+// Native multi-ligand co-docking kernel (P1).
+// One multi-ligand JOB = N ligands jointly docked (CPU Vina 1.2.x mechanism).
+// Each work item runs one MC trajectory of the whole N-ligand system; per-trajectory
+// state is large (~0.5 MB private, spilled to global) so launch FEW trajectories.
+// Lean standard-Vina scoring (no QFD/BH/cavity) to match CPU AutoDock Vina 1.2.7.
+// ---------------------------------------------------------------------------
+__kernel
+void kernel2_multi(
+				const	__global	output_type_multi_cl*	ric,			// initial conf per trajectory
+						__global	m_multi_cl*				mg,				// the multi-ligand model (1 job)
+				const	__global	pre_cl*					pre,
+				const	__global	grids_cl*				grids,
+				const	__global	random_maps*			rand_maps_arr,	// [0] for the single job
+						__global	output_type_multi_cl*	results,		// best conf per trajectory
+						__global	m_coords_multi_cl*		out_coords,		// best all-atom coords per trajectory
+				const	__global	mis_cl*					mis,
+				const				int						num_ligands,
+				const				int						total_torsions,
+				const				int						search_depth,
+				const				int						max_bfgs_steps,
+				const				int						n_traj
+) {
+	int gl = get_global_linear_id();
+	int total_wi = get_global_size(0) * get_global_size(1);
+
+	for (int traj_id = gl; traj_id < n_traj; traj_id += total_wi) {
+		const __global random_maps* rmap = rand_maps_arr;   // single job
+
+		// pairs-free private copy of the multi-ligand model
+		m_multi_cl_private m;
+		m.m_num_movable_atoms = mg->m_num_movable_atoms;
+		m.num_ligands         = mg->num_ligands;
+		for (int i = 0; i < m.m_num_movable_atoms; i++) m.atoms[i] = mg->atoms[i];
+		m.m_coords     = mg->m_coords;
+		m.minus_forces = mg->minus_forces;
+		for (int k = 0; k < m.num_ligands; k++) m.ligands[k] = mg->ligands[k];
+		m.flex_rigid = mg->flex_rigid;   // P1: num_nodes == 0
+
+		__global const lig_pairs_multi_cl* lig_pairs_g = mg->lig_pairs;
+		__global const other_pairs_cl*     other_g     = &mg->other_pairs;
+
+		float best_e = INFINITY;
+		output_type_multi_cl best_out;
+		m_coords_multi_cl     best_coords;
+
+		output_type_multi_cl tmp = ric[traj_id];
+		change_multi_cl g;
+		output_type_multi_cl candidate;
+
+		const float temperature = 1.2f;   // standard Vina effective Metropolis temperature
+
+		for (int step = 0; step < search_depth; step++) {
+			candidate = tmp;
+			int map_index = (step + traj_id * search_depth) % MAX_NUM_OF_RANDOM_MAP;
+
+			mutate_conf_multi(map_index, &candidate, &m,
+							  rmap->int_map, rmap->sphere_map, rmap->pi_map,
+							  mis->epsilon_fl, mis->mutation_amplitude);
+
+			bfgs_multi(&candidate, &g, &m, lig_pairs_g, other_g, pre, grids, mis,
+					   num_ligands, total_torsions, max_bfgs_steps);
+
+			int accept_index = (map_index + MAX_NUM_OF_RANDOM_MAP / 2) % MAX_NUM_OF_RANDOM_MAP;
+			float nrand = generate_n(rmap->pi_map, accept_index);
+
+			if (step == 0 || metropolis_accept(tmp.e, candidate.e, temperature, nrand)) {
+				tmp = candidate;
+				set_multi(&tmp, &m, mis->epsilon_fl);   // refresh m.m_coords for the accepted conf
+				if (tmp.e < best_e) {
+					best_out    = tmp;
+					best_coords = m.m_coords;
+					best_e      = tmp.e;
+				}
+			}
+		}
+
+		results[traj_id]    = best_out;
+		out_coords[traj_id] = best_coords;
+	}
+}

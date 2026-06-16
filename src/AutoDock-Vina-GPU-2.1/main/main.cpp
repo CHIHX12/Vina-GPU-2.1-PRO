@@ -482,6 +482,69 @@ void dual_procedure(
 	write_output(mb, out_b, nc_b, out_b_name, gpu_mode, /*preserve_pairing=*/gpu_mode);
 }
 
+// Native multi-ligand co-docking (GPU, kernel2_multi). One model holds all N ligands; they are
+// jointly optimised and written together to ONE PDBQT (CPU AutoDock Vina 1.2.x output style).
+void multi_procedure(
+	model& m,
+	const std::string& out_name,
+	const grid_dims& gd,
+	const flv& weights,
+	int seed, int verbosity, sz num_modes, fl energy_range,
+	tee& log,
+	int thread,
+	const std::string& opencl_binary_path,
+	const std::string& gpu_id_str,
+	int rilc_bfgs,
+	int search_depth_arg,
+	bool ad4zn)
+{
+	doing(verbosity, "Setting up the scoring function", log);
+	everything t(g_scoring_type);
+	VINA_CHECK(weights.size() == 5 || weights.size() == 6);
+	weighted_terms wt(&t, weights);
+	precalculate prec(wt);
+	done(verbosity, log);
+
+	const fl slope = 1e6;
+	vec corner1(gd[0].begin, gd[1].begin, gd[2].begin);
+	vec corner2(gd[0].end,   gd[1].end,   gd[2].end);
+
+	if (thread <= 0)
+		throw std::runtime_error("Multi-ligand co-docking requires GPU mode (--thread >= 1000).");
+
+	int gpu0 = 0;
+	try { gpu0 = std::stoi(gpu_id_str); } catch (...) { gpu0 = 0; }   // "all"/invalid -> GPU 0
+
+	parallel_mc par;
+	par.mc.thread             = thread;
+	par.mc.search_depth       = { search_depth_arg };
+	par.mc.ssd_par.bfgs_steps = { int((25 + m.num_movable_atoms()) / 3) };
+	par.mc.mutation_amplitude = 2.0f;
+	par.mc.hunt_cap           = vec(10, 10, 10);
+	par.mc.min_rmsd           = 1.0f;
+	par.mc.num_saved_mins     = 20;
+
+	cache c("scoring_function_version001", gd, slope, atom_type::XS);
+
+	std::cout << "Native multi-ligand co-docking: " << m.num_ligands()
+	          << " ligands on GPU " << gpu0 << ", thread=" << thread
+	          << ", search_depth=" << search_depth_arg << "...\n";
+
+	output_container out;
+	main_procedure_multi(c, m, prec, par, corner1, corner2, seed, out,
+	                     opencl_binary_path, rilc_bfgs, gpu0, ad4zn);
+
+	if (out.empty()) { std::cerr << "No poses produced for " << out_name << '\n'; return; }
+
+	// Write all N ligands of the best joint pose to ONE file (write_all_output's m.set(out[0].c)
+	// updates every ligand's coords; the whole model is then written with all ligands).
+	std::vector<std::string> remarks;
+	remarks.push_back(vina_remark(out[0].e, 0.0, 0.0));
+	write_all_output(m, out, 1, out_name, remarks);
+	std::cout << "Wrote co-docked complex (" << m.num_ligands() << " ligands, combined E = "
+	          << out[0].e << " kcal/mol) to " << out_name << '\n';
+}
+
 void main_procedure(std::vector<model>& ms, const boost::optional<model>& ref, // m is non-const (FIXME?)
 	const std::vector<std::string>& out_names,
 	bool score_only, bool local_only, bool randomize_only, bool no_cache,
@@ -886,6 +949,7 @@ Thank you!\n";
 	try {
 		std::string rigid_name, ligand_name, flex_name, config_name, out_name, log_name;
 		std::string ligand2_name, out2_name;
+		std::vector<std::string> co_dock_ligands;   // native multi-ligand co-docking (--co_dock)
 		bool ad4zn_mode = false;
 		fl center_x = -8.654, center_y = 2.229, center_z = 19.715, size_x = 24.0, size_y = 26.25, size_z = 22.5;
 		int cpu = 1, seed, exhaustiveness = 1, verbosity = 2, num_modes = 9;
@@ -934,6 +998,7 @@ Thank you!\n";
 			    "number of ligands dispatched simultaneously to each GPU (default 32)")
 			("ligand2", value<std::string>(&ligand2_name), "second ligand for co-docking (PDBQT); runs GPU dual-ligand mode (kernel2_dual) when --thread > 0, CPU dual otherwise. Both ligands are docked together and output as a co-docked pair; requires --out2")
 			("out2", value<std::string>(&out2_name), "output poses for second ligand (PDBQT; required when --ligand2 is given)")
+			("co_dock", value<std::vector<std::string>>(&co_dock_ligands)->multitoken(), "native multi-ligand co-docking: list 2+ ligand PDBQTs (e.g. --co_dock a.pdbqt b.pdbqt c.pdbqt). All are docked JOINTLY on GPU (kernel2_multi) and written together to --out as one complex. CPU Vina 1.2.x mechanism.")
 			("ref", value<std::string>(), "reference / co-crystal ligand PDBQT: auto-computes box center and size (ligand extent + 10 A margin)")
 			("ad4zn", bool_switch(&ad4zn_mode), "use AutoDock4Zn calibrated Zn coordination parameters (GPU mode)")
 			("scoring", value<std::string>(&scoring_name)->default_value(scoring_name),
@@ -1146,7 +1211,7 @@ Thank you!\n";
 			std::cout << "Using virtual sreening mode\n\n";
 		}
 
-		if (vm.count("ligand") <= 0 && vm.count("ligand_directory") <= 0) {
+		if (vm.count("ligand") <= 0 && vm.count("ligand_directory") <= 0 && vm.count("co_dock") <= 0) {
 			std::cerr << "Missing ligand\n";
 			return 1;
 		}
@@ -1234,8 +1299,21 @@ Thank you!\n";
 
 		
 
+		// ---- Native multi-ligand co-docking path (GPU, kernel2_multi) ----
+		if (vm.count("co_dock") > 0) {
+			if (co_dock_ligands.size() < 2)
+				throw usage_error("--co_dock needs at least 2 ligand PDBQTs");
+			if (out_name.empty()) out_name = "codock_out.pdbqt";
+			std::cout << "Native multi-ligand co-docking mode (" << co_dock_ligands.size()
+			          << " ligands)  -> " << out_name << '\n';
+			doing(verbosity, "Parsing ligands", log);
+			model m = parse_bundle(rigid_name_opt, flex_name_opt, co_dock_ligands);
+			done(verbosity, log);
+			multi_procedure(m, out_name, gd, weights, seed, verbosity, max_modes_sz, energy_range, log,
+			                thread, opencl_binary_path, gpu_id_str, rilc_bfgs, search_depth, ad4zn_mode);
+		}
 		// ---- Dual-ligand co-docking path ----
-		if (vm.count("ligand2") > 0) {
+		else if (vm.count("ligand2") > 0) {
 			// ---- Dual-ligand co-docking path (CPU MC) ----
 			if (out2_name.empty())
 				out2_name = default_output(ligand2_name);
