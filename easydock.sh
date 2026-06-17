@@ -121,6 +121,16 @@ say "Preparing ${#EXPANDED[@]} ligand(s)..."
 LIG_PDBQT=(); i=0
 for L in "${EXPANDED[@]}"; do i=$((i+1)); LIG_PDBQT+=("$(prep_ligand "$L" "$i")"); done
 
+# ---- auto-deepen search for flexible ligands ----
+# A flexible ligand (many rotatable bonds) has a much larger conformational space; the default depth
+# can leave it under-sampled. Bump depth by the largest ligand's rotatable-bond (BRANCH) count so big
+# ligands get more MC+BFGS rounds automatically. Never lowers the user's chosen quality.
+MAXROT=0
+for L in "${LIG_PDBQT[@]}"; do r=$(grep -c "^BRANCH" "$L" 2>/dev/null || echo 0); [ "$r" -gt "$MAXROT" ] && MAXROT=$r; done
+if   [ "$MAXROT" -gt 15 ]; then [ "$DEPTH" -lt 96 ] && { DEPTH=96; say "Large flexible ligand ($MAXROT rotatable bonds) → deepening search to $DEPTH"; }
+elif [ "$MAXROT" -gt 10 ]; then [ "$DEPTH" -lt 64 ] && { DEPTH=64; say "Flexible ligand ($MAXROT rotatable bonds) → deepening search to $DEPTH"; }
+fi
+
 # ---- binding box ----
 # Sensible box size = biggest ligand's extent + 10 Å of search room (min 22). A tight box gives
 # accurate, interpretable energies; a huge box makes the search wander and the scores unreliable.

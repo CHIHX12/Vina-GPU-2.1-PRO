@@ -951,6 +951,7 @@ Thank you!\n";
 		std::string ligand2_name, out2_name;
 		std::vector<std::string> co_dock_ligands;   // native multi-ligand co-docking (--co_dock)
 		bool ad4zn_mode = false;
+		bool cavity_mode = false, cavity_init_mode = false;   // CLI aliases for VINA_CAVITY / VINA_CAVITY_INIT
 		fl center_x = -8.654, center_y = 2.229, center_z = 19.715, size_x = 24.0, size_y = 26.25, size_z = 22.5;
 		int cpu = 1, seed, exhaustiveness = 1, verbosity = 2, num_modes = 9;
 		fl energy_range = 2.0;
@@ -1001,6 +1002,8 @@ Thank you!\n";
 			("co_dock", value<std::vector<std::string>>(&co_dock_ligands)->multitoken(), "native multi-ligand co-docking: list 2+ ligand PDBQTs (e.g. --co_dock a.pdbqt b.pdbqt c.pdbqt). All are docked JOINTLY on GPU (kernel2_multi) and written together to --out as one complex. CPU Vina 1.2.x mechanism.")
 			("ref", value<std::string>(), "reference / co-crystal ligand PDBQT: auto-computes box center and size (ligand extent + 10 A margin)")
 			("ad4zn", bool_switch(&ad4zn_mode), "use AutoDock4Zn calibrated Zn coordination parameters (GPU mode)")
+			("cavity", bool_switch(&cavity_mode), "EXPERIMENTAL (opt-in, default off): pose-level cavity rescue — down-ranks poses left in solvent (do-no-harm on in-pocket poses). Net-neutral for redocking; mainly useful for screening/diagnostics. Same as env VINA_CAVITY=1")
+			("cavity_init", bool_switch(&cavity_init_mode), "EXPERIMENTAL: seed a fraction of MC trajectories in pocket (buried) voxels instead of uniformly across the box. Same as env VINA_CAVITY_INIT=1")
 			("scoring", value<std::string>(&scoring_name)->default_value(scoring_name),
 			    "scoring function: vina (default) | vinardo")
 			;
@@ -1098,6 +1101,11 @@ Thank you!\n";
 			std::cout << version_string << '\n';
 			return 0;
 		}
+
+		// --cavity / --cavity_init are discoverable CLI aliases for the VINA_CAVITY[_INIT] env vars the
+		// grid/kernel code reads via getenv. Setting them here keeps every downstream path unchanged.
+		if (cavity_mode)      setenv("VINA_CAVITY", "1", 1);
+		if (cavity_init_mode) setenv("VINA_CAVITY_INIT", "1", 1);
 
 		bool search_box_needed = !score_only; // randomize_only and local_only still need the search space
 		bool output_produced = !score_only;
