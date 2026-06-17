@@ -90,8 +90,13 @@
 // poses (fraction < GATE_LO) get gate=0 ⇒ exactly 0 rescue ⇒ do-no-harm; only poses with most atoms
 // in solvent are down-ranked, pulling the search toward the pocket.
 #define QFD_CAVITY_RESCUE_W   0.30f
-#define QFD_CAV_GATE_LO       0.40f   // mean/fraction exposure below this ⇒ gate 0 (in pocket)
-#define QFD_CAV_GATE_HI       0.70f   // mean/fraction exposure above this ⇒ gate 1 (in solvent)
+// Gate thresholds raised 0.40/0.70 → 0.80/0.95 (2026-06-17). On the clean engine (post stale-grid
+// fix) the old gate MISFIRED on large extended ligands: a correctly-docked 17-rotatable-bond ligand
+// legitimately has 40–65% of its heavy atoms facing solvent at the pocket mouth, so gate>0 penalised
+// the correct pose and promoted a compact buried decoy (1DF7 0.51→12.0 Å, 1U72 0.54→1.25). Only a
+// pose with ≥80% of atoms in solvent (genuinely mislocalised, not just extended) now triggers rescue.
+#define QFD_CAV_GATE_LO       0.80f   // fraction of heavy atoms in solvent below this ⇒ gate 0 (do-no-harm)
+#define QFD_CAV_GATE_HI       0.95f   // above this ⇒ gate 1 (pose essentially entirely in solvent)
 #define QFD_CAV_EXPOSED_THR   0.50f   // an atom counts as "exposed" when grid exposure > this
 // Phase 6c (iteration 6): GATED cavity GRADIENT. The per-atom pull-in force, scaled by the same
 // pose-level gate (mean exposure over heavy atoms). gate≈0 in the pocket ⇒ no force ⇒ do-no-harm;
